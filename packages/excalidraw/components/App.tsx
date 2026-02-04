@@ -493,6 +493,11 @@ import type {
 import type { RoughCanvas } from "roughjs/bin/canvas";
 import type { Action, ActionResult } from "../actions/types";
 
+const BPD_STANDARD_SHAPE_SIZE = {
+  width: 160,
+  height: 100,
+} as const;
+
 const AppContext = React.createContext<AppClassProperties>(null!);
 const AppPropsContext = React.createContext<AppProps>(null!);
 
@@ -8883,6 +8888,61 @@ class App extends React.Component<AppProps, AppState> {
     });
   };
 
+  private maybeApplyBpdClickToCreateDefaults = (
+    newElement: NonDeletedExcalidrawElement,
+    pointerDownState: PointerDownState,
+  ): boolean => {
+    if (
+      !getFeatureFlag("BPD_FEATURES") ||
+      pointerDownState.drag.hasOccurred ||
+      !isTextBindableContainer(newElement, false) ||
+      isArrowElement(newElement)
+    ) {
+      return false;
+    }
+
+    this.scene.mutateElement(
+      newElement,
+      {
+        x: pointerDownState.originInGrid.x,
+        y: pointerDownState.originInGrid.y,
+        width: BPD_STANDARD_SHAPE_SIZE.width,
+        height: BPD_STANDARD_SHAPE_SIZE.height,
+      },
+      { informMutation: false, isDragging: false },
+    );
+
+    this.scene.triggerUpdate();
+    return true;
+  };
+
+  private maybeAutoEditBpdNewShape = (
+    newElement: NonDeletedExcalidrawElement,
+  ) => {
+    if (
+      !getFeatureFlag("BPD_FEATURES") ||
+      !isTextBindableContainer(newElement, false) ||
+      isArrowElement(newElement) ||
+      this.state.editingTextElement
+    ) {
+      return;
+    }
+
+    const elementCenter = getContainerCenter(
+      newElement,
+      this.state,
+      this.scene.getNonDeletedElementsMap(),
+    );
+
+    this.startTextEditing({
+      sceneX: elementCenter.x,
+      sceneY: elementCenter.y,
+      insertAtParentCenter: true,
+      container: newElement,
+      autoEdit: true,
+    });
+  };
+
   private maybeCacheReferenceSnapPoints(
     event: KeyboardModifiersObject,
     selectedElements: ExcalidrawElement[],
@@ -10255,19 +10315,23 @@ class App extends React.Component<AppProps, AppState> {
         newElement &&
         isInvisiblySmallElement(newElement)
       ) {
-        // remove invisible element which was added in onPointerDown
-        // update the store snapshot, so that invisible elements are not captured by the store
-        this.updateScene({
-          elements: this.scene
-            .getElementsIncludingDeleted()
-            .filter((el) => el.id !== newElement.id),
-          appState: {
-            newElement: null,
-          },
-          captureUpdate: CaptureUpdateAction.NEVER,
-        });
+        if (this.maybeApplyBpdClickToCreateDefaults(newElement, pointerDownState)) {
+          // keep element, it will be normalized and auto-edited below
+        } else {
+          // remove invisible element which was added in onPointerDown
+          // update the store snapshot, so that invisible elements are not captured by the store
+          this.updateScene({
+            elements: this.scene
+              .getElementsIncludingDeleted()
+              .filter((el) => el.id !== newElement.id),
+            appState: {
+              newElement: null,
+            },
+            captureUpdate: CaptureUpdateAction.NEVER,
+          });
 
-        return;
+          return;
+        }
       }
 
       if (isFrameLikeElement(newElement)) {
@@ -10298,6 +10362,7 @@ class App extends React.Component<AppProps, AppState> {
         );
         // the above does not guarantee the scene to be rendered again, hence the trigger below
         this.scene.triggerUpdate();
+        this.maybeAutoEditBpdNewShape(newElement);
       }
 
       if (pointerDownState.drag.hasOccurred) {

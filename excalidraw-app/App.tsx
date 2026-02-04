@@ -19,7 +19,10 @@ import { ShareableLinkDialog } from "@excalidraw/excalidraw/components/Shareable
 import Trans from "@excalidraw/excalidraw/components/Trans";
 import {
   APP_NAME,
+  ARROW_TYPE,
   EVENT,
+  ROUGHNESS,
+  STROKE_WIDTH,
   THEME,
   VERSION_TIMEOUT,
   debounce,
@@ -30,6 +33,7 @@ import {
   resolvablePromise,
   isRunningInIframe,
   isDevEnv,
+  setFeatureFlag,
 } from "@excalidraw/common";
 import polyfill from "@excalidraw/excalidraw/polyfill";
 import { useCallback, useEffect, useRef, useState } from "react";
@@ -77,6 +81,18 @@ import type {
 } from "@excalidraw/excalidraw/types";
 import type { ResolutionType } from "@excalidraw/common/utility-types";
 import type { ResolvablePromise } from "@excalidraw/common/utils";
+
+const BPD_FEATURES_ENABLED = true;
+
+const BPD_APP_DEFAULTS: Partial<AppState> = {
+  currentItemStrokeWidth: STROKE_WIDTH.extraBold,
+  currentItemRoughness: ROUGHNESS.architect,
+  currentItemArrowType: ARROW_TYPE.elbow,
+};
+
+if (BPD_FEATURES_ENABLED) {
+  setFeatureFlag("BPD_FEATURES", true);
+}
 
 import CustomStats from "./CustomStats";
 import {
@@ -245,6 +261,15 @@ const initializeScene = async (opts: {
 
   let roomLinkData = getCollaborationLinkData(window.location.href);
   const isExternalScene = !!(id || jsonBackendMatch || roomLinkData);
+  if (BPD_FEATURES_ENABLED && !localDataState?.appState && !isExternalScene) {
+    scene = {
+      ...scene,
+      appState: {
+        ...scene.appState,
+        ...BPD_APP_DEFAULTS,
+      },
+    };
+  }
   if (isExternalScene) {
     if (
       // don't prompt if scene is empty
