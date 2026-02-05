@@ -15,8 +15,8 @@ export default defineConfig(({ mode }) => {
   return {
     server: {
       port: Number(envVars.VITE_APP_PORT || 3000),
-      // open the browser
-      open: true,
+      // don't auto-open a browser in headless/server environments
+      open: false,
     },
     // We need to specify the envDir since now there are no
     //more located in parallel with the vite.config.ts file but in parent dir
@@ -124,7 +124,9 @@ export default defineConfig(({ mode }) => {
       woff2BrowserPlugin(),
       react(),
       checker({
-        typescript: true,
+        typescript: {
+          tsconfigPath: path.resolve(__dirname, "./tsconfig.vite.json"),
+        },
         eslint:
           envVars.VITE_APP_ENABLE_ESLINT === "false"
             ? undefined

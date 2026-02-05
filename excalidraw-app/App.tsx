@@ -82,18 +82,6 @@ import type {
 import type { ResolutionType } from "@excalidraw/common/utility-types";
 import type { ResolvablePromise } from "@excalidraw/common/utils";
 
-const BPD_FEATURES_ENABLED = true;
-
-const BPD_APP_DEFAULTS: Partial<AppState> = {
-  currentItemStrokeWidth: STROKE_WIDTH.extraBold,
-  currentItemRoughness: ROUGHNESS.architect,
-  currentItemArrowType: ARROW_TYPE.elbow,
-};
-
-if (BPD_FEATURES_ENABLED) {
-  setFeatureFlag("BPD_FEATURES", true);
-}
-
 import CustomStats from "./CustomStats";
 import {
   Provider,
@@ -162,6 +150,18 @@ import { ExcalidrawPlusPromoBanner } from "./components/ExcalidrawPlusPromoBanne
 import { AppSidebar } from "./components/AppSidebar";
 
 import type { CollabAPI } from "./collab/Collab";
+
+const BPD_FEATURES_ENABLED = true;
+
+const BPD_APP_DEFAULTS: Partial<AppState> = {
+  currentItemStrokeWidth: STROKE_WIDTH.extraBold,
+  currentItemRoughness: ROUGHNESS.architect,
+  currentItemArrowType: ARROW_TYPE.elbow,
+};
+
+if (BPD_FEATURES_ENABLED) {
+  setFeatureFlag("BPD_FEATURES", true);
+}
 
 polyfill();
 
