@@ -1,5 +1,6 @@
 import {
   Excalidraw,
+  DefaultSidebar,
   LiveCollaborationTrigger,
   TTDDialogTrigger,
   CaptureUpdateAction,
@@ -106,10 +107,7 @@ import Collab, {
 import { AppFooter } from "./components/AppFooter";
 import { AppMainMenu } from "./components/AppMainMenu";
 import { AppWelcomeScreen } from "./components/AppWelcomeScreen";
-import {
-  ExportToExcalidrawPlus,
-  exportToExcalidrawPlus,
-} from "./components/ExportToExcalidrawPlus";
+import { exportToExcalidrawPlus } from "./components/ExportToExcalidrawPlus";
 import { TopErrorBoundary } from "./components/TopErrorBoundary";
 
 import {
@@ -148,7 +146,6 @@ import { ExcalidrawPlusIframeExport } from "./ExcalidrawPlusIframeExport";
 
 import "./index.scss";
 
-import { ExcalidrawPlusPromoBanner } from "./components/ExcalidrawPlusPromoBanner";
 import { AppSidebar } from "./components/AppSidebar";
 
 import type { CollabAPI } from "./collab/Collab";
@@ -159,6 +156,8 @@ const BPD_APP_DEFAULTS: Partial<AppState> = {
   currentItemStrokeWidth: STROKE_WIDTH.extraBold,
   currentItemRoughness: ROUGHNESS.architect,
   currentItemArrowType: ARROW_TYPE.elbow,
+  currentItemEndArrowhead: "triangle",
+  currentItemStartArrowhead: null,
   currentItemFontSize: FONT_SIZES.sm,
   currentItemFontFamily: FONT_FAMILY["Comic Shanns"],
 };
@@ -878,30 +877,6 @@ const ExcalidrawWrapper = () => {
             toggleTheme: true,
             export: {
               onExportToBackend,
-              renderCustomUI: excalidrawAPI
-                ? (elements, appState, files) => {
-                    return (
-                      <ExportToExcalidrawPlus
-                        elements={elements}
-                        appState={appState}
-                        files={files}
-                        name={excalidrawAPI.getName()}
-                        onError={(error) => {
-                          excalidrawAPI?.updateScene({
-                            appState: {
-                              errorMessage: error.message,
-                            },
-                          });
-                        }}
-                        onSuccess={() => {
-                          excalidrawAPI.updateScene({
-                            appState: { openDialog: null },
-                          });
-                        }}
-                      />
-                    );
-                  }
-                : undefined,
             },
           },
         }}
@@ -918,12 +893,6 @@ const ExcalidrawWrapper = () => {
 
           return (
             <div className="excalidraw-ui-top-right">
-              {excalidrawAPI?.getEditorInterface().formFactor === "desktop" && (
-                <ExcalidrawPlusPromoBanner
-                  isSignedIn={isExcalidrawPlusSignedUser}
-                />
-              )}
-
               {collabError.message && <CollabError collabError={collabError} />}
               <LiveCollaborationTrigger
                 isCollaborating={isCollaborating}
@@ -942,13 +911,13 @@ const ExcalidrawWrapper = () => {
           }
         }}
       >
+        <DefaultSidebar.Trigger style={{ display: "none" }} />
         <AppMainMenu
           onCollabDialogOpen={onCollabDialogOpen}
           isCollaborating={isCollaborating}
           isCollabEnabled={!isCollabDisabled}
           theme={appTheme}
           setTheme={(theme) => setAppTheme(theme)}
-          refresh={() => forceRefresh((prev) => !prev)}
         />
         <AppWelcomeScreen
           onCollabDialogOpen={onCollabDialogOpen}
@@ -957,22 +926,6 @@ const ExcalidrawWrapper = () => {
         <OverwriteConfirmDialog>
           <OverwriteConfirmDialog.Actions.ExportToImage />
           <OverwriteConfirmDialog.Actions.SaveToDisk />
-          {excalidrawAPI && (
-            <OverwriteConfirmDialog.Action
-              title={t("overwriteConfirm.action.excalidrawPlus.title")}
-              actionLabel={t("overwriteConfirm.action.excalidrawPlus.button")}
-              onClick={() => {
-                exportToExcalidrawPlus(
-                  excalidrawAPI.getSceneElements(),
-                  excalidrawAPI.getAppState(),
-                  excalidrawAPI.getFiles(),
-                  excalidrawAPI.getName(),
-                );
-              }}
-            >
-              {t("overwriteConfirm.action.excalidrawPlus.description")}
-            </OverwriteConfirmDialog.Action>
-          )}
         </OverwriteConfirmDialog>
         <AppFooter onChange={() => excalidrawAPI?.refresh()} />
         {excalidrawAPI && <AIComponents excalidrawAPI={excalidrawAPI} />}

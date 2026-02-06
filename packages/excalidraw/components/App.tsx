@@ -42,6 +42,7 @@ import {
   MQ_RIGHT_SIDEBAR_MIN_WIDTH,
   POINTER_BUTTON,
   ROUNDNESS,
+  ROUGHNESS,
   SCROLL_TIMEOUT,
   TAP_TWICE_TIMEOUT,
   TEXT_TO_CENTER_SNAP_THRESHOLD,
@@ -517,12 +518,14 @@ const BPD_STANDARD_SHAPE_SIZE = {
 } as const;
 
 const BPD_MIN_DRAGGED_SHAPE_SIZE = {
-  width: 50,
-  height: 50,
+  width: BPD_STANDARD_SHAPE_SIZE.width / 2,
+  height: BPD_STANDARD_SHAPE_SIZE.height / 2,
 } as const;
 
 const BPD_FLOWCHART_ADD_NEXT_SPACING_MULTIPLIER = 1.5;
 const BPD_DEFAULT_NODE_FONT_FAMILY = FONT_FAMILY["Comic Shanns"];
+const BPD_DEFAULT_END_ARROWHEAD = "triangle" as const;
+const BPD_DRAG_GRID_SIZE = 20;
 
 const BPD_DEFAULT_SHAPE_BACKGROUNDS = {
   rectangle: COLOR_PALETTE.blue[DEFAULT_ELEMENT_BACKGROUND_COLOR_INDEX],
@@ -2614,6 +2617,7 @@ class App extends React.Component<AppProps, AppState> {
       direction,
       this.scene,
       BPD_FLOWCHART_ADD_NEXT_SPACING_MULTIPLIER,
+      BPD_DRAG_GRID_SIZE as NullableGridSize,
     );
 
     const pendingNodes = this.flowChartCreator.pendingNodes;
@@ -2628,6 +2632,14 @@ class App extends React.Component<AppProps, AppState> {
 
     const nextStepNodes: ExcalidrawElement[] = pendingNodes.map(
       (pendingNode) => {
+        if (isArrowElement(pendingNode)) {
+          return {
+            ...pendingNode,
+            startArrowhead: null,
+            endArrowhead: BPD_DEFAULT_END_ARROWHEAD,
+          };
+        }
+
         if (!isFlowchartNodeElement(pendingNode)) {
           return pendingNode;
         }
@@ -2636,6 +2648,7 @@ class App extends React.Component<AppProps, AppState> {
           ...pendingNode,
           type: "rectangle",
           roundness: null,
+          roughness: ROUGHNESS.architect,
           strokeColor: COLOR_PALETTE.black,
           backgroundColor: stepBackgroundColor,
         };
@@ -9072,9 +9085,13 @@ class App extends React.Component<AppProps, AppState> {
       values from appState. */
 
       const { currentItemStartArrowhead, currentItemEndArrowhead } = this.state;
+      const shouldForceBpdArrowhead =
+        getFeatureFlag("BPD_FEATURES") && elementType === "arrow";
       const [startArrowhead, endArrowhead] =
         elementType === "arrow"
-          ? [currentItemStartArrowhead, currentItemEndArrowhead]
+          ? shouldForceBpdArrowhead
+            ? [null, BPD_DEFAULT_END_ARROWHEAD]
+            : [currentItemStartArrowhead, currentItemEndArrowhead]
           : [null, null];
 
       const element =
@@ -9271,9 +9288,15 @@ class App extends React.Component<AppProps, AppState> {
       fillStyle: this.state.currentItemFillStyle,
       strokeWidth: this.state.currentItemStrokeWidth,
       strokeStyle: this.state.currentItemStrokeStyle,
-      roughness: this.state.currentItemRoughness,
+      roughness:
+        getFeatureFlag("BPD_FEATURES") && !!bpdDefaultBackgroundColor
+          ? ROUGHNESS.architect
+          : this.state.currentItemRoughness,
       opacity: this.state.currentItemOpacity,
-      roundness: this.getCurrentItemRoundness(elementType),
+      roundness:
+        getFeatureFlag("BPD_FEATURES") && !!bpdDefaultBackgroundColor
+          ? null
+          : this.getCurrentItemRoundness(elementType),
       locked: false,
       frameId: topLayerFrame ? topLayerFrame.id : null,
     } as const;
@@ -9350,10 +9373,10 @@ class App extends React.Component<AppProps, AppState> {
     }
 
     const normalizedSize = getNormalizedDimensions(newElement);
-    const shouldUseDefaultSize =
-      !pointerDownState.drag.hasOccurred ||
-      normalizedSize.width < BPD_MIN_DRAGGED_SHAPE_SIZE.width ||
+    const isDraggedSizeTooSmall =
+      normalizedSize.width < BPD_MIN_DRAGGED_SHAPE_SIZE.width &&
       normalizedSize.height < BPD_MIN_DRAGGED_SHAPE_SIZE.height;
+    const shouldUseDefaultSize = isDraggedSizeTooSmall;
 
     if (!shouldUseDefaultSize) {
       return false;
@@ -9957,13 +9980,23 @@ class App extends React.Component<AppProps, AppState> {
           // when we're editing the name of a frame, we want the user to be
           // able to select and interact with the text input
           if (!this.state.editingFrame) {
+            const dragGridSize = (
+              getFeatureFlag("BPD_FEATURES")
+                ? event[KEYS.CTRL_OR_CMD]
+                  ? null
+                  : BPD_DRAG_GRID_SIZE
+                : event[KEYS.CTRL_OR_CMD]
+                ? null
+                : this.getEffectiveGridSize()
+            ) as NullableGridSize;
+
             dragSelectedElements(
               pointerDownState,
               selectedElements,
               dragOffset,
               this.scene,
               snapOffset,
-              event[KEYS.CTRL_OR_CMD] ? null : this.getEffectiveGridSize(),
+              dragGridSize,
             );
           }
 

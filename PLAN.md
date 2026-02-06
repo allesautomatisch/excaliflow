@@ -77,7 +77,10 @@
 - In BPD mode, default font size is `small`.
 - In BPD mode, default font family is `Comic Shanns`.
 - In BPD mode, new node text insertion enforces `Comic Shanns` (does not inherit last-used font).
-- In BPD mode, dragged node size is applied only when dimensions are at least `50x50`; smaller drags snap to default size.
+- In BPD mode, newly created node shapes always use sharp corners (roundness reset to sharp), regardless of previously selected roundness.
+- In BPD mode, newly created arrows always use Triangle end arrowhead (toolbar arrows and `+`-created flow arrows), regardless of previously selected arrowhead.
+- In BPD mode, dragging selected shapes snaps to a 20px grid by default; holding Ctrl/Cmd temporarily disables drag-grid snapping for free positioning.
+- In BPD mode, dragged node size is applied unless both width and height are below half of the default node size; only those small drags snap to default size.
 - In BPD mode, `+` node creation uses a `1.5x` spacing multiplier.
 - In BPD mode, creating a node via `+` auto-opens bound text editing on the new node so typing can start immediately.
 

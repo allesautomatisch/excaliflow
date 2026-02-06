@@ -9,7 +9,11 @@ Always update `PLAN.md` first, then reflect changes here. This file is for quick
 - [x] Set default font size to small
 - [x] Set default font family to built-in Comic Shanns
 - [x] Enforce Comic Shanns for new nodes regardless of last-used font
+- [x] Force Triangle arrowhead for newly created arrows (toolbar + `+` flow creation), regardless of last-used arrowhead
+- [x] Force sharp corners for newly created nodes (tool-created and `+`-created), regardless of previously selected roundness
+- [x] Snap dragged shapes to 20px grid in BPD mode; hold Ctrl/Cmd to temporarily disable snap for free positioning
 - [x] Apply default node size for sub-50x50 accidental drags
+- [x] Use half-default-size threshold for drag fallback, and only fallback when dragged width and height are both below threshold
 - [x] Double default node size
 
 ## Milestone 2 (new shapes/tools)

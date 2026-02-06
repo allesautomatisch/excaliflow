@@ -1,9 +1,10 @@
-import { KEYS, invariant, toBrandedType } from "@excalidraw/common";
+import { getGridPoint, KEYS, invariant, toBrandedType } from "@excalidraw/common";
 
 import { type GlobalPoint, pointFrom, type LocalPoint } from "@excalidraw/math";
 
 import type {
   AppState,
+  NullableGridSize,
   PendingExcalidrawElements,
 } from "@excalidraw/excalidraw/types";
 
@@ -240,12 +241,26 @@ const getOffsets = (
   };
 };
 
+const getSnappedNodePosition = (
+  x: number,
+  y: number,
+  snapToGridSize: NullableGridSize = null,
+) => {
+  if (!snapToGridSize || snapToGridSize <= 0) {
+    return { x, y };
+  }
+
+  const [snappedX, snappedY] = getGridPoint(x, y, snapToGridSize);
+  return { x: snappedX, y: snappedY };
+};
+
 const addNewNode = (
   element: ExcalidrawFlowchartNodeElement,
   appState: AppState,
   direction: LinkDirection,
   scene: Scene,
   spacingMultiplier: number,
+  snapToGridSize: NullableGridSize = null,
 ) => {
   const elementsMap = scene.getNonDeletedElementsMap();
   const successors = getSuccessors(element, elementsMap, direction);
@@ -258,10 +273,16 @@ const addNewNode = (
     spacingMultiplier,
   );
 
+  const snappedNodePosition = getSnappedNodePosition(
+    element.x + offsets.x,
+    element.y + offsets.y,
+    snapToGridSize,
+  );
+
   const nextNode = newElement({
     type: element.type,
-    x: element.x + offsets.x,
-    y: element.y + offsets.y,
+    x: snappedNodePosition.x,
+    y: snappedNodePosition.y,
     // TODO: extract this to a util
     width: element.width,
     height: element.height,
@@ -301,6 +322,7 @@ export const addNewNodes = (
   scene: Scene,
   numberOfNodes: number,
   spacingMultiplier: number,
+  snapToGridSize: NullableGridSize = null,
 ) => {
   const verticalOffset = BASE_VERTICAL_OFFSET * spacingMultiplier;
   const horizontalOffset = BASE_HORIZONTAL_OFFSET * spacingMultiplier;
@@ -339,10 +361,16 @@ export const addNewNodes = (
       nextX = startX + offsetX;
     }
 
+    const snappedNodePosition = getSnappedNodePosition(
+      nextX,
+      nextY,
+      snapToGridSize,
+    );
+
     const nextNode = newElement({
       type: startNode.type,
-      x: nextX,
-      y: nextY,
+      x: snappedNodePosition.x,
+      y: snappedNodePosition.y,
       // TODO: extract this to a util
       width: startNode.width,
       height: startNode.height,
@@ -652,6 +680,7 @@ export class FlowChartCreator {
     direction: LinkDirection,
     scene: Scene,
     spacingMultiplier = 1,
+    snapToGridSize: NullableGridSize = null,
   ) {
     const elementsMap = scene.getNonDeletedElementsMap();
     if (direction !== this.direction) {
@@ -661,6 +690,7 @@ export class FlowChartCreator {
         direction,
         scene,
         spacingMultiplier,
+        snapToGridSize,
       );
 
       this.numberOfNodes = 1;
@@ -676,6 +706,7 @@ export class FlowChartCreator {
         scene,
         this.numberOfNodes,
         spacingMultiplier,
+        snapToGridSize,
       );
 
       this.isCreatingChart = true;

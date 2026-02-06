@@ -20,6 +20,8 @@ When done with a task, check it off in todo.md and update PLAN.md if necessary t
 
 ## Local Hosting and Run Checks
 - Preferred local host command: `yarn host:app` (serves on `http://localhost:3001`).
+- Before checking localhost health, run TypeScript typecheck:
+  - `cd excalidraw-app && TMPDIR=/tmp yarn tsc --noEmit`
 - If Yarn temp/cache permissions fail, run with user-owned temp/cache dirs:
   - `mkdir -p "$HOME/.tmp/yarn" "$HOME/.cache/yarn"`
   - `TMPDIR="$HOME/.tmp/yarn" YARN_CACHE_FOLDER="$HOME/.cache/yarn" yarn host:app`
