@@ -11,6 +11,7 @@ import {
 } from "@excalidraw/utils/shape";
 
 import {
+  polygon,
   pointFrom,
   pointDistance,
   type LocalPoint,
@@ -61,6 +62,7 @@ import {
   getCenterForBounds,
   getDiamondPoints,
   getElementAbsoluteCoords,
+  getParallelogramPoints,
 } from "./bounds";
 import { shouldTestInside } from "./collision";
 
@@ -227,6 +229,8 @@ export const generateRoughOptions = (
 
   switch (element.type) {
     case "rectangle":
+    case "capsule":
+    case "parallelogram":
     case "iframe":
     case "embeddable":
     case "diamond":
@@ -645,13 +649,14 @@ const _generateElementShape = (
   const isDarkMode = theme === THEME.DARK;
   switch (element.type) {
     case "rectangle":
+    case "capsule":
     case "iframe":
     case "embeddable": {
       let shape: ElementShapes[typeof element.type];
       // this is for rendering the stroke/bg of the embeddable, especially
       // when the src url is not set
 
-      if (element.roundness) {
+      if (element.roundness || element.type === "capsule") {
         const w = element.width;
         const h = element.height;
         const r = getCornerRadius(Math.min(w, h), element);
@@ -688,6 +693,29 @@ const _generateElementShape = (
           ),
         );
       }
+      return shape;
+    }
+    case "parallelogram": {
+      const [
+        topLeftX,
+        topLeftY,
+        topRightX,
+        topRightY,
+        bottomRightX,
+        bottomRightY,
+        bottomLeftX,
+        bottomLeftY,
+      ] = getParallelogramPoints(element);
+
+      const shape: ElementShapes[typeof element.type] = generator.polygon(
+        [
+          [topLeftX, topLeftY],
+          [topRightX, topRightY],
+          [bottomRightX, bottomRightY],
+          [bottomLeftX, bottomLeftY],
+        ],
+        generateRoughOptions(element, false, isDarkMode),
+      );
       return shape;
     }
     case "diamond": {
@@ -951,7 +979,9 @@ export const getElementShape = <Point extends GlobalPoint | LocalPoint>(
 ): GeometricShape<Point> => {
   switch (element.type) {
     case "rectangle":
+    case "capsule":
     case "diamond":
+    case "parallelogram":
     case "frame":
     case "magicframe":
     case "embeddable":
@@ -959,6 +989,50 @@ export const getElementShape = <Point extends GlobalPoint | LocalPoint>(
     case "iframe":
     case "text":
     case "selection":
+      if (element.type === "parallelogram") {
+        const [
+          topLeftX,
+          topLeftY,
+          topRightX,
+          topRightY,
+          bottomRightX,
+          bottomRightY,
+          bottomLeftX,
+          bottomLeftY,
+        ] = getParallelogramPoints(element);
+        const center = pointFrom<Point>(
+          element.x + element.width / 2,
+          element.y + element.height / 2,
+        );
+        return {
+          type: "polygon",
+          data: polygon<Point>(
+            pointRotateRads(
+              pointFrom<Point>(element.x + topLeftX, element.y + topLeftY),
+              center,
+              element.angle,
+            ),
+            pointRotateRads(
+              pointFrom<Point>(element.x + topRightX, element.y + topRightY),
+              center,
+              element.angle,
+            ),
+            pointRotateRads(
+              pointFrom<Point>(
+                element.x + bottomRightX,
+                element.y + bottomRightY,
+              ),
+              center,
+              element.angle,
+            ),
+            pointRotateRads(
+              pointFrom<Point>(element.x + bottomLeftX, element.y + bottomLeftY),
+              center,
+              element.angle,
+            ),
+          ),
+        };
+      }
       return getPolygonShape(element);
     case "arrow":
     case "line": {

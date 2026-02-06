@@ -2,16 +2,20 @@ import type { ElementOrToolType } from "@excalidraw/excalidraw/types";
 
 export const hasBackground = (type: ElementOrToolType) =>
   type === "rectangle" ||
+  type === "parallelogram" ||
   type === "iframe" ||
   type === "embeddable" ||
   type === "ellipse" ||
+  type === "capsule" ||
   type === "diamond" ||
   type === "line" ||
   type === "freedraw";
 
 export const hasStrokeColor = (type: ElementOrToolType) =>
   type === "rectangle" ||
+  type === "parallelogram" ||
   type === "ellipse" ||
+  type === "capsule" ||
   type === "diamond" ||
   type === "freedraw" ||
   type === "arrow" ||
@@ -21,9 +25,11 @@ export const hasStrokeColor = (type: ElementOrToolType) =>
 
 export const hasStrokeWidth = (type: ElementOrToolType) =>
   type === "rectangle" ||
+  type === "parallelogram" ||
   type === "iframe" ||
   type === "embeddable" ||
   type === "ellipse" ||
+  type === "capsule" ||
   type === "diamond" ||
   type === "freedraw" ||
   type === "arrow" ||
@@ -31,9 +37,11 @@ export const hasStrokeWidth = (type: ElementOrToolType) =>
 
 export const hasStrokeStyle = (type: ElementOrToolType) =>
   type === "rectangle" ||
+  type === "parallelogram" ||
   type === "iframe" ||
   type === "embeddable" ||
   type === "ellipse" ||
+  type === "capsule" ||
   type === "diamond" ||
   type === "arrow" ||
   type === "line";

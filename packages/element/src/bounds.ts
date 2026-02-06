@@ -51,6 +51,7 @@ import { getElementShape } from "./shape";
 
 import {
   deconstructDiamondElement,
+  deconstructParallelogramElement,
   deconstructRectanguloidElement,
 } from "./utils";
 
@@ -64,6 +65,7 @@ import type {
   ExcalidrawEllipseElement,
   ExcalidrawFreeDrawElement,
   ExcalidrawLinearElement,
+  ExcalidrawParallelogramElement,
   ExcalidrawRectanguloidElement,
   ExcalidrawTextElementWithContainer,
   NonDeleted,
@@ -211,6 +213,42 @@ export class ElementBounds {
       const ww = Math.hypot(w * cos, h * sin);
       const hh = Math.hypot(h * cos, w * sin);
       bounds = [cx - ww, cy - hh, cx + ww, cy + hh];
+    } else if (element.type === "parallelogram") {
+      const [
+        topLeftX,
+        topLeftY,
+        topRightX,
+        topRightY,
+        bottomRightX,
+        bottomRightY,
+        bottomLeftX,
+        bottomLeftY,
+      ] = getParallelogramPoints(element);
+      const [x11, y11] = pointRotateRads(
+        pointFrom(element.x + topLeftX, element.y + topLeftY),
+        pointFrom(cx, cy),
+        element.angle,
+      );
+      const [x12, y12] = pointRotateRads(
+        pointFrom(element.x + topRightX, element.y + topRightY),
+        pointFrom(cx, cy),
+        element.angle,
+      );
+      const [x22, y22] = pointRotateRads(
+        pointFrom(element.x + bottomRightX, element.y + bottomRightY),
+        pointFrom(cx, cy),
+        element.angle,
+      );
+      const [x21, y21] = pointRotateRads(
+        pointFrom(element.x + bottomLeftX, element.y + bottomLeftY),
+        pointFrom(cx, cy),
+        element.angle,
+      );
+      const minX = Math.min(x11, x12, x22, x21);
+      const minY = Math.min(y11, y12, y22, y21);
+      const maxX = Math.max(x11, x12, x22, x21);
+      const maxY = Math.max(y11, y12, y22, y21);
+      bounds = [minX, minY, maxX, maxY];
     } else {
       const [x11, y11] = pointRotateRads(
         pointFrom(x1, y1),
@@ -361,6 +399,9 @@ export const getElementLineSegments = (
       .flat();
     const rotatedSides = getRotatedSides(sides, center, element.angle);
     return [...rotatedSides, ...cornerSegments];
+  } else if (element.type === "parallelogram") {
+    const [sides] = deconstructParallelogramElement(element);
+    return getRotatedSides(sides, center, element.angle);
   } else if (element.type === "diamond") {
     const [sides, corners] = deconstructDiamondElement(element);
     const cornerSegments = corners
@@ -424,6 +465,7 @@ const _isRectanguloidElement = (
   return (
     element != null &&
     (element.type === "rectangle" ||
+      element.type === "capsule" ||
       element.type === "image" ||
       element.type === "iframe" ||
       element.type === "embeddable" ||
@@ -535,6 +577,34 @@ export const getDiamondPoints = (element: ExcalidrawElement) => {
   const leftY = rightY;
 
   return [topX, topY, rightX, rightY, bottomX, bottomY, leftX, leftY];
+};
+
+const getParallelogramOffset = (element: ExcalidrawParallelogramElement) =>
+  Math.min(Math.abs(element.width) * 0.25, Math.abs(element.height) * 0.5);
+
+export const getParallelogramPoints = (
+  element: ExcalidrawParallelogramElement,
+) => {
+  const offset = getParallelogramOffset(element);
+  const topLeftX = offset;
+  const topLeftY = 0;
+  const topRightX = element.width;
+  const topRightY = 0;
+  const bottomRightX = element.width - offset;
+  const bottomRightY = element.height;
+  const bottomLeftX = 0;
+  const bottomLeftY = element.height;
+
+  return [
+    topLeftX,
+    topLeftY,
+    topRightX,
+    topRightY,
+    bottomRightX,
+    bottomRightY,
+    bottomLeftX,
+    bottomLeftY,
+  ];
 };
 
 // reference: https://eliot-jones.com/2019/12/cubic-bezier-curve-bounding-boxes

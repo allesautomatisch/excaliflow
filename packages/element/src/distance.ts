@@ -11,6 +11,7 @@ import type { GlobalPoint, Radians } from "@excalidraw/math";
 import {
   deconstructDiamondElement,
   deconstructLinearOrFreeDrawElement,
+  deconstructParallelogramElement,
   deconstructRectanguloidElement,
 } from "./utils";
 
@@ -23,6 +24,7 @@ import type {
   ExcalidrawEllipseElement,
   ExcalidrawFreeDrawElement,
   ExcalidrawLinearElement,
+  ExcalidrawParallelogramElement,
   ExcalidrawRectanguloidElement,
 } from "./types";
 
@@ -34,6 +36,7 @@ export const distanceToElement = (
   switch (element.type) {
     case "selection":
     case "rectangle":
+    case "capsule":
     case "image":
     case "text":
     case "iframe":
@@ -43,6 +46,8 @@ export const distanceToElement = (
       return distanceToRectanguloidElement(element, elementsMap, p);
     case "diamond":
       return distanceToDiamondElement(element, elementsMap, p);
+    case "parallelogram":
+      return distanceToParallelogramElement(element, elementsMap, p);
     case "ellipse":
       return distanceToEllipseElement(element, elementsMap, p);
     case "line":
@@ -108,6 +113,18 @@ const distanceToDiamondElement = (
       .map((a) => curvePointDistance(a, rotatedPoint))
       .filter((d): d is number => d !== null),
   );
+};
+
+const distanceToParallelogramElement = (
+  element: ExcalidrawParallelogramElement,
+  elementsMap: ElementsMap,
+  p: GlobalPoint,
+): number => {
+  const center = elementCenterPoint(element, elementsMap);
+  const rotatedPoint = pointRotateRads(p, center, -element.angle as Radians);
+  const [sides] = deconstructParallelogramElement(element);
+
+  return Math.min(...sides.map((s) => distanceToLineSegment(rotatedPoint, s)));
 };
 
 /**

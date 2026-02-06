@@ -333,6 +333,14 @@ export const RectangleIcon = createIcon(
   tablerIconProps,
 );
 
+export const ParallelogramIcon = createIcon(
+  <g strokeWidth="1.5">
+    <path stroke="none" d="M0 0h24v24H0z" fill="none" />
+    <path d="M7 4h13l-3 16h-13z" />
+  </g>,
+  tablerIconProps,
+);
+
 // tabler-icons: square-rotated
 export const DiamondIcon = createIcon(
   <g strokeWidth="1.5">
@@ -350,6 +358,14 @@ export const EllipseIcon = createIcon(
     <circle cx="12" cy="12" r="9"></circle>
   </g>,
 
+  tablerIconProps,
+);
+
+export const CapsuleIcon = createIcon(
+  <g strokeWidth="1.5">
+    <path stroke="none" d="M0 0h24v24H0z" fill="none" />
+    <rect x="3" y="7" width="18" height="10" rx="5" />
+  </g>,
   tablerIconProps,
 );
 

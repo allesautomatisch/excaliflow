@@ -43,8 +43,8 @@ import type { Scene } from "./Scene";
 
 type LinkDirection = "up" | "right" | "down" | "left";
 
-const VERTICAL_OFFSET = 100;
-const HORIZONTAL_OFFSET = 100;
+const BASE_VERTICAL_OFFSET = 100;
+const BASE_HORIZONTAL_OFFSET = 100;
 
 export const getLinkDirectionFromKey = (key: string): LinkDirection => {
   switch (key) {
@@ -151,12 +151,15 @@ const getOffsets = (
   element: ExcalidrawFlowchartNodeElement,
   linkedNodes: ExcalidrawElement[],
   direction: LinkDirection,
+  spacingMultiplier: number,
 ) => {
-  const _HORIZONTAL_OFFSET = HORIZONTAL_OFFSET + element.width;
+  const verticalOffset = BASE_VERTICAL_OFFSET * spacingMultiplier;
+  const horizontalOffset = BASE_HORIZONTAL_OFFSET * spacingMultiplier;
+  const _HORIZONTAL_OFFSET = horizontalOffset + element.width;
 
   // check if vertical space or horizontal space is available first
   if (direction === "up" || direction === "down") {
-    const _VERTICAL_OFFSET = VERTICAL_OFFSET + element.height;
+    const _VERTICAL_OFFSET = verticalOffset + element.height;
     // check vertical space
     const minX = element.x;
     const maxX = element.x + element.width;
@@ -185,14 +188,14 @@ const getOffsets = (
     ) {
       return {
         x:
-          (HORIZONTAL_OFFSET + element.width) * (direction === "left" ? -1 : 1),
+          (horizontalOffset + element.width) * (direction === "left" ? -1 : 1),
         y: 0,
       };
     }
   }
 
   if (direction === "up" || direction === "down") {
-    const _VERTICAL_OFFSET = VERTICAL_OFFSET + element.height;
+    const _VERTICAL_OFFSET = verticalOffset + element.height;
     const y = linkedNodes.length === 0 ? _VERTICAL_OFFSET : _VERTICAL_OFFSET;
     const x =
       linkedNodes.length === 0
@@ -214,9 +217,9 @@ const getOffsets = (
     };
   }
 
-  const _VERTICAL_OFFSET = VERTICAL_OFFSET + element.height;
+  const _VERTICAL_OFFSET = verticalOffset + element.height;
   const x =
-    (linkedNodes.length === 0 ? HORIZONTAL_OFFSET : HORIZONTAL_OFFSET) +
+    (linkedNodes.length === 0 ? horizontalOffset : horizontalOffset) +
     element.width;
   const y =
     linkedNodes.length === 0
@@ -242,6 +245,7 @@ const addNewNode = (
   appState: AppState,
   direction: LinkDirection,
   scene: Scene,
+  spacingMultiplier: number,
 ) => {
   const elementsMap = scene.getNonDeletedElementsMap();
   const successors = getSuccessors(element, elementsMap, direction);
@@ -251,6 +255,7 @@ const addNewNode = (
     element,
     [...successors, ...predeccessors],
     direction,
+    spacingMultiplier,
   );
 
   const nextNode = newElement({
@@ -295,7 +300,10 @@ export const addNewNodes = (
   direction: LinkDirection,
   scene: Scene,
   numberOfNodes: number,
+  spacingMultiplier: number,
 ) => {
+  const verticalOffset = BASE_VERTICAL_OFFSET * spacingMultiplier;
+  const horizontalOffset = BASE_HORIZONTAL_OFFSET * spacingMultiplier;
   // always start from 0 and distribute evenly
   const newNodes: ExcalidrawElement[] = [];
 
@@ -304,30 +312,30 @@ export const addNewNodes = (
     let nextY: number;
     if (direction === "left" || direction === "right") {
       const totalHeight =
-        VERTICAL_OFFSET * (numberOfNodes - 1) +
+        verticalOffset * (numberOfNodes - 1) +
         numberOfNodes * startNode.height;
 
       const startY = startNode.y + startNode.height / 2 - totalHeight / 2;
 
-      let offsetX = HORIZONTAL_OFFSET + startNode.width;
+      let offsetX = horizontalOffset + startNode.width;
       if (direction === "left") {
         offsetX *= -1;
       }
       nextX = startNode.x + offsetX;
-      const offsetY = (VERTICAL_OFFSET + startNode.height) * i;
+      const offsetY = (verticalOffset + startNode.height) * i;
       nextY = startY + offsetY;
     } else {
       const totalWidth =
-        HORIZONTAL_OFFSET * (numberOfNodes - 1) +
+        horizontalOffset * (numberOfNodes - 1) +
         numberOfNodes * startNode.width;
       const startX = startNode.x + startNode.width / 2 - totalWidth / 2;
-      let offsetY = VERTICAL_OFFSET + startNode.height;
+      let offsetY = verticalOffset + startNode.height;
 
       if (direction === "up") {
         offsetY *= -1;
       }
       nextY = startNode.y + offsetY;
-      const offsetX = (HORIZONTAL_OFFSET + startNode.width) * i;
+      const offsetX = (horizontalOffset + startNode.width) * i;
       nextX = startX + offsetX;
     }
 
@@ -643,6 +651,7 @@ export class FlowChartCreator {
     appState: AppState,
     direction: LinkDirection,
     scene: Scene,
+    spacingMultiplier = 1,
   ) {
     const elementsMap = scene.getNonDeletedElementsMap();
     if (direction !== this.direction) {
@@ -651,6 +660,7 @@ export class FlowChartCreator {
         appState,
         direction,
         scene,
+        spacingMultiplier,
       );
 
       this.numberOfNodes = 1;
@@ -665,6 +675,7 @@ export class FlowChartCreator {
         direction,
         scene,
         this.numberOfNodes,
+        spacingMultiplier,
       );
 
       this.isCreatingChart = true;

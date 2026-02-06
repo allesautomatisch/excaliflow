@@ -57,6 +57,8 @@ import {
   DEFAULT_TEXT_ALIGN,
   ARROW_TYPE,
   DEFAULT_REDUCED_GLOBAL_ALPHA,
+  DEFAULT_ELEMENT_BACKGROUND_COLOR_INDEX,
+  FONT_FAMILY,
   isLocalLink,
   normalizeLink,
   toValidURL,
@@ -281,6 +283,7 @@ import type {
   MagicGenerationData,
   ExcalidrawArrowElement,
   ExcalidrawElbowArrowElement,
+  ExcalidrawFlowchartNodeElement,
   SceneElementsMap,
   ExcalidrawBindableElement,
 } from "@excalidraw/element/types";
@@ -409,7 +412,10 @@ import {
   resetCursor,
   setCursorForShape,
 } from "../cursor";
-import { ElementCanvasButtons } from "../components/ElementCanvasButtons";
+import {
+  ElementCanvasButtons,
+  type ElementCanvasButtonsPosition,
+} from "../components/ElementCanvasButtons";
 import { LaserTrails } from "../laser-trails";
 import { withBatchedUpdates, withBatchedUpdatesThrottled } from "../reactUtils";
 import { textWysiwyg } from "../wysiwyg/textWysiwyg";
@@ -445,8 +451,20 @@ import {
   isPointHittingLink,
   isPointHittingLinkIcon,
 } from "./hyperlink/helpers";
-import { MagicIcon, copyIcon, fullscreenIcon } from "./icons";
+import {
+  CapsuleIcon,
+  DiamondIcon,
+  DotsHorizontalIcon,
+  EllipseIcon,
+  MagicIcon,
+  ParallelogramIcon,
+  PlusIcon,
+  RectangleIcon,
+  copyIcon,
+  fullscreenIcon,
+} from "./icons";
 import { Toast } from "./Toast";
+import { ToolButton } from "./ToolButton";
 
 import { findShapeByKey } from "./shapes";
 
@@ -494,9 +512,87 @@ import type { RoughCanvas } from "roughjs/bin/canvas";
 import type { Action, ActionResult } from "../actions/types";
 
 const BPD_STANDARD_SHAPE_SIZE = {
-  width: 160,
-  height: 100,
+  width: 320,
+  height: 200,
 } as const;
+
+const BPD_MIN_DRAGGED_SHAPE_SIZE = {
+  width: 50,
+  height: 50,
+} as const;
+
+const BPD_FLOWCHART_ADD_NEXT_SPACING_MULTIPLIER = 1.5;
+const BPD_DEFAULT_NODE_FONT_FAMILY = FONT_FAMILY["Comic Shanns"];
+
+const BPD_DEFAULT_SHAPE_BACKGROUNDS = {
+  rectangle: COLOR_PALETTE.blue[DEFAULT_ELEMENT_BACKGROUND_COLOR_INDEX],
+  diamond: COLOR_PALETTE.yellow[DEFAULT_ELEMENT_BACKGROUND_COLOR_INDEX],
+  parallelogram: COLOR_PALETTE.green[DEFAULT_ELEMENT_BACKGROUND_COLOR_INDEX],
+  ellipse: COLOR_PALETTE.red[DEFAULT_ELEMENT_BACKGROUND_COLOR_INDEX],
+  capsule: COLOR_PALETTE.red[DEFAULT_ELEMENT_BACKGROUND_COLOR_INDEX],
+} as const;
+
+const getBpdDefaultShapeBackgroundColor = (
+  elementType: ExcalidrawGenericElement["type"] | "embeddable",
+) => {
+  if (!getFeatureFlag("BPD_FEATURES")) {
+    return null;
+  }
+
+  if (elementType in BPD_DEFAULT_SHAPE_BACKGROUNDS) {
+    return BPD_DEFAULT_SHAPE_BACKGROUNDS[
+      elementType as keyof typeof BPD_DEFAULT_SHAPE_BACKGROUNDS
+    ];
+  }
+
+  return null;
+};
+
+type BpdFlowchartShapeType = keyof typeof BPD_DEFAULT_SHAPE_BACKGROUNDS;
+
+const FLOWCHART_SHAPE_PICKER_OPTIONS = [
+  {
+    type: "rectangle",
+    icon: RectangleIcon,
+    key: KEYS.R,
+    numericKey: KEYS["2"],
+    labelKey: "toolBar.rectangle",
+  },
+  {
+    type: "diamond",
+    icon: DiamondIcon,
+    key: KEYS.D,
+    numericKey: KEYS["3"],
+    labelKey: "toolBar.diamond",
+  },
+  {
+    type: "parallelogram",
+    icon: ParallelogramIcon,
+    key: KEYS.G,
+    numericKey: KEYS["4"],
+    labelKey: "toolBar.parallelogram",
+  },
+  {
+    type: "ellipse",
+    icon: EllipseIcon,
+    key: KEYS.O,
+    numericKey: KEYS["5"],
+    labelKey: "toolBar.ellipse",
+  },
+  {
+    type: "capsule",
+    icon: CapsuleIcon,
+    key: KEYS.C,
+    numericKey: KEYS["6"],
+    labelKey: "toolBar.capsule",
+  },
+] as const;
+
+const isBpdFlowchartShapeType = (
+  shape: ReturnType<typeof findShapeByKey>,
+): shape is BpdFlowchartShapeType =>
+  !!shape &&
+  FLOWCHART_SHAPE_PICKER_OPTIONS.some((option) => option.type === shape);
 
 const AppContext = React.createContext<AppClassProperties>(null!);
 const AppPropsContext = React.createContext<AppProps>(null!);
@@ -645,6 +741,9 @@ class App extends React.Component<AppProps, AppState> {
 
   public flowChartCreator: FlowChartCreator = new FlowChartCreator();
   private flowChartNavigator: FlowChartNavigator = new FlowChartNavigator();
+  private flowchartAddNextDirection: "up" | "right" | "down" | "left" =
+    "right";
+  private flowchartShapePickerOpen = false;
 
   bindModeHandler: ReturnType<typeof setTimeout> | null = null;
 
@@ -1910,6 +2009,18 @@ class App extends React.Component<AppProps, AppState> {
             this.state.cursorButton === "down");
 
     const firstSelectedElement = selectedElements[0];
+    const flowchartAddNextButtonPosition: ElementCanvasButtonsPosition =
+      this.flowchartAddNextDirection === "up"
+        ? "top"
+        : this.flowchartAddNextDirection === "right"
+        ? "right"
+        : this.flowchartAddNextDirection === "down"
+        ? "bottom"
+        : "left";
+    const selectedFlowchartShapeType: BpdFlowchartShapeType =
+      selectedElements.length === 1 && isFlowchartNodeElement(firstSelectedElement)
+        ? firstSelectedElement.type
+        : "rectangle";
 
     const showShapeSwitchPanel =
       editorJotaiStore.get(convertElementTypePopupAtom)?.type === "panel";
@@ -2033,6 +2144,71 @@ class App extends React.Component<AppProps, AppState> {
                                   )
                                 }
                               />
+                            </ElementCanvasButtons>
+                          )}
+                        {getFeatureFlag("BPD_FEATURES") &&
+                          selectedElements.length === 1 &&
+                          isFlowchartNodeElement(firstSelectedElement) && (
+                            <ElementCanvasButtons
+                              element={firstSelectedElement}
+                              elementsMap={elementsMap}
+                              position={flowchartAddNextButtonPosition}
+                            >
+                              <div className="excalidraw-flowchart-canvas-buttons">
+                                <ElementCanvasButton
+                                  title={t("labels.addNextStep")}
+                                  icon={PlusIcon}
+                                  checked={false}
+                                  onChange={() =>
+                                    this.onFlowchartAddNextStep(
+                                      firstSelectedElement,
+                                      this.flowchartAddNextDirection,
+                                    )
+                                  }
+                                />
+                                <ElementCanvasButton
+                                  title={t("toolBar.convertElementType")}
+                                  icon={DotsHorizontalIcon}
+                                  checked={this.flowchartShapePickerOpen}
+                                  onChange={() =>
+                                    this.setFlowchartShapePickerOpen(
+                                      !this.flowchartShapePickerOpen,
+                                    )
+                                  }
+                                />
+                                {this.flowchartShapePickerOpen && (
+                                  <div className="excalidraw-flowchart-shape-picker">
+                                    {FLOWCHART_SHAPE_PICKER_OPTIONS.map(
+                                      ({ type, icon, key, numericKey, labelKey }) => {
+                                        const shortcut = `${key.toUpperCase()} ${t(
+                                          "helpDialog.or",
+                                        )} ${numericKey}`;
+                                        return (
+                                          <ToolButton
+                                            className="Shape"
+                                            key={`flowchart-shape-${type}`}
+                                            type="radio"
+                                            icon={icon}
+                                            checked={selectedFlowchartShapeType === type}
+                                            name="flowchart-shape-picker"
+                                            size="small"
+                                            title={`${t(labelKey)} — ${shortcut}`}
+                                            keyBindingLabel={numericKey}
+                                            aria-label={t(labelKey)}
+                                            aria-keyshortcuts={shortcut}
+                                            onChange={() =>
+                                              this.onFlowchartShapePickerSelect(
+                                                type,
+                                                "button",
+                                              )
+                                            }
+                                          />
+                                        );
+                                      },
+                                    )}
+                                  </div>
+                                )}
+                              </div>
                             </ElementCanvasButtons>
                           )}
                         {selectedElements.length === 1 &&
@@ -2426,6 +2602,235 @@ class App extends React.Component<AppProps, AppState> {
       });
     }
   }
+
+  private onFlowchartAddNextStep = (
+    startNode: NonDeleted<ExcalidrawFlowchartNodeElement>,
+    direction: "up" | "right" | "down" | "left",
+  ) => {
+    this.setFlowchartShapePickerOpen(false);
+    this.flowChartCreator.createNodes(
+      startNode,
+      this.state,
+      direction,
+      this.scene,
+      BPD_FLOWCHART_ADD_NEXT_SPACING_MULTIPLIER,
+    );
+
+    const pendingNodes = this.flowChartCreator.pendingNodes;
+    if (!pendingNodes?.length) {
+      this.flowChartCreator.clear();
+      return;
+    }
+
+    const stepBackgroundColor =
+      getBpdDefaultShapeBackgroundColor("rectangle") ??
+      COLOR_PALETTE.blue[DEFAULT_ELEMENT_BACKGROUND_COLOR_INDEX];
+
+    const nextStepNodes: ExcalidrawElement[] = pendingNodes.map(
+      (pendingNode) => {
+        if (!isFlowchartNodeElement(pendingNode)) {
+          return pendingNode;
+        }
+
+        const nextStepNode: ExcalidrawFlowchartNodeElement = {
+          ...pendingNode,
+          type: "rectangle",
+          roundness: null,
+          strokeColor: COLOR_PALETTE.black,
+          backgroundColor: stepBackgroundColor,
+        };
+
+        return nextStepNode;
+      },
+    );
+
+    this.scene.insertElements(nextStepNodes);
+
+    const firstNode = nextStepNodes.find(isFlowchartNodeElement);
+
+    if (firstNode) {
+      const firstNodeCenter = getContainerCenter(
+        firstNode,
+        this.state,
+        this.scene.getNonDeletedElementsMap(),
+      );
+
+      flushSync(() => {
+        this.setState((prevState) => ({
+          selectedElementIds: makeNextSelectedElementIds(
+            { [firstNode.id]: true },
+            prevState,
+          ),
+        }));
+      });
+
+      if (
+        !isElementCompletelyInViewport(
+          [firstNode],
+          this.canvas.width / window.devicePixelRatio,
+          this.canvas.height / window.devicePixelRatio,
+          {
+            offsetLeft: this.state.offsetLeft,
+            offsetTop: this.state.offsetTop,
+            scrollX: this.state.scrollX,
+            scrollY: this.state.scrollY,
+            zoom: this.state.zoom,
+          },
+          this.scene.getNonDeletedElementsMap(),
+          this.getEditorUIOffsets(),
+        )
+      ) {
+        this.scrollToContent(firstNode, {
+          animate: true,
+          duration: 300,
+          canvasOffsets: this.getEditorUIOffsets(),
+        });
+      }
+
+      this.startTextEditing({
+        sceneX: firstNodeCenter.x,
+        sceneY: firstNodeCenter.y,
+        insertAtParentCenter: true,
+        container: firstNode,
+        autoEdit: true,
+      });
+    }
+
+    this.flowChartCreator.clear();
+    this.syncActionResult({
+      captureUpdate: CaptureUpdateAction.IMMEDIATELY,
+    });
+  };
+
+  private getFlowchartAddNextDirection = (
+    element: NonDeleted<ExcalidrawFlowchartNodeElement>,
+  ): "up" | "right" | "down" | "left" => {
+    if (!this.lastPointerMoveCoords) {
+      return "right";
+    }
+
+    const elementCenter = getContainerCenter(
+      element,
+      this.state,
+      this.scene.getNonDeletedElementsMap(),
+    );
+    const dx = this.lastPointerMoveCoords.x - elementCenter.x;
+    const dy = this.lastPointerMoveCoords.y - elementCenter.y;
+
+    if (Math.abs(dx) >= Math.abs(dy)) {
+      return dx >= 0 ? "right" : "left";
+    }
+
+    return dy >= 0 ? "down" : "up";
+  };
+
+  private updateFlowchartAddNextDirection = () => {
+    if (!getFeatureFlag("BPD_FEATURES")) {
+      return;
+    }
+
+    const selectedElements = getSelectedElements(
+      this.scene.getNonDeletedElementsMap(),
+      this.state,
+    );
+
+    const nextDirection =
+      selectedElements.length === 1 &&
+      isFlowchartNodeElement(selectedElements[0]) &&
+      this.lastPointerMoveCoords
+        ? this.getFlowchartAddNextDirection(selectedElements[0])
+        : "right";
+
+    if (nextDirection !== this.flowchartAddNextDirection) {
+      this.flowchartAddNextDirection = nextDirection;
+      this.triggerRender();
+    }
+  };
+
+  private setFlowchartShapePickerOpen = (open: boolean) => {
+    if (this.flowchartShapePickerOpen === open) {
+      return;
+    }
+    this.flowchartShapePickerOpen = open;
+    this.triggerRender();
+  };
+
+  private getFlowchartShapeFromShortcut = (
+    key: string,
+  ): BpdFlowchartShapeType | null => {
+    const shape = findShapeByKey(key, this);
+    return isBpdFlowchartShapeType(shape) ? shape : null;
+  };
+
+  private applyBpdDefaultFlowchartShapeStyle = (
+    element: NonDeleted<ExcalidrawFlowchartNodeElement>,
+    type: BpdFlowchartShapeType,
+  ) => {
+    const backgroundColor = getBpdDefaultShapeBackgroundColor(type);
+
+    if (!backgroundColor) {
+      return;
+    }
+
+    this.mutateElement(element, {
+      strokeColor: COLOR_PALETTE.black,
+      backgroundColor,
+      ...(type === "rectangle" ? { roundness: null } : {}),
+    });
+  };
+
+  private onFlowchartShapePickerSelect = (
+    type: BpdFlowchartShapeType,
+    source: "button" | "keyboard",
+  ) => {
+    const selectedElements = getSelectedElements(
+      this.scene.getNonDeletedElementsMap(),
+      this.state,
+    );
+
+    if (
+      selectedElements.length !== 1 ||
+      !isFlowchartNodeElement(selectedElements[0])
+    ) {
+      this.setFlowchartShapePickerOpen(false);
+      return;
+    }
+
+    const selectedNode = selectedElements[0];
+
+    if (selectedNode.type !== type) {
+      convertElementTypes(this, {
+        conversionType: "generic",
+        nextType: type,
+      });
+    }
+
+    const convertedNode = this.scene.getNonDeletedElementsMap().get(
+      selectedNode.id,
+    );
+
+    if (convertedNode && isFlowchartNodeElement(convertedNode)) {
+      this.applyBpdDefaultFlowchartShapeStyle(convertedNode, type);
+    }
+
+    trackEvent("flowchart", `change-shape-${type}`, source);
+    this.store.scheduleCapture();
+    this.setFlowchartShapePickerOpen(false);
+  };
+
+  private onFlowchartShapePickerPointerDown = (event: PointerEvent) => {
+    if (!this.flowchartShapePickerOpen) {
+      return;
+    }
+
+    const target = event.target as HTMLElement | null;
+
+    if (target?.closest(".excalidraw-flowchart-canvas-buttons")) {
+      return;
+    }
+
+    this.setFlowchartShapePickerOpen(false);
+  };
 
   public onMagicframeToolSelect = () => {
     const selectedElements = this.scene.getSelectedElements({
@@ -3028,6 +3433,14 @@ class App extends React.Component<AppProps, AppState> {
       addEventListener(document, EVENT.POINTER_UP, this.removePointer, {
         passive: false,
       }), // #3553
+      addEventListener(
+        document,
+        EVENT.POINTER_DOWN,
+        this.onFlowchartShapePickerPointerDown,
+        {
+          passive: true,
+        },
+      ),
       addEventListener(document, EVENT.COPY, this.onCopy, { passive: false }),
       addEventListener(document, EVENT.KEYUP, this.onKeyUp, { passive: true }),
       addEventListener(
@@ -4512,6 +4925,24 @@ class App extends React.Component<AppProps, AppState> {
           return;
         }
 
+        if (this.flowchartShapePickerOpen) {
+          if (event.key === KEYS.ESCAPE) {
+            event.preventDefault();
+            this.setFlowchartShapePickerOpen(false);
+            return;
+          }
+
+          if (!event.ctrlKey && !event.altKey && !event.metaKey) {
+            const shape = this.getFlowchartShapeFromShortcut(event.key);
+            if (shape) {
+              event.preventDefault();
+              event.stopPropagation();
+              this.onFlowchartShapePickerSelect(shape, "keyboard");
+              return;
+            }
+          }
+        }
+
         // Shape switching
         if (event.key === KEYS.ESCAPE) {
           this.updateEditorAtom(convertElementTypePopupAtom, null);
@@ -5793,8 +6224,17 @@ class App extends React.Component<AppProps, AppState> {
       existingTextElement = this.getTextElementAtPosition(sceneX, sceneY);
     }
 
+    const shouldUseBpdDefaultFont =
+      getFeatureFlag("BPD_FEATURES") &&
+      !!container &&
+      isFlowchartNodeElement(container) &&
+      !existingTextElement;
+
     const fontFamily =
-      existingTextElement?.fontFamily || this.state.currentItemFontFamily;
+      existingTextElement?.fontFamily ||
+      (shouldUseBpdDefaultFont
+        ? BPD_DEFAULT_NODE_FONT_FAMILY
+        : this.state.currentItemFontFamily);
 
     const lineHeight =
       existingTextElement?.lineHeight || getLineHeight(fontFamily);
@@ -6237,6 +6677,7 @@ class App extends React.Component<AppProps, AppState> {
       x: scenePointerX,
       y: scenePointerY,
     };
+    this.updateFlowchartAddNextDirection();
 
     if (gesture.pointers.has(event.pointerId)) {
       gesture.pointers.set(event.pointerId, {
@@ -8783,8 +9224,10 @@ class App extends React.Component<AppProps, AppState> {
     elementType:
       | "selection"
       | "rectangle"
+      | "parallelogram"
       | "diamond"
       | "ellipse"
+      | "capsule"
       | "iframe"
       | "embeddable",
   ) {
@@ -8814,11 +9257,17 @@ class App extends React.Component<AppProps, AppState> {
       y: gridY,
     });
 
+    const bpdDefaultBackgroundColor =
+      getBpdDefaultShapeBackgroundColor(elementType);
+
     const baseElementAttributes = {
       x: gridX,
       y: gridY,
-      strokeColor: this.state.currentItemStrokeColor,
-      backgroundColor: this.state.currentItemBackgroundColor,
+      strokeColor: bpdDefaultBackgroundColor
+        ? COLOR_PALETTE.black
+        : this.state.currentItemStrokeColor,
+      backgroundColor:
+        bpdDefaultBackgroundColor ?? this.state.currentItemBackgroundColor,
       fillStyle: this.state.currentItemFillStyle,
       strokeWidth: this.state.currentItemStrokeWidth,
       strokeStyle: this.state.currentItemStrokeStyle,
@@ -8894,10 +9343,19 @@ class App extends React.Component<AppProps, AppState> {
   ): boolean => {
     if (
       !getFeatureFlag("BPD_FEATURES") ||
-      pointerDownState.drag.hasOccurred ||
       !isTextBindableContainer(newElement, false) ||
       isArrowElement(newElement)
     ) {
+      return false;
+    }
+
+    const normalizedSize = getNormalizedDimensions(newElement);
+    const shouldUseDefaultSize =
+      !pointerDownState.drag.hasOccurred ||
+      normalizedSize.width < BPD_MIN_DRAGGED_SHAPE_SIZE.width ||
+      normalizedSize.height < BPD_MIN_DRAGGED_SHAPE_SIZE.height;
+
+    if (!shouldUseDefaultSize) {
       return false;
     }
 
@@ -10312,12 +10770,14 @@ class App extends React.Component<AppProps, AppState> {
 
       if (
         activeTool.type !== "selection" &&
-        newElement &&
-        isInvisiblySmallElement(newElement)
+        newElement
       ) {
-        if (this.maybeApplyBpdClickToCreateDefaults(newElement, pointerDownState)) {
-          // keep element, it will be normalized and auto-edited below
-        } else {
+        const didApplyBpdDefaultSize = this.maybeApplyBpdClickToCreateDefaults(
+          newElement,
+          pointerDownState,
+        );
+
+        if (!didApplyBpdDefaultSize && isInvisiblySmallElement(newElement)) {
           // remove invisible element which was added in onPointerDown
           // update the store snapshot, so that invisible elements are not captured by the store
           this.updateScene({

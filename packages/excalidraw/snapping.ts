@@ -12,6 +12,7 @@ import {
   getCommonBounds,
   getDraggedElementsBounds,
   getElementAbsoluteCoords,
+  getParallelogramPoints,
 } from "@excalidraw/element";
 import { isBoundToContainer } from "@excalidraw/element";
 
@@ -234,8 +235,46 @@ export const getElementsCorners = (
     const halfWidth = (x2 - x1) / 2;
     const halfHeight = (y2 - y1) / 2;
 
-    if (
-      (element.type === "diamond" || element.type === "ellipse") &&
+    if (element.type === "parallelogram" && !boundingBoxCorners) {
+      const [
+        topLeftX,
+        topLeftY,
+        topRightX,
+        topRightY,
+        bottomRightX,
+        bottomRightY,
+        bottomLeftX,
+        bottomLeftY,
+      ] = getParallelogramPoints(element);
+      const topLeft = pointRotateRads<GlobalPoint>(
+        pointFrom(x1 + topLeftX, y1 + topLeftY),
+        pointFrom(cx, cy),
+        element.angle,
+      );
+      const topRight = pointRotateRads<GlobalPoint>(
+        pointFrom(x1 + topRightX, y1 + topRightY),
+        pointFrom(cx, cy),
+        element.angle,
+      );
+      const bottomRight = pointRotateRads<GlobalPoint>(
+        pointFrom(x1 + bottomRightX, y1 + bottomRightY),
+        pointFrom(cx, cy),
+        element.angle,
+      );
+      const bottomLeft = pointRotateRads<GlobalPoint>(
+        pointFrom(x1 + bottomLeftX, y1 + bottomLeftY),
+        pointFrom(cx, cy),
+        element.angle,
+      );
+      const center = pointFrom<GlobalPoint>(cx, cy);
+
+      result = omitCenter
+        ? [topLeft, topRight, bottomRight, bottomLeft]
+        : [topLeft, topRight, bottomRight, bottomLeft, center];
+    } else if (
+      (element.type === "diamond" ||
+        element.type === "ellipse" ||
+        element.type === "capsule") &&
       !boundingBoxCorners
     ) {
       const leftMid = pointRotateRads<GlobalPoint>(
@@ -1404,7 +1443,9 @@ export const isActiveToolNonLinearSnappable = (
 ) => {
   return (
     activeToolType === TOOL_TYPE.rectangle ||
+    activeToolType === TOOL_TYPE.parallelogram ||
     activeToolType === TOOL_TYPE.ellipse ||
+    activeToolType === TOOL_TYPE.capsule ||
     activeToolType === TOOL_TYPE.diamond ||
     activeToolType === TOOL_TYPE.frame ||
     activeToolType === TOOL_TYPE.magicframe ||

@@ -89,12 +89,20 @@ export type ExcalidrawRectangleElement = _ExcalidrawElementBase & {
   type: "rectangle";
 };
 
+export type ExcalidrawParallelogramElement = _ExcalidrawElementBase & {
+  type: "parallelogram";
+};
+
 export type ExcalidrawDiamondElement = _ExcalidrawElementBase & {
   type: "diamond";
 };
 
 export type ExcalidrawEllipseElement = _ExcalidrawElementBase & {
   type: "ellipse";
+};
+
+export type ExcalidrawCapsuleElement = _ExcalidrawElementBase & {
+  type: "capsule";
 };
 
 export type ExcalidrawEmbeddableElement = _ExcalidrawElementBase &
@@ -180,16 +188,21 @@ export type ExcalidrawFrameLikeElement =
 export type ExcalidrawGenericElement =
   | ExcalidrawSelectionElement
   | ExcalidrawRectangleElement
+  | ExcalidrawParallelogramElement
   | ExcalidrawDiamondElement
-  | ExcalidrawEllipseElement;
+  | ExcalidrawEllipseElement
+  | ExcalidrawCapsuleElement;
 
 export type ExcalidrawFlowchartNodeElement =
   | ExcalidrawRectangleElement
+  | ExcalidrawParallelogramElement
   | ExcalidrawDiamondElement
-  | ExcalidrawEllipseElement;
+  | ExcalidrawEllipseElement
+  | ExcalidrawCapsuleElement;
 
 export type ExcalidrawRectanguloidElement =
   | ExcalidrawRectangleElement
+  | ExcalidrawCapsuleElement
   | ExcalidrawImageElement
   | ExcalidrawTextElement
   | ExcalidrawFreeDrawElement
@@ -258,8 +271,10 @@ export type ExcalidrawTextElement = _ExcalidrawElementBase &
 
 export type ExcalidrawBindableElement =
   | ExcalidrawRectangleElement
+  | ExcalidrawParallelogramElement
   | ExcalidrawDiamondElement
   | ExcalidrawEllipseElement
+  | ExcalidrawCapsuleElement
   | ExcalidrawTextElement
   | ExcalidrawImageElement
   | ExcalidrawIframeElement
@@ -269,8 +284,10 @@ export type ExcalidrawBindableElement =
 
 export type ExcalidrawTextContainer =
   | ExcalidrawRectangleElement
+  | ExcalidrawParallelogramElement
   | ExcalidrawDiamondElement
   | ExcalidrawEllipseElement
+  | ExcalidrawCapsuleElement
   | ExcalidrawArrowElement;
 
 export type ExcalidrawTextElementWithContainer = {
@@ -430,6 +447,11 @@ export type ExcalidrawLinearElementSubType =
   | "curvedArrow"
   | "elbowArrow";
 
-export type ConvertibleGenericTypes = "rectangle" | "diamond" | "ellipse";
+export type ConvertibleGenericTypes =
+  | "rectangle"
+  | "parallelogram"
+  | "diamond"
+  | "ellipse"
+  | "capsule";
 export type ConvertibleLinearTypes = ExcalidrawLinearElementSubType;
 export type ConvertibleTypes = ConvertibleGenericTypes | ConvertibleLinearTypes;

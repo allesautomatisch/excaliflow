@@ -1,6 +1,7 @@
 import {
   KEYS,
   MOBILE_ACTION_BUTTON_BG,
+  getFeatureFlag,
   updateActiveTool,
 } from "@excalidraw/common";
 
@@ -41,6 +42,33 @@ const deleteSelectedElements = (
   appState: AppState,
   app: AppClassProperties,
 ) => {
+  const shouldDeleteBoundArrows = getFeatureFlag("BPD_FEATURES");
+  const elementIdsMarkedForDeletion = new Set(
+    Object.keys(appState.selectedElementIds),
+  );
+
+  if (shouldDeleteBoundArrows) {
+    let hasNewArrowToDelete = false;
+    do {
+      hasNewArrowToDelete = false;
+      for (const element of elements) {
+        if (!elementIdsMarkedForDeletion.has(element.id)) {
+          continue;
+        }
+
+        for (const candidate of element.boundElements || []) {
+          if (
+            candidate.type === "arrow" &&
+            !elementIdsMarkedForDeletion.has(candidate.id)
+          ) {
+            elementIdsMarkedForDeletion.add(candidate.id);
+            hasNewArrowToDelete = true;
+          }
+        }
+      }
+    } while (hasNewArrowToDelete);
+  }
+
   const framesToBeDeleted = new Set(
     getSelectedElements(
       elements.filter((el) => isFrameLikeElement(el)),
@@ -76,7 +104,7 @@ const deleteSelectedElements = (
   let shouldSelectEditingGroup = true;
 
   const nextElements = elements.map((el) => {
-    if (appState.selectedElementIds[el.id]) {
+    if (elementIdsMarkedForDeletion.has(el.id)) {
       const boundElement = isBoundToContainer(el)
         ? getContainerElement(el, elementsMap)
         : null;
@@ -94,7 +122,7 @@ const deleteSelectedElements = (
         return el;
       }
 
-      if (el.boundElements) {
+      if (!shouldDeleteBoundArrows && el.boundElements) {
         el.boundElements.forEach((candidate) => {
           const bound = app.scene.getNonDeletedElementsMap().get(candidate.id);
           if (bound && isElbowArrow(bound)) {

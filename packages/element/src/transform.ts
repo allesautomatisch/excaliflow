@@ -306,7 +306,9 @@ const bindLinearElementToElement = (
       } else {
         switch (startType) {
           case "rectangle":
+          case "parallelogram":
           case "ellipse":
+          case "capsule":
           case "diamond": {
             startBoundElement = newElement({
               x: startX,
@@ -382,7 +384,9 @@ const bindLinearElementToElement = (
       } else {
         switch (endType) {
           case "rectangle":
+          case "parallelogram":
           case "ellipse":
+          case "capsule":
           case "diamond": {
             endBoundElement = newElement({
               x: endX,
@@ -528,7 +532,9 @@ export const convertToExcalidrawElements = (
 
     switch (element.type) {
       case "rectangle":
+      case "parallelogram":
       case "ellipse":
+      case "capsule":
       case "diamond": {
         const width =
           element?.label?.text && element.width === undefined
@@ -660,7 +666,9 @@ export const convertToExcalidrawElements = (
 
     switch (element.type) {
       case "rectangle":
+      case "parallelogram":
       case "ellipse":
+      case "capsule":
       case "diamond":
       case "arrow": {
         if (element.label?.text) {

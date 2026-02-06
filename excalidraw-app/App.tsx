@@ -21,6 +21,8 @@ import {
   APP_NAME,
   ARROW_TYPE,
   EVENT,
+  FONT_FAMILY,
+  FONT_SIZES,
   ROUGHNESS,
   STROKE_WIDTH,
   THEME,
@@ -157,6 +159,8 @@ const BPD_APP_DEFAULTS: Partial<AppState> = {
   currentItemStrokeWidth: STROKE_WIDTH.extraBold,
   currentItemRoughness: ROUGHNESS.architect,
   currentItemArrowType: ARROW_TYPE.elbow,
+  currentItemFontSize: FONT_SIZES.sm,
+  currentItemFontFamily: FONT_FAMILY["Comic Shanns"],
 };
 
 if (BPD_FEATURES_ENABLED) {

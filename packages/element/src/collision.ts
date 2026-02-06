@@ -35,6 +35,7 @@ import {
   getCubicBezierCurveBound,
   getDiamondPoints,
   getElementBounds,
+  getParallelogramPoints,
   pointInsideBounds,
 } from "./bounds";
 import {
@@ -50,6 +51,7 @@ import {
 import {
   deconstructDiamondElement,
   deconstructLinearOrFreeDrawElement,
+  deconstructParallelogramElement,
   deconstructRectanguloidElement,
 } from "./utils";
 
@@ -70,6 +72,7 @@ import type {
   ExcalidrawEllipseElement,
   ExcalidrawFreeDrawElement,
   ExcalidrawLinearElement,
+  ExcalidrawParallelogramElement,
   ExcalidrawRectanguloidElement,
   NonDeleted,
   NonDeletedExcalidrawElement,
@@ -433,6 +436,7 @@ export const intersectElementWithLineSegment = (
   // Do the actual intersection test against the element's shape
   switch (element.type) {
     case "rectangle":
+    case "capsule":
     case "image":
     case "text":
     case "iframe":
@@ -449,6 +453,14 @@ export const intersectElementWithLineSegment = (
       );
     case "diamond":
       return intersectDiamondWithLineSegment(
+        element,
+        elementsMap,
+        line,
+        offset,
+        onlyFirst,
+      );
+    case "parallelogram":
+      return intersectParallelogramWithLineSegment(
         element,
         elementsMap,
         line,
@@ -680,6 +692,33 @@ const intersectDiamondWithLineSegment = (
   return intersections;
 };
 
+const intersectParallelogramWithLineSegment = (
+  element: ExcalidrawParallelogramElement,
+  elementsMap: ElementsMap,
+  l: LineSegment<GlobalPoint>,
+  offset: number = 0,
+  onlyFirst = false,
+): GlobalPoint[] => {
+  const center = elementCenterPoint(element, elementsMap);
+  const rotatedA = pointRotateRads(l[0], center, -element.angle as Radians);
+  const rotatedB = pointRotateRads(l[1], center, -element.angle as Radians);
+  const rotatedIntersector = lineSegment(rotatedA, rotatedB);
+
+  const [sides] = deconstructParallelogramElement(element, offset);
+  const intersections: GlobalPoint[] = [];
+
+  lineIntersections(
+    sides,
+    rotatedIntersector,
+    intersections,
+    center,
+    element.angle,
+    onlyFirst,
+  );
+
+  return intersections;
+};
+
 /**
  *
  * @param element
@@ -785,6 +824,25 @@ export const isBindableElementInsideOtherBindable = (
         pointFrom(x + rightX + offset, y + rightY), // right
         pointFrom(x + bottomX, y + bottomY + offset), // bottom
         pointFrom(x + leftX - offset, y + leftY), // left
+      ];
+      return corners.map((corner) => pointRotateRads(corner, center, angle));
+    }
+    if (element.type === "parallelogram") {
+      const [
+        topLeftX,
+        topLeftY,
+        topRightX,
+        topRightY,
+        bottomRightX,
+        bottomRightY,
+        bottomLeftX,
+        bottomLeftY,
+      ] = getParallelogramPoints(element);
+      const corners: GlobalPoint[] = [
+        pointFrom(x + topLeftX, y + topLeftY),
+        pointFrom(x + topRightX, y + topRightY),
+        pointFrom(x + bottomRightX, y + bottomRightY),
+        pointFrom(x + bottomLeftX, y + bottomLeftY),
       ];
       return corners.map((corner) => pointRotateRads(corner, center, angle));
     }

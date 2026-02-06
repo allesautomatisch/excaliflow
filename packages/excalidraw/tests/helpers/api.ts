@@ -279,10 +279,17 @@ export class API {
     };
     switch (type) {
       case "rectangle":
+      case "parallelogram":
       case "diamond":
       case "ellipse":
+      case "capsule":
         element = newElement({
-          type: type as "rectangle" | "diamond" | "ellipse",
+          type: type as
+            | "rectangle"
+            | "parallelogram"
+            | "diamond"
+            | "ellipse"
+            | "capsule",
           ...base,
         });
         break;

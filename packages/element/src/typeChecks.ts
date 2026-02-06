@@ -182,8 +182,10 @@ export const isBindableElement = (
     element != null &&
     (!element.locked || includeLocked === true) &&
     (element.type === "rectangle" ||
+      element.type === "parallelogram" ||
       element.type === "diamond" ||
       element.type === "ellipse" ||
+      element.type === "capsule" ||
       element.type === "image" ||
       element.type === "iframe" ||
       element.type === "embeddable" ||
@@ -200,6 +202,7 @@ export const isRectanguloidElement = (
     element != null &&
     (element.type === "rectangle" ||
       element.type === "diamond" ||
+      element.type === "capsule" ||
       element.type === "image" ||
       element.type === "iframe" ||
       element.type === "embeddable" ||
@@ -217,6 +220,7 @@ export const isRectangularElement = (
   return (
     element != null &&
     (element.type === "rectangle" ||
+      element.type === "capsule" ||
       element.type === "image" ||
       element.type === "text" ||
       element.type === "iframe" ||
@@ -235,8 +239,10 @@ export const isTextBindableContainer = (
     element != null &&
     (!element.locked || includeLocked === true) &&
     (element.type === "rectangle" ||
+      element.type === "parallelogram" ||
       element.type === "diamond" ||
       element.type === "ellipse" ||
+      element.type === "capsule" ||
       isArrowElement(element))
   );
 };
@@ -251,10 +257,12 @@ export const isExcalidrawElement = (
   switch (type) {
     case "text":
     case "diamond":
+    case "parallelogram":
     case "rectangle":
     case "iframe":
     case "embeddable":
     case "ellipse":
+    case "capsule":
     case "arrow":
     case "freedraw":
     case "line":
@@ -276,8 +284,10 @@ export const isFlowchartNodeElement = (
 ): element is ExcalidrawFlowchartNodeElement => {
   return (
     element.type === "rectangle" ||
+    element.type === "parallelogram" ||
     element.type === "ellipse" ||
-    element.type === "diamond"
+    element.type === "diamond" ||
+    element.type === "capsule"
   );
 };
 

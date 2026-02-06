@@ -34,11 +34,15 @@ import {
   type LocalPoint,
 } from "@excalidraw/math";
 
-import { getElementAbsoluteCoords } from "@excalidraw/element";
+import {
+  getElementAbsoluteCoords,
+  getParallelogramPoints,
+} from "@excalidraw/element";
 
 import type {
   ElementsMap,
   ExcalidrawBindableElement,
+  ExcalidrawCapsuleElement,
   ExcalidrawDiamondElement,
   ExcalidrawElement,
   ExcalidrawEllipseElement,
@@ -48,6 +52,7 @@ import type {
   ExcalidrawIframeElement,
   ExcalidrawImageElement,
   ExcalidrawLinearElement,
+  ExcalidrawParallelogramElement,
   ExcalidrawRectangleElement,
   ExcalidrawSelectionElement,
   ExcalidrawTextElement,
@@ -104,6 +109,8 @@ export type GeometricShape<Point extends GlobalPoint | LocalPoint> =
 
 type RectangularElement =
   | ExcalidrawRectangleElement
+  | ExcalidrawCapsuleElement
+  | ExcalidrawParallelogramElement
   | ExcalidrawDiamondElement
   | ExcalidrawFrameLikeElement
   | ExcalidrawEmbeddableElement
@@ -131,6 +138,31 @@ export const getPolygonShape = <Point extends GlobalPoint | LocalPoint>(
       pointRotateRads(pointFrom(x + width, cy), center, angle),
       pointRotateRads(pointFrom(cx, y + height), center, angle),
       pointRotateRads(pointFrom(x, cy), center, angle),
+    );
+  } else if (element.type === "parallelogram") {
+    const [
+      topLeftX,
+      topLeftY,
+      topRightX,
+      topRightY,
+      bottomRightX,
+      bottomRightY,
+      bottomLeftX,
+      bottomLeftY,
+    ] = getParallelogramPoints(element);
+    data = polygon(
+      pointRotateRads(pointFrom(x + topLeftX, y + topLeftY), center, angle),
+      pointRotateRads(pointFrom(x + topRightX, y + topRightY), center, angle),
+      pointRotateRads(
+        pointFrom(x + bottomRightX, y + bottomRightY),
+        center,
+        angle,
+      ),
+      pointRotateRads(
+        pointFrom(x + bottomLeftX, y + bottomLeftY),
+        center,
+        angle,
+      ),
     );
   } else {
     data = polygon(

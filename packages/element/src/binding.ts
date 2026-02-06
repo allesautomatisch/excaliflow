@@ -64,6 +64,7 @@ import { aabbForElement, elementCenterPoint } from "./bounds";
 import { updateElbowArrowPoints } from "./elbowArrow";
 import {
   deconstructDiamondElement,
+  deconstructParallelogramElement,
   deconstructRectanguloidElement,
   projectFixedPointOntoDiagonal,
 } from "./utils";
@@ -2437,9 +2438,13 @@ type Side =
   | "bottom-left"
   | "left"
   | "top-left";
-type ShapeType = "rectangle" | "ellipse" | "diamond";
+type ShapeType = "rectangle" | "ellipse" | "diamond" | "parallelogram";
 const getShapeType = (element: ExcalidrawBindableElement): ShapeType => {
-  if (element.type === "ellipse" || element.type === "diamond") {
+  if (
+    element.type === "ellipse" ||
+    element.type === "diamond" ||
+    element.type === "parallelogram"
+  ) {
     return element.type;
   }
   return "rectangle";
@@ -2457,6 +2462,18 @@ interface SectorConfig {
 const SHAPE_CONFIGS: Record<ShapeType, SectorConfig[]> = {
   // rectangle: 15° corners, 75° edges
   rectangle: [
+    { centerAngle: 0, sectorWidth: 75, side: "right" },
+    { centerAngle: 45, sectorWidth: 15, side: "bottom-right" },
+    { centerAngle: 90, sectorWidth: 75, side: "bottom" },
+    { centerAngle: 135, sectorWidth: 15, side: "bottom-left" },
+    { centerAngle: 180, sectorWidth: 75, side: "left" },
+    { centerAngle: 225, sectorWidth: 15, side: "top-left" },
+    { centerAngle: 270, sectorWidth: 75, side: "top" },
+    { centerAngle: 315, sectorWidth: 15, side: "top-right" },
+  ],
+
+  // parallelogram: use the same sector balancing as rectangle.
+  parallelogram: [
     { centerAngle: 0, sectorWidth: 75, side: "right" },
     { centerAngle: 45, sectorWidth: 15, side: "bottom-right" },
     { centerAngle: 90, sectorWidth: 75, side: "bottom" },
@@ -2740,6 +2757,69 @@ export const getBindingSideMidPoint = (
         const ellipseY = radiusY * Math.sin(angle);
         x = ellipseCenterX + ellipseX - OFFSET * 0.707;
         y = ellipseCenterY + ellipseY - OFFSET * 0.707;
+        break;
+      }
+      default: {
+        return null;
+      }
+    }
+
+    return pointRotateRads(pointFrom(x, y), center, bindableElement.angle);
+  }
+
+  if (bindableElement.type === "parallelogram") {
+    const [sides] = deconstructParallelogramElement(bindableElement);
+    const [top, right, bottom, left] = sides;
+
+    let x: number;
+    let y: number;
+    switch (side) {
+      case "top": {
+        const midPoint = getMidPoint(top[0], top[1]);
+        x = midPoint[0];
+        y = midPoint[1] - OFFSET;
+        break;
+      }
+      case "right": {
+        const midPoint = getMidPoint(right[0], right[1]);
+        x = midPoint[0] + OFFSET;
+        y = midPoint[1];
+        break;
+      }
+      case "bottom": {
+        const midPoint = getMidPoint(bottom[0], bottom[1]);
+        x = midPoint[0];
+        y = midPoint[1] + OFFSET;
+        break;
+      }
+      case "left": {
+        const midPoint = getMidPoint(left[0], left[1]);
+        x = midPoint[0] - OFFSET;
+        y = midPoint[1];
+        break;
+      }
+      case "top-right": {
+        const midPoint = getMidPoint(top[1], right[0]);
+        x = midPoint[0] + OFFSET * 0.707;
+        y = midPoint[1] - OFFSET * 0.707;
+        break;
+      }
+      case "bottom-right": {
+        const midPoint = getMidPoint(right[1], bottom[0]);
+        x = midPoint[0] + OFFSET * 0.707;
+        y = midPoint[1] + OFFSET * 0.707;
+        break;
+      }
+      case "bottom-left": {
+        const midPoint = getMidPoint(bottom[1], left[0]);
+        x = midPoint[0] - OFFSET * 0.707;
+        y = midPoint[1] + OFFSET * 0.707;
+        break;
+      }
+      case "top-left": {
+        const midPoint = getMidPoint(left[1], top[0]);
+        x = midPoint[0] - OFFSET * 0.707;
+        y = midPoint[1] - OFFSET * 0.707;
         break;
       }
       default: {

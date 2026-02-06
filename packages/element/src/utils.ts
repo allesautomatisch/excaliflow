@@ -29,7 +29,11 @@ import type { Curve, LineSegment, LocalPoint } from "@excalidraw/math";
 
 import type { NormalizedZoomValue, Zoom } from "@excalidraw/excalidraw/types";
 
-import { elementCenterPoint, getDiamondPoints } from "./bounds";
+import {
+  elementCenterPoint,
+  getDiamondPoints,
+  getParallelogramPoints,
+} from "./bounds";
 
 import { generateLinearCollisionShape } from "./shape";
 
@@ -44,6 +48,7 @@ import type {
   ExcalidrawElement,
   ExcalidrawFreeDrawElement,
   ExcalidrawLinearElement,
+  ExcalidrawParallelogramElement,
   ExcalidrawRectanguloidElement,
 } from "./types";
 
@@ -445,6 +450,66 @@ export function deconstructDiamondElement(
   return shape;
 }
 
+export function deconstructParallelogramElement(
+  element: ExcalidrawParallelogramElement,
+  offset: number = 0,
+): [LineSegment<GlobalPoint>[], Curve<GlobalPoint>[]] {
+  const cachedShape = getElementShapesCacheEntry(element, offset);
+
+  if (cachedShape) {
+    return cachedShape;
+  }
+
+  const [
+    topLeftX,
+    topLeftY,
+    topRightX,
+    topRightY,
+    bottomRightX,
+    bottomRightY,
+    bottomLeftX,
+    bottomLeftY,
+  ] = getParallelogramPoints(element);
+
+  const center = pointFrom<GlobalPoint>(
+    element.x + element.width / 2,
+    element.y + element.height / 2,
+  );
+
+  const corners = [
+    pointFrom<GlobalPoint>(element.x + topLeftX, element.y + topLeftY),
+    pointFrom<GlobalPoint>(element.x + topRightX, element.y + topRightY),
+    pointFrom<GlobalPoint>(
+      element.x + bottomRightX,
+      element.y + bottomRightY,
+    ),
+    pointFrom<GlobalPoint>(element.x + bottomLeftX, element.y + bottomLeftY),
+  ].map((corner) => {
+    if (!offset) {
+      return corner;
+    }
+    const dx = corner[0] - center[0];
+    const dy = corner[1] - center[1];
+    const d = Math.hypot(dx, dy) || 1;
+    return pointFrom<GlobalPoint>(
+      corner[0] + (dx / d) * offset,
+      corner[1] + (dy / d) * offset,
+    );
+  });
+
+  const sides = [
+    lineSegment<GlobalPoint>(corners[0], corners[1]),
+    lineSegment<GlobalPoint>(corners[1], corners[2]),
+    lineSegment<GlobalPoint>(corners[2], corners[3]),
+    lineSegment<GlobalPoint>(corners[3], corners[0]),
+  ];
+
+  const shape = [sides, []] as ElementShape;
+  setElementShapesCacheEntry(element, shape, offset);
+
+  return shape;
+}
+
 // Checks if the first and last point are close enough
 // to be considered a loop
 export const isPathALoop = (
@@ -464,6 +529,10 @@ export const isPathALoop = (
 };
 
 export const getCornerRadius = (x: number, element: ExcalidrawElement) => {
+  if (element.type === "capsule") {
+    return x / 2;
+  }
+
   if (
     element.roundness?.type === ROUNDNESS.PROPORTIONAL_RADIUS ||
     element.roundness?.type === ROUNDNESS.LEGACY
