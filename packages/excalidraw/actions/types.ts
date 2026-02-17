@@ -122,6 +122,7 @@ export type ActionName =
   | "bindText"
   | "unlockAllElements"
   | "toggleElementLock"
+  | "toggleElementConceal"
   | "toggleLinearEditor"
   | "toggleEraserTool"
   | "toggleHandTool"

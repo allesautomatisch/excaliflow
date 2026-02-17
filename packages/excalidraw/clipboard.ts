@@ -349,6 +349,14 @@ const parseClipboardEventTextData = async (
   isPlainPaste = false,
 ): Promise<ParsedClipboardEventTextData> => {
   try {
+    const excalidrawClipboard =
+      dataList.getData(MIME_TYPES.excalidrawClipboard) ||
+      dataList.getData(MIME_TYPES.excalidraw);
+
+    if (!isPlainPaste && excalidrawClipboard) {
+      return { type: "text", value: excalidrawClipboard };
+    }
+
     const htmlItem = dataList.findByType(MIME_TYPES.html);
 
     const mixedContent =

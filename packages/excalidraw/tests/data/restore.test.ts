@@ -43,6 +43,18 @@ describe("restoreElements", () => {
     expect(restoredElements.length).toBe(elements.length);
   });
 
+  it("restores flowchart node elements", () => {
+    const capsuleElement = API.createElement({ type: "capsule" });
+    const parallelogramElement = API.createElement({ type: "parallelogram" });
+
+    const restoredElements = restore.restoreElements(
+      [capsuleElement, parallelogramElement],
+      null,
+    );
+
+    expect(restoredElements).toHaveLength(2);
+  });
+
   it("when imported data state is null it should return an empty array of elements", () => {
     const restoredElements = restore.restoreElements(null, null);
     expect(restoredElements.length).toBe(0);

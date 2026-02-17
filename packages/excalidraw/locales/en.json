@@ -152,6 +152,10 @@
       "lockAll": "Lock all",
       "unlockAll": "Unlock all"
     },
+    "elementConceal": {
+      "conceal": "Conceal",
+      "reveal": "Reveal"
+    },
     "statusPublished": "Published",
     "sidebarLock": "Keep sidebar open",
     "selectAllElementsInFrame": "Select all elements in frame",

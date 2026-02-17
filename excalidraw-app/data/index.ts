@@ -9,7 +9,6 @@ import {
 } from "@excalidraw/excalidraw/data/encryption";
 import { serializeAsJSON } from "@excalidraw/excalidraw/data/json";
 import { isInvisiblySmallElement } from "@excalidraw/element";
-import { isInitializedImageElement } from "@excalidraw/element";
 import { t } from "@excalidraw/excalidraw/i18n";
 import { bytesToHexString } from "@excalidraw/common";
 
@@ -18,12 +17,10 @@ import type { ImportedDataState } from "@excalidraw/excalidraw/data/types";
 import type { SceneBounds } from "@excalidraw/element";
 import type {
   ExcalidrawElement,
-  FileId,
   OrderedExcalidrawElement,
 } from "@excalidraw/element/types";
 import type {
   AppState,
-  BinaryFileData,
   BinaryFiles,
   SocketId,
 } from "@excalidraw/excalidraw/types";
@@ -31,12 +28,8 @@ import type { MakeBrand } from "@excalidraw/common/utility-types";
 
 import {
   DELETED_ELEMENT_TIMEOUT,
-  FILE_UPLOAD_MAX_BYTES,
   ROOM_ID_BYTES,
 } from "../app_constants";
-
-import { encodeFilesForUpload } from "./FileManager";
-import { saveFilesToFirebase } from "./firebase";
 
 import type { WS_SUBTYPES } from "../app_constants";
 
@@ -245,11 +238,72 @@ type ExportToBackendResult =
   | { url: null; errorMessage: string }
   | { url: string; errorMessage: null };
 
-export const exportToBackend = async (
+type SaveToBackendResult = {
+  id: string | null;
+  encryptionKey: string | null;
+  errorMessage: string | null;
+};
+
+const persistDrawingToBackend = async ({
+  payload,
+  encryptionKey,
+  drawingName,
+  persistEncryptionKey,
+}: {
+  payload: Uint8Array;
+  encryptionKey: string;
+  drawingName?: string | null;
+  persistEncryptionKey?: boolean;
+}) => {
+  const endpoint = new URL(BACKEND_V2_POST, window.location.href);
+
+  const trimmedName = drawingName?.trim();
+  if (trimmedName) {
+    endpoint.searchParams.set("name", trimmedName);
+  }
+
+  const requestBody = new ArrayBuffer(payload.byteLength);
+  new Uint8Array(requestBody).set(payload);
+
+  const response = await fetch(endpoint.toString(), {
+    method: "POST",
+    headers: persistEncryptionKey ? { "X-Drawing-Key": encryptionKey } : {},
+    body: requestBody,
+  });
+
+  const rawBody = await response.text();
+  let json: Record<string, unknown> = {};
+  if (rawBody) {
+    try {
+      json = JSON.parse(rawBody) as Record<string, unknown>;
+    } catch (error) {
+      json = {};
+    }
+  }
+
+  const id = typeof json.id === "string" ? json.id : undefined;
+  const errorClass =
+    typeof json.error_class === "string" ? json.error_class : undefined;
+  const message = typeof json.message === "string" ? json.message : undefined;
+
+  return {
+    ok: response.ok,
+    status: response.status,
+    id,
+    errorClass,
+    message,
+  };
+};
+
+export const saveToBackend = async (
   elements: readonly ExcalidrawElement[],
   appState: Partial<AppState>,
   files: BinaryFiles,
-): Promise<ExportToBackendResult> => {
+  opts?: {
+    drawingName?: string | null;
+    persistEncryptionKey?: boolean;
+  },
+): Promise<SaveToBackendResult> => {
   const encryptionKey = await generateEncryptionKey("string");
 
   const payload = await compressData(
@@ -260,48 +314,102 @@ export const exportToBackend = async (
   );
 
   try {
-    const filesMap = new Map<FileId, BinaryFileData>();
-    for (const element of elements) {
-      if (isInitializedImageElement(element) && files[element.fileId]) {
-        filesMap.set(element.fileId, files[element.fileId]);
-      }
+    /*
+     * Temporarily disabled: uploading encrypted image binaries to Firebase.
+     * Keep this block for quick re-enable once storage config is ready again.
+     *
+     * const filesMap = new Map<FileId, BinaryFileData>();
+     * for (const element of elements) {
+     *   if (isInitializedImageElement(element) && files[element.fileId]) {
+     *     filesMap.set(element.fileId, files[element.fileId]);
+     *   }
+     * }
+     *
+     * const filesToUpload = await encodeFilesForUpload({
+     *   files: filesMap,
+     *   encryptionKey,
+     *   maxBytes: FILE_UPLOAD_MAX_BYTES,
+     * });
+     */
+
+    const { ok, status, id, errorClass, message } =
+      await persistDrawingToBackend({
+      payload,
+      encryptionKey,
+      drawingName: opts?.drawingName,
+      persistEncryptionKey: opts?.persistEncryptionKey,
+    });
+
+    if (id) {
+      /*
+       * Temporarily disabled with file upload block above.
+       * if (filesToUpload.length > 0) {
+       *   await saveFilesToFirebase({
+       *     prefix: `/files/shareLinks/${id}`,
+       *     files: filesToUpload,
+       *   });
+       * }
+       */
+
+      return { id, encryptionKey, errorMessage: null };
     }
 
-    const filesToUpload = await encodeFilesForUpload({
-      files: filesMap,
-      encryptionKey,
-      maxBytes: FILE_UPLOAD_MAX_BYTES,
-    });
-
-    const response = await fetch(BACKEND_V2_POST, {
-      method: "POST",
-      body: payload.buffer,
-    });
-    const json = await response.json();
-    if (json.id) {
-      const url = new URL(window.location.href);
-      // We need to store the key (and less importantly the id) as hash instead
-      // of queryParam in order to never send it to the server
-      url.hash = `json=${json.id},${encryptionKey}`;
-      const urlString = url.toString();
-
-      await saveFilesToFirebase({
-        prefix: `/files/shareLinks/${json.id}`,
-        files: filesToUpload,
-      });
-
-      return { url: urlString, errorMessage: null };
-    } else if (json.error_class === "RequestTooLargeError") {
+    if (errorClass === "RequestTooLargeError") {
       return {
-        url: null,
+        id: null,
+        encryptionKey: null,
         errorMessage: t("alerts.couldNotCreateShareableLinkTooBig"),
       };
     }
 
-    return { url: null, errorMessage: t("alerts.couldNotCreateShareableLink") };
+    if (!ok) {
+      return {
+        id: null,
+        encryptionKey: null,
+        errorMessage: message ?? `${t("alerts.couldNotCreateShareableLink")} (HTTP ${status})`,
+      };
+    }
+
+    return {
+      id: null,
+      encryptionKey: null,
+      errorMessage: message ?? t("alerts.couldNotCreateShareableLink"),
+    };
   } catch (error: any) {
     console.error(error);
 
+    return {
+      id: null,
+      encryptionKey: null,
+      errorMessage: t("alerts.couldNotCreateShareableLink"),
+    };
+  }
+};
+
+export const exportToBackend = async (
+  elements: readonly ExcalidrawElement[],
+  appState: Partial<AppState>,
+  files: BinaryFiles,
+): Promise<ExportToBackendResult> => {
+  const { id, encryptionKey, errorMessage } = await saveToBackend(
+    elements,
+    appState,
+    files,
+    { persistEncryptionKey: false },
+  );
+
+  if (errorMessage) {
+    return { url: null, errorMessage };
+  }
+
+  if (!id || !encryptionKey) {
     return { url: null, errorMessage: t("alerts.couldNotCreateShareableLink") };
   }
+
+  const url = new URL(window.location.href);
+  // We need to store the key (and less importantly the id) as hash instead
+  // of queryParam in order to never send it to the server
+  url.hash = `json=${id},${encryptionKey}`;
+
+  return { url: url.toString(), errorMessage: null };
 };

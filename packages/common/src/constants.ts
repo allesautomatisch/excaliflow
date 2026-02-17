@@ -272,6 +272,8 @@ export const MIME_TYPES = {
 export const ALLOWED_PASTE_MIME_TYPES = [
   MIME_TYPES.text,
   MIME_TYPES.html,
+  MIME_TYPES.excalidraw,
+  MIME_TYPES.excalidrawClipboard,
   ...Object.values(IMAGE_MIME_TYPES),
 ] as const;
 

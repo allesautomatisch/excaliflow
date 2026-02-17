@@ -13,10 +13,12 @@ import {
   CommandPalette,
   DEFAULT_CATEGORIES,
 } from "@excalidraw/excalidraw/components/CommandPalette/CommandPalette";
+import { Card } from "@excalidraw/excalidraw/components/Card";
 import { ErrorDialog } from "@excalidraw/excalidraw/components/ErrorDialog";
 import { OverwriteConfirmDialog } from "@excalidraw/excalidraw/components/OverwriteConfirm/OverwriteConfirm";
 import { openConfirmModal } from "@excalidraw/excalidraw/components/OverwriteConfirm/OverwriteConfirmState";
 import { ShareableLinkDialog } from "@excalidraw/excalidraw/components/ShareableLinkDialog";
+import { ToolButton } from "@excalidraw/excalidraw/components/ToolButton";
 import Trans from "@excalidraw/excalidraw/components/Trans";
 import {
   APP_NAME,
@@ -115,6 +117,7 @@ import {
   getCollaborationLinkData,
   importFromBackend,
   isCollaborationLink,
+  saveToBackend,
 } from "./data";
 
 import { updateStaleImageStatuses } from "./data/FileManager";
@@ -738,6 +741,9 @@ const ExcalidrawWrapper = () => {
   const [latestShareableLink, setLatestShareableLink] = useState<string | null>(
     null,
   );
+  const [backendDrawingName, setBackendDrawingName] = useState<string | null>(
+    null,
+  );
 
   const onExportToBackend = async (
     exportedElements: readonly NonDeletedExcalidrawElement[],
@@ -777,6 +783,74 @@ const ExcalidrawWrapper = () => {
         throw new Error(error.message);
       }
     }
+  };
+
+  const onSaveToConfiguredBackend = async (
+    exportedElements: readonly NonDeletedExcalidrawElement[],
+    appState: Partial<AppState>,
+    files: BinaryFiles,
+    drawingNameOverride?: string | null,
+  ) => {
+    if (exportedElements.length === 0) {
+      throw new Error(t("alerts.cannotExportEmptyCanvas"));
+    }
+    try {
+      const drawingName =
+        (drawingNameOverride ?? appState.name ?? "").trim() || null;
+
+      const { id, errorMessage } = await saveToBackend(
+        exportedElements,
+        {
+          ...appState,
+          viewBackgroundColor: appState.exportBackground
+            ? appState.viewBackgroundColor
+            : getDefaultAppState().viewBackgroundColor,
+        },
+        files,
+        {
+          drawingName,
+          persistEncryptionKey: true,
+        },
+      );
+
+      if (errorMessage) {
+        throw new Error(errorMessage);
+      }
+
+      if (id) {
+        setBackendDrawingName(null);
+        excalidrawAPI?.setToast({
+          message: drawingName
+            ? t("toast.fileSavedToFilename").replace(
+                "{filename}",
+                `"${drawingName}"`,
+              )
+            : t("toast.fileSaved"),
+        });
+        excalidrawAPI?.updateScene({
+          appState: { openDialog: null },
+        });
+      }
+    } catch (error: any) {
+      if (error.name !== "AbortError") {
+        const { width, height } = appState;
+        console.error(error, {
+          width,
+          height,
+          devicePixelRatio: window.devicePixelRatio,
+        });
+        throw new Error(error.message);
+      }
+    }
+  };
+
+  const onBackendDrawingNameChange = (nextName: string) => {
+    setBackendDrawingName(nextName);
+    excalidrawAPI?.updateScene({
+      appState: {
+        name: nextName,
+      },
+    });
   };
 
   const renderCustomStats = (
@@ -877,6 +951,56 @@ const ExcalidrawWrapper = () => {
             toggleTheme: true,
             export: {
               onExportToBackend,
+              renderCustomUI: (
+                exportedElements,
+                exportedAppState,
+                exportedFiles,
+              ) => (
+                <Card color="primary">
+                  <div className="Card-icon">{exportToPlus}</div>
+                  <h2>Save to Flow backend</h2>
+                  <div className="Card-details">
+                    Save encrypted drawing data to your configured Laravel
+                    server.
+                  </div>
+                  <input
+                    className="TextInput"
+                    type="text"
+                    placeholder="Drawing name (optional)"
+                    value={backendDrawingName ?? exportedAppState.name ?? ""}
+                    onChange={(event) =>
+                      onBackendDrawingNameChange(event.target.value)
+                    }
+                    style={{
+                      width: "100%",
+                      marginTop: "0.5rem",
+                      marginBottom: "0.5rem",
+                    }}
+                    data-testid="backend-save-name-input"
+                  />
+                  <ToolButton
+                    className="Card-button"
+                    type="button"
+                    title="Save to Flow backend"
+                    aria-label="Save to Flow backend"
+                    showAriaLabel={true}
+                    onClick={async () => {
+                      try {
+                        trackEvent("export", "backend", `ui (${getFrame()})`);
+                        await onSaveToConfiguredBackend(
+                          exportedElements,
+                          exportedAppState,
+                          exportedFiles,
+                          backendDrawingName,
+                        );
+                      } catch (error: any) {
+                        setErrorMessage(error.message);
+                      }
+                    }}
+                    data-testid="backend-save-button"
+                  />
+                </Card>
+              ),
             },
           },
         }}

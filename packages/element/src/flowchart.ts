@@ -153,9 +153,18 @@ const getOffsets = (
   linkedNodes: ExcalidrawElement[],
   direction: LinkDirection,
   spacingMultiplier: number,
+  snapToGridSize: NullableGridSize = null,
 ) => {
-  const verticalOffset = BASE_VERTICAL_OFFSET * spacingMultiplier;
-  const horizontalOffset = BASE_HORIZONTAL_OFFSET * spacingMultiplier;
+  const [verticalOffset] = getGridPoint(
+    BASE_VERTICAL_OFFSET * spacingMultiplier,
+    0,
+    snapToGridSize,
+  );
+  const [horizontalOffset] = getGridPoint(
+    BASE_HORIZONTAL_OFFSET * spacingMultiplier,
+    0,
+    snapToGridSize,
+  );
   const _HORIZONTAL_OFFSET = horizontalOffset + element.width;
 
   // check if vertical space or horizontal space is available first
@@ -271,6 +280,7 @@ const addNewNode = (
     [...successors, ...predeccessors],
     direction,
     spacingMultiplier,
+    snapToGridSize,
   );
 
   const snappedNodePosition = getSnappedNodePosition(
@@ -324,8 +334,16 @@ export const addNewNodes = (
   spacingMultiplier: number,
   snapToGridSize: NullableGridSize = null,
 ) => {
-  const verticalOffset = BASE_VERTICAL_OFFSET * spacingMultiplier;
-  const horizontalOffset = BASE_HORIZONTAL_OFFSET * spacingMultiplier;
+  const [verticalOffset] = getGridPoint(
+    BASE_VERTICAL_OFFSET * spacingMultiplier,
+    0,
+    snapToGridSize,
+  );
+  const [horizontalOffset] = getGridPoint(
+    BASE_HORIZONTAL_OFFSET * spacingMultiplier,
+    0,
+    snapToGridSize,
+  );
   // always start from 0 and distribute evenly
   const newNodes: ExcalidrawElement[] = [];
 

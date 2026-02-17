@@ -319,6 +319,7 @@ import {
   actionUngroup,
   actionLink,
   actionToggleElementLock,
+  actionToggleElementConceal,
   actionToggleLinearEditor,
   actionToggleObjectsSnapMode,
   actionToggleCropEditor,
@@ -525,7 +526,9 @@ const BPD_MIN_DRAGGED_SHAPE_SIZE = {
 const BPD_FLOWCHART_ADD_NEXT_SPACING_MULTIPLIER = 1.5;
 const BPD_DEFAULT_NODE_FONT_FAMILY = FONT_FAMILY["Comic Shanns"];
 const BPD_DEFAULT_END_ARROWHEAD = "triangle" as const;
-const BPD_DRAG_GRID_SIZE = 20;
+const BPD_FLOWCHART_ADD_NEXT_STEP_GRID_SIZE = 20 as NullableGridSize;
+const NODE_MOVEMENT_GRID_SIZE = 10 as NullableGridSize;
+const NODE_RESIZE_GRID_SIZE = 20 as NullableGridSize;
 
 const BPD_DEFAULT_SHAPE_BACKGROUNDS = {
   rectangle: COLOR_PALETTE.blue[DEFAULT_ELEMENT_BACKGROUND_COLOR_INDEX],
@@ -2617,7 +2620,7 @@ class App extends React.Component<AppProps, AppState> {
       direction,
       this.scene,
       BPD_FLOWCHART_ADD_NEXT_SPACING_MULTIPLIER,
-      BPD_DRAG_GRID_SIZE as NullableGridSize,
+      BPD_FLOWCHART_ADD_NEXT_STEP_GRID_SIZE,
     );
 
     const pendingNodes = this.flowChartCreator.pendingNodes;
@@ -9261,21 +9264,22 @@ class App extends React.Component<AppProps, AppState> {
     elementType: ExcalidrawGenericElement["type"] | "embeddable",
     pointerDownState: PointerDownState,
   ): void => {
+    const bpdDefaultBackgroundColor =
+      getBpdDefaultShapeBackgroundColor(elementType);
     const [gridX, gridY] = getGridPoint(
       pointerDownState.origin.x,
       pointerDownState.origin.y,
       this.lastPointerDownEvent?.[KEYS.CTRL_OR_CMD]
         ? null
-        : this.getEffectiveGridSize(),
+        : bpdDefaultBackgroundColor
+          ? NODE_RESIZE_GRID_SIZE
+          : this.getEffectiveGridSize(),
     );
 
     const topLayerFrame = this.getTopLayerFrameAtSceneCoords({
       x: gridX,
       y: gridY,
     });
-
-    const bpdDefaultBackgroundColor =
-      getBpdDefaultShapeBackgroundColor(elementType);
 
     const baseElementAttributes = {
       x: gridX,
@@ -9984,10 +9988,12 @@ class App extends React.Component<AppProps, AppState> {
               getFeatureFlag("BPD_FEATURES")
                 ? event[KEYS.CTRL_OR_CMD]
                   ? null
-                  : BPD_DRAG_GRID_SIZE
+                  : selectedElements.every(isFlowchartNodeElement)
+                    ? NODE_MOVEMENT_GRID_SIZE
+                    : BPD_FLOWCHART_ADD_NEXT_STEP_GRID_SIZE
                 : event[KEYS.CTRL_OR_CMD]
-                ? null
-                : this.getEffectiveGridSize()
+                  ? null
+                  : this.getEffectiveGridSize()
             ) as NullableGridSize;
 
             dragSelectedElements(
@@ -12202,10 +12208,20 @@ class App extends React.Component<AppProps, AppState> {
       return;
     }
 
+    const dragGridSize = event[KEYS.CTRL_OR_CMD]
+      ? null
+      : isFlowchartNodeElement(newElement)
+        ? NODE_RESIZE_GRID_SIZE
+        : this.getEffectiveGridSize();
+    const [originGridX, originGridY] = getGridPoint(
+      pointerDownState.origin.x,
+      pointerDownState.origin.y,
+      dragGridSize,
+    );
     let [gridX, gridY] = getGridPoint(
       pointerCoords.x,
       pointerCoords.y,
-      event[KEYS.CTRL_OR_CMD] ? null : this.getEffectiveGridSize(),
+      dragGridSize,
     );
 
     const image =
@@ -12222,15 +12238,15 @@ class App extends React.Component<AppProps, AppState> {
       event,
       {
         x:
-          pointerDownState.originInGrid.x +
+          originGridX +
           (this.state.originSnapOffset?.x ?? 0),
         y:
-          pointerDownState.originInGrid.y +
+          originGridY +
           (this.state.originSnapOffset?.y ?? 0),
       },
       {
-        x: gridX - pointerDownState.originInGrid.x,
-        y: gridY - pointerDownState.originInGrid.y,
+        x: gridX - originGridX,
+        y: gridY - originGridY,
       },
       this.scene.getNonDeletedElementsMap(),
     );
@@ -12246,12 +12262,12 @@ class App extends React.Component<AppProps, AppState> {
       dragNewElement({
         newElement,
         elementType: this.state.activeTool.type,
-        originX: pointerDownState.originInGrid.x,
-        originY: pointerDownState.originInGrid.y,
+        originX: originGridX,
+        originY: originGridY,
         x: gridX,
         y: gridY,
-        width: distance(pointerDownState.originInGrid.x, gridX),
-        height: distance(pointerDownState.originInGrid.y, gridY),
+        width: distance(originGridX, gridX),
+        height: distance(originGridY, gridY),
         shouldMaintainAspectRatio: isImageElement(newElement)
           ? !shouldMaintainAspectRatio(event)
           : shouldMaintainAspectRatio(event),
@@ -12408,10 +12424,16 @@ class App extends React.Component<AppProps, AppState> {
       activeEmbeddable: null,
     });
     const pointerCoords = pointerDownState.lastCoords;
+    const shouldResizeNode = selectedElements.every(isFlowchartNodeElement);
+    const resizeGridSize = event[KEYS.CTRL_OR_CMD]
+      ? null
+      : shouldResizeNode
+        ? NODE_RESIZE_GRID_SIZE
+        : this.getEffectiveGridSize();
     let [resizeX, resizeY] = getGridPoint(
       pointerCoords.x - pointerDownState.resize.offset.x,
       pointerCoords.y - pointerDownState.resize.offset.y,
-      event[KEYS.CTRL_OR_CMD] ? null : this.getEffectiveGridSize(),
+      resizeGridSize,
     );
 
     const frameElementsOffsetsMap = new Map<
@@ -12442,7 +12464,7 @@ class App extends React.Component<AppProps, AppState> {
       const [gridX, gridY] = getGridPoint(
         pointerCoords.x,
         pointerCoords.y,
-        event[KEYS.CTRL_OR_CMD] ? null : this.getEffectiveGridSize(),
+        resizeGridSize,
       );
 
       const dragOffset = {
@@ -12602,6 +12624,7 @@ class App extends React.Component<AppProps, AppState> {
       actionCopyElementLink,
       CONTEXT_MENU_SEPARATOR,
       actionDuplicateSelection,
+      actionToggleElementConceal,
       actionToggleElementLock,
       CONTEXT_MENU_SEPARATOR,
       actionDeleteSelected,

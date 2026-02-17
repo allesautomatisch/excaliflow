@@ -239,25 +239,18 @@ const repairBinding = <T extends ExcalidrawArrowElement>(
 };
 
 const restoreElementWithProperties = <
-  T extends Required<Omit<ExcalidrawElement, "customData">> & {
-    customData?: ExcalidrawElement["customData"];
+  T extends ExcalidrawElement & {
     /** @deprecated */
     boundElementIds?: readonly ExcalidrawElement["id"][];
     /** @deprecated */
     strokeSharpness?: StrokeRoundness;
   },
-  K extends Pick<T, keyof Omit<Required<T>, keyof ExcalidrawElement>>,
 >(
   element: T,
-  extra: Pick<
-    T,
-    // This extra Pick<T, keyof K> ensure no excess properties are passed.
-    // @ts-ignore TS complains here but type checks the call sites fine.
-    keyof K
-  > &
+  extra: Partial<Omit<T, keyof ExcalidrawElement>> &
     Partial<Pick<ExcalidrawElement, "type" | "x" | "y" | "customData">>,
 ): T => {
-  const base: Pick<T, keyof ExcalidrawElement> = {
+  const base: Mutable<Pick<T, keyof ExcalidrawElement>> = {
     type: extra.type || element.type,
     // all elements must have version > 0 so getSceneVersion() will pick up
     // newly added elements
@@ -497,6 +490,8 @@ export const restoreElement = (
     case "ellipse":
     case "rectangle":
     case "diamond":
+    case "parallelogram":
+    case "capsule":
     case "iframe":
     case "embeddable":
       return restoreElementWithProperties(element, {});

@@ -5,6 +5,7 @@ import {
   serializeAsClipboardJSON,
 } from "./clipboard";
 import { API } from "./tests/helpers/api";
+import { MIME_TYPES } from "@excalidraw/common";
 
 describe("parseClipboard()", () => {
   it("should parse JSON as plaintext if not excalidraw-api/clipboard data", async () => {
@@ -55,6 +56,91 @@ describe("parseClipboard()", () => {
       ),
     );
     expect(clipboardData.elements).toEqual([rect]);
+  });
+
+  it("should parse valid excalidraw JSON from excalidraw mime type", async () => {
+    const payload = {
+      type: "excalidraw/clipboard",
+      elements: [
+        {
+          id: "Xxk1Gb9I0OvehdjGzC_WB",
+          type: "capsule",
+          x: 1340,
+          y: 240,
+          width: 320,
+          height: 200,
+          angle: 0,
+          strokeColor: "#1e1e1e",
+          backgroundColor: "#ffc9c9",
+          fillStyle: "solid",
+          strokeWidth: 2,
+          strokeStyle: "solid",
+          roughness: 0,
+          opacity: 100,
+          groupIds: [],
+          frameId: null,
+          index: "b0L",
+          roundness: null,
+          seed: 1671086815,
+          version: 6,
+          versionNonce: 295474367,
+          isDeleted: false,
+          boundElements: [{ type: "text", id: "l8FCZrILlDFQSxZfr2gXk" }],
+          updated: 1771339909971,
+          link: null,
+          locked: false,
+        },
+        {
+          id: "l8FCZrILlDFQSxZfr2gXk",
+          type: "text",
+          x: 1467,
+          y: 327.5,
+          width: 66,
+          height: 25,
+          angle: 0,
+          strokeColor: "#1e1e1e",
+          backgroundColor: "transparent",
+          fillStyle: "solid",
+          strokeWidth: 2,
+          strokeStyle: "solid",
+          roughness: 0,
+          opacity: 100,
+          groupIds: [],
+          frameId: null,
+          index: "b0M",
+          roundness: null,
+          seed: 885193777,
+          version: 9,
+          versionNonce: 2009703647,
+          isDeleted: false,
+          boundElements: null,
+          updated: 1771339909971,
+          link: null,
+          locked: false,
+          text: "asdasd",
+          fontSize: 20,
+          fontFamily: 8,
+          textAlign: "center",
+          verticalAlign: "middle",
+          containerId: "Xxk1Gb9I0OvehdjGzC_WB",
+          originalText: "asdasd",
+          autoResize: true,
+          lineHeight: 1.25,
+        },
+      ],
+      files: {},
+    };
+
+    const clipboardData = await parseClipboard(
+      await parseDataTransferEvent(
+        createPasteEvent({
+          types: {
+            [MIME_TYPES.excalidrawClipboard]: JSON.stringify(payload),
+          },
+        }),
+      ),
+    );
+    expect(clipboardData.elements).toEqual(payload.elements);
   });
 
   it("should parse valid excalidraw JSON if inside text/html", async () => {

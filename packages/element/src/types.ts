@@ -77,6 +77,7 @@ type _ExcalidrawElementBase = Readonly<{
   /** epoch (ms) timestamp of last element update */
   updated: number;
   link: string | null;
+  concealed?: boolean;
   locked: boolean;
   customData?: Record<string, any>;
 }>;

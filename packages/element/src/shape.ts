@@ -197,6 +197,12 @@ export const generateRoughOptions = (
   continuousPath = false,
   isDarkMode: boolean = false,
 ): Options => {
+  const concealedColor = "#d3d3d3";
+  const color = element.concealed ? concealedColor : element.strokeColor;
+  const fillColor = element.concealed
+    ? concealedColor
+    : element.backgroundColor;
+
   const options: Options = {
     seed: element.seed,
     strokeLineDash:
@@ -220,9 +226,7 @@ export const generateRoughOptions = (
     fillWeight: element.strokeWidth / 2,
     hachureGap: element.strokeWidth * 4,
     roughness: adjustRoughness(element),
-    stroke: isDarkMode
-      ? applyDarkModeFilter(element.strokeColor)
-      : element.strokeColor,
+    stroke: isDarkMode ? applyDarkModeFilter(color) : color,
     preserveVertices:
       continuousPath || element.roughness < ROUGHNESS.cartoonist,
   };
@@ -236,11 +240,11 @@ export const generateRoughOptions = (
     case "diamond":
     case "ellipse": {
       options.fillStyle = element.fillStyle;
-      options.fill = isTransparent(element.backgroundColor)
+      options.fill = isTransparent(fillColor)
         ? undefined
         : isDarkMode
-        ? applyDarkModeFilter(element.backgroundColor)
-        : element.backgroundColor;
+        ? applyDarkModeFilter(fillColor)
+        : fillColor;
       if (element.type === "ellipse") {
         options.curveFitting = 1;
       }
@@ -251,11 +255,11 @@ export const generateRoughOptions = (
       if (isPathALoop(element.points)) {
         options.fillStyle = element.fillStyle;
         options.fill =
-          element.backgroundColor === "transparent"
+          fillColor === "transparent"
             ? undefined
             : isDarkMode
-            ? applyDarkModeFilter(element.backgroundColor)
-            : element.backgroundColor;
+            ? applyDarkModeFilter(fillColor)
+            : fillColor;
       }
       return options;
     }
@@ -334,9 +338,10 @@ const getArrowheadShapes = (
     return [generator.line(x3, y3, x4, y4, options)];
   };
 
+  const concealedColor = element.concealed ? "#d3d3d3" : element.strokeColor;
   const strokeColor = isDarkMode
-    ? applyDarkModeFilter(element.strokeColor)
-    : element.strokeColor;
+    ? applyDarkModeFilter(concealedColor)
+    : concealedColor;
 
   switch (arrowhead) {
     case "dot":
