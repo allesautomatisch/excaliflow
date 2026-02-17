@@ -1,6 +1,7 @@
 import { KEYS, arrayToMap } from "@excalidraw/common";
 
 import { CaptureUpdateAction, newElementWith } from "@excalidraw/element";
+import { isArrowElement, isFlowchartNodeElement } from "@excalidraw/element";
 
 import type { ExcalidrawElement } from "@excalidraw/element/types";
 
@@ -12,6 +13,44 @@ import { register } from "./register";
 
 const shouldConceal = (elements: readonly ExcalidrawElement[]) =>
   elements.every((el) => !el.concealed);
+
+const getIsNodeConcealed = (
+  node: ExcalidrawElement,
+  nextConcealState: boolean,
+  toggledNodeIds: Set<string>,
+) => {
+  if (!toggledNodeIds.has(node.id)) {
+    return !!node.concealed;
+  }
+
+  return nextConcealState;
+};
+
+const getArrowConnectedNodeConcealStates = (
+  arrow: ExcalidrawElement,
+  allElementsMap: Map<string, ExcalidrawElement>,
+  nextConcealState: boolean,
+  toggledNodeIds: Set<string>,
+) => {
+  if (!isArrowElement(arrow) || (!arrow.startBinding && !arrow.endBinding)) {
+    return null;
+  }
+
+  const connectedNodeConcealStates = [arrow.startBinding, arrow.endBinding]
+    .flatMap((binding) => (binding ? [binding.elementId] : []))
+    .map((boundId) => allElementsMap.get(boundId))
+    .filter((element): element is ExcalidrawElement => !!element)
+    .filter((element): element is ExcalidrawElement =>
+      isFlowchartNodeElement(element),
+    )
+    .map((node) => getIsNodeConcealed(node, nextConcealState, toggledNodeIds));
+
+  if (!connectedNodeConcealStates.length) {
+    return null;
+  }
+
+  return connectedNodeConcealStates.some(Boolean);
+};
 
 export const actionToggleElementConceal = register({
   name: "toggleElementConceal",
@@ -47,9 +86,31 @@ export const actionToggleElementConceal = register({
 
     const nextConcealState = shouldConceal(selectedElements);
     const selectedElementsMap = arrayToMap(selectedElements);
+    const selectedNodes = selectedElements.filter(isFlowchartNodeElement);
+    const selectedNodeIds = new Set(selectedNodes.map((node) => node.id));
+    const elementsMap = new Map(elements.map((element) => [element.id, element]));
 
     const nextElements = elements.map((element) => {
       if (!selectedElementsMap.has(element.id)) {
+        if (isArrowElement(element)) {
+          const shouldConcealArrow = getArrowConnectedNodeConcealStates(
+            element,
+            elementsMap,
+            nextConcealState,
+            selectedNodeIds,
+          );
+
+          if (shouldConcealArrow === null) {
+            return element;
+          }
+
+          if (shouldConcealArrow !== !!element.concealed) {
+            return newElementWith(element, {
+              concealed: shouldConcealArrow,
+            });
+          }
+        }
+
         return element;
       }
 
