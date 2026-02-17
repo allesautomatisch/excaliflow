@@ -58,7 +58,7 @@ const strokeGrid = (
   width: number,
   height: number,
 ) => {
-  if (zoom.value < 0.3) {
+  if (zoom.value < 0.4) {
     return;
   }
 
