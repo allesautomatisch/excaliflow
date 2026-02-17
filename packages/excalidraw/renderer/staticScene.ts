@@ -58,10 +58,14 @@ const strokeGrid = (
   width: number,
   height: number,
 ) => {
+  if (zoom.value < 0.3) {
+    return;
+  }
+
   const offsetX = (scrollX % gridSize) - gridSize;
   const offsetY = (scrollY % gridSize) - gridSize;
 
-  const dotSize = 2 / zoom.value;
+  const dotSize = (zoom.value < 0.75 ? 1 : 2) / zoom.value;
 
   context.save();
 
