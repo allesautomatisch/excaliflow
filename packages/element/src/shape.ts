@@ -197,11 +197,27 @@ export const generateRoughOptions = (
   continuousPath = false,
   isDarkMode: boolean = false,
 ): Options => {
+  const shouldHideDarkModeStroke =
+    isDarkMode &&
+    !isTransparent(element.backgroundColor) &&
+    (element.type === "rectangle" ||
+      element.type === "parallelogram" ||
+      element.type === "capsule" ||
+      element.type === "iframe" ||
+      element.type === "embeddable" ||
+      element.type === "diamond" ||
+      element.type === "ellipse");
+
   const concealedColor = "#d3d3d3";
   const color = element.concealed ? concealedColor : element.strokeColor;
   const fillColor = element.concealed
     ? concealedColor
     : element.backgroundColor;
+  const strokeColor = shouldHideDarkModeStroke
+    ? "transparent"
+    : isDarkMode
+      ? applyDarkModeFilter(color)
+      : color;
 
   const options: Options = {
     seed: element.seed,
@@ -226,7 +242,7 @@ export const generateRoughOptions = (
     fillWeight: element.strokeWidth / 2,
     hachureGap: element.strokeWidth * 4,
     roughness: adjustRoughness(element),
-    stroke: isDarkMode ? applyDarkModeFilter(color) : color,
+    stroke: strokeColor,
     preserveVertices:
       continuousPath || element.roughness < ROUGHNESS.cartoonist,
   };
