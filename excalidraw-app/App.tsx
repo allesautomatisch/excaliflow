@@ -1,7 +1,6 @@
 import {
   Excalidraw,
   DefaultSidebar,
-  LiveCollaborationTrigger,
   TTDDialogTrigger,
   CaptureUpdateAction,
   reconcileElements,
@@ -62,7 +61,9 @@ import {
   restoreAppState,
   restoreElements,
 } from "@excalidraw/excalidraw/data/restore";
+import { getNormalizedZoom } from "@excalidraw/excalidraw/scene";
 import { newElementWith } from "@excalidraw/element";
+import { isFlowchartNodeElement } from "@excalidraw/element";
 import { isInitializedImageElement } from "@excalidraw/element";
 import clsx from "clsx";
 import {
@@ -81,6 +82,7 @@ import type {
   AppState,
   ExcalidrawImperativeAPI,
   BinaryFiles,
+  LoadDialogDrawing,
   ExcalidrawInitialDataState,
   UIAppState,
 } from "@excalidraw/excalidraw/types";
@@ -117,6 +119,7 @@ import {
   getCollaborationLinkData,
   importFromBackend,
   isCollaborationLink,
+  listDrawingsFromBackend,
   saveToBackend,
 } from "./data";
 
@@ -135,7 +138,6 @@ import {
 } from "./data/LocalData";
 import { isBrowserStorageStateNewer } from "./data/tabSync";
 import { ShareDialog, shareDialogStateAtom } from "./share/ShareDialog";
-import CollabError, { collabErrorIndicatorAtom } from "./collab/CollabError";
 import { useHandleAppTheme } from "./useHandleAppTheme";
 import { getPreferredLanguage } from "./app-language/language-detector";
 import { useAppLangCode } from "./app-language/language-state";
@@ -438,7 +440,6 @@ const ExcalidrawWrapper = () => {
   const [isCollaborating] = useAtomWithInitialValue(isCollaboratingAtom, () => {
     return isCollaborationLink(window.location.href);
   });
-  const collabError = useAtomValue(collabErrorIndicatorAtom);
 
   useHandleLibrary({
     excalidrawAPI,
@@ -853,6 +854,67 @@ const ExcalidrawWrapper = () => {
     });
   };
 
+  const getLoadDialogDrawings = useCallback(async () => {
+    return listDrawingsFromBackend({
+      includeEncryptionKey: true,
+    });
+  }, []);
+
+  const onLoadDrawing = useCallback(
+    async (drawing: LoadDialogDrawing) => {
+      if (!excalidrawAPI) {
+        return;
+      }
+
+      const encryptionKey = drawing.encryption_key?.trim();
+      if (!encryptionKey || encryptionKey.length !== 22) {
+        setErrorMessage(t("alerts.invalidEncryptionKey"));
+        return;
+      }
+
+      try {
+        const { elements, appState: importedAppState } = await importFromBackend(
+          drawing.id,
+          encryptionKey,
+        );
+        const restoredElements = restoreElements(elements, null, {
+          repairBindings: true,
+          deleteInvisibleElements: true,
+        });
+        const focusTarget =
+          restoredElements.find((element) => element.type === "capsule") ||
+          restoredElements.find(isFlowchartNodeElement) ||
+          restoredElements[0];
+        const restoredAppState = {
+          ...restoreAppState(importedAppState, null),
+          theme: editorTheme,
+          zoom: { value: getNormalizedZoom(1) },
+        };
+
+        excalidrawAPI.updateScene({
+          elements: restoredElements,
+          appState: {
+            ...restoredAppState,
+            openDialog: null,
+            isLoading: false,
+          },
+          captureUpdate: CaptureUpdateAction.IMMEDIATELY,
+        });
+
+        if (focusTarget) {
+          requestAnimationFrame(() => {
+            excalidrawAPI.scrollToContent(focusTarget, {
+              animate: false,
+            });
+          });
+        }
+      } catch (error: any) {
+        setErrorMessage(error.message || t("alerts.importBackendFailed"));
+      }
+    },
+    [excalidrawAPI, editorTheme],
+  );
+
   const renderCustomStats = (
     elements: readonly NonDeletedExcalidrawElement[],
     appState: UIAppState,
@@ -1015,18 +1077,7 @@ const ExcalidrawWrapper = () => {
             return null;
           }
 
-          return (
-            <div className="excalidraw-ui-top-right">
-              {collabError.message && <CollabError collabError={collabError} />}
-              <LiveCollaborationTrigger
-                isCollaborating={isCollaborating}
-                onSelect={() =>
-                  setShareDialogState({ isOpen: true, type: "share" })
-                }
-                editorInterface={editorInterface}
-              />
-            </div>
-          );
+          return null;
         }}
         onLinkOpen={(element, event) => {
           if (element.link && isElementLink(element.link)) {
@@ -1034,6 +1085,8 @@ const ExcalidrawWrapper = () => {
             excalidrawAPI?.scrollToContent(element.link, { animate: true });
           }
         }}
+        getLoadDialogDrawings={getLoadDialogDrawings}
+        onLoadDrawing={onLoadDrawing}
       >
         <DefaultSidebar.Trigger style={{ display: "none" }} />
         <AppMainMenu

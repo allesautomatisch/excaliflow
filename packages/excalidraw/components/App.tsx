@@ -514,8 +514,8 @@ import type { RoughCanvas } from "roughjs/bin/canvas";
 import type { Action, ActionResult } from "../actions/types";
 
 const BPD_STANDARD_SHAPE_SIZE = {
-  width: 320,
-  height: 200,
+  width: 200,
+  height: 120,
 } as const;
 
 const BPD_MIN_DRAGGED_SHAPE_SIZE = {
@@ -523,7 +523,7 @@ const BPD_MIN_DRAGGED_SHAPE_SIZE = {
   height: BPD_STANDARD_SHAPE_SIZE.height / 2,
 } as const;
 
-const BPD_FLOWCHART_ADD_NEXT_SPACING_MULTIPLIER = 1.5;
+const BPD_FLOWCHART_ADD_NEXT_SPACING_MULTIPLIER = 1;
 const BPD_DEFAULT_NODE_FONT_FAMILY = FONT_FAMILY["Comic Shanns"];
 const BPD_DEFAULT_END_ARROWHEAD = "triangle" as const;
 const BPD_FLOWCHART_ADD_NEXT_STEP_GRID_SIZE = 20 as NullableGridSize;
@@ -2015,17 +2015,30 @@ class App extends React.Component<AppProps, AppState> {
             this.state.cursorButton === "down");
 
     const firstSelectedElement = selectedElements[0];
+    let selectedFlowchartNode: NonDeleted<ExcalidrawFlowchartNodeElement> | null =
+      null;
+    if (
+      selectedElements.length === 1 &&
+      isFlowchartNodeElement(firstSelectedElement)
+    ) {
+      selectedFlowchartNode = firstSelectedElement;
+    }
+    const flowchartAddNextDirection =
+      selectedFlowchartNode &&
+      this.lastPointerMoveCoords
+        ? this.getFlowchartAddNextDirection(selectedFlowchartNode)
+        : this.flowchartAddNextDirection;
     const flowchartAddNextButtonPosition: ElementCanvasButtonsPosition =
-      this.flowchartAddNextDirection === "up"
+      flowchartAddNextDirection === "up"
         ? "top"
-        : this.flowchartAddNextDirection === "right"
+        : flowchartAddNextDirection === "right"
         ? "right"
-        : this.flowchartAddNextDirection === "down"
+        : flowchartAddNextDirection === "down"
         ? "bottom"
         : "left";
     const selectedFlowchartShapeType: BpdFlowchartShapeType =
-      selectedElements.length === 1 && isFlowchartNodeElement(firstSelectedElement)
-        ? firstSelectedElement.type
+      selectedFlowchartNode
+        ? selectedFlowchartNode.type
         : "rectangle";
 
     const showShapeSwitchPanel =
@@ -2066,45 +2079,45 @@ class App extends React.Component<AppProps, AppState> {
                     <ExcalidrawElementsContext.Provider
                       value={this.scene.getNonDeletedElements()}
                     >
-                      <ExcalidrawActionManagerContext.Provider
-                        value={this.actionManager}
-                      >
-                        <LayerUI
-                          canvas={this.canvas}
-                          appState={this.state}
-                          files={this.files}
-                          setAppState={this.setAppState}
-                          actionManager={this.actionManager}
-                          elements={this.scene.getNonDeletedElements()}
-                          onLockToggle={this.toggleLock}
-                          onPenModeToggle={this.togglePenMode}
-                          onHandToolToggle={this.onHandToolToggle}
-                          langCode={getLanguage().code}
-                          renderTopLeftUI={renderTopLeftUI}
-                          renderTopRightUI={renderTopRightUI}
-                          renderCustomStats={renderCustomStats}
-                          showExitZenModeBtn={
-                            typeof this.props?.zenModeEnabled === "undefined" &&
-                            this.state.zenModeEnabled
-                          }
-                          UIOptions={this.props.UIOptions}
-                          onExportImage={this.onExportImage}
-                          renderWelcomeScreen={
-                            !this.state.isLoading &&
-                            this.state.showWelcomeScreen &&
-                            this.state.activeTool.type ===
-                              this.state.preferredSelectionTool.type &&
-                            !this.state.zenModeEnabled &&
-                            !this.scene.getElementsIncludingDeleted().length
-                          }
-                          app={this}
-                          isCollaborating={this.props.isCollaborating}
-                          generateLinkForSelection={
-                            this.props.generateLinkForSelection
-                          }
+                        <ExcalidrawActionManagerContext.Provider
+                          value={this.actionManager}
                         >
-                          {this.props.children}
-                        </LayerUI>
+                          <LayerUI
+                            canvas={this.canvas}
+                            appState={this.state}
+                            files={this.files}
+                            setAppState={this.setAppState}
+                            actionManager={this.actionManager}
+                            elements={this.scene.getNonDeletedElements()}
+                            onLockToggle={this.toggleLock}
+                            onPenModeToggle={this.togglePenMode}
+                            onHandToolToggle={this.onHandToolToggle}
+                            langCode={getLanguage().code}
+                            renderTopLeftUI={renderTopLeftUI}
+                            renderTopRightUI={renderTopRightUI}
+                            renderCustomStats={renderCustomStats}
+                            UIOptions={this.props.UIOptions}
+                            onExportImage={this.onExportImage}
+                            renderWelcomeScreen={
+                              !this.state.isLoading &&
+                              this.state.showWelcomeScreen &&
+                              this.state.activeTool.type ===
+                                this.state.preferredSelectionTool.type &&
+                              !this.state.zenModeEnabled &&
+                              !this.scene.getElementsIncludingDeleted().length
+                            }
+                            app={this}
+                            isCollaborating={this.props.isCollaborating}
+                            generateLinkForSelection={
+                              this.props.generateLinkForSelection
+                            }
+                            getLoadDialogDrawings={
+                              this.props.getLoadDialogDrawings
+                            }
+                            onLoadDrawing={this.props.onLoadDrawing}
+                          >
+                            {this.props.children}
+                          </LayerUI>
 
                         <div className="excalidraw-textEditorContainer" />
                         <div className="excalidraw-contextMenuContainer" />
@@ -2153,10 +2166,9 @@ class App extends React.Component<AppProps, AppState> {
                             </ElementCanvasButtons>
                           )}
                         {getFeatureFlag("BPD_FEATURES") &&
-                          selectedElements.length === 1 &&
-                          isFlowchartNodeElement(firstSelectedElement) && (
+                          selectedFlowchartNode && (
                             <ElementCanvasButtons
-                              element={firstSelectedElement}
+                              element={selectedFlowchartNode}
                               elementsMap={elementsMap}
                               position={flowchartAddNextButtonPosition}
                             >
@@ -2167,8 +2179,8 @@ class App extends React.Component<AppProps, AppState> {
                                   checked={false}
                                   onChange={() =>
                                     this.onFlowchartAddNextStep(
-                                      firstSelectedElement,
-                                      this.flowchartAddNextDirection,
+                                      selectedFlowchartNode,
+                                      flowchartAddNextDirection,
                                     )
                                   }
                                 />
@@ -7961,6 +7973,8 @@ class App extends React.Component<AppProps, AppState> {
         selectedElementIds: {},
       });
     }
+
+    this.updateFlowchartAddNextDirection();
   };
 
   private maybeOpenContextMenuAfterPointerDownOnTouchDevices = (

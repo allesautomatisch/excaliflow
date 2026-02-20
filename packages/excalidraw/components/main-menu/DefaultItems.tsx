@@ -36,6 +36,7 @@ import {
   ExportIcon,
   ExportImageIcon,
   HelpIcon,
+  UploadIcon,
   LoadIcon,
   MoonIcon,
   save,
@@ -109,6 +110,23 @@ export const SaveToActiveFile = () => {
   );
 };
 SaveToActiveFile.displayName = "SaveToActiveFile";
+
+export const LoadDialogItem = () => {
+  const setAppState = useExcalidrawSetAppState();
+  const { t } = useI18n();
+
+  return (
+    <DropdownMenuItem
+      icon={UploadIcon}
+      data-testid="load-dialog-button"
+      onSelect={() => setAppState({ openDialog: { name: "load" } })}
+      aria-label={t("loadDialog.title")}
+    >
+      {t("loadDialog.title")}
+    </DropdownMenuItem>
+  );
+};
+LoadDialogItem.displayName = "LoadDialogItem";
 
 export const SaveAsImage = () => {
   const setAppState = useExcalidrawSetAppState();

@@ -2,7 +2,7 @@ import clsx from "clsx";
 
 import { actionShortcuts } from "../../actions";
 import { useTunnels } from "../../context/tunnels";
-import { ExitZenModeButton, UndoRedoActions, ZoomActions } from "../Actions";
+import { UndoRedoActions, ZoomActions } from "../Actions";
 import { HelpButton } from "../HelpButton";
 import { Section } from "../Section";
 import Stack from "../Stack";
@@ -13,12 +13,10 @@ import type { UIAppState } from "../../types";
 const Footer = ({
   appState,
   actionManager,
-  showExitZenModeBtn,
   renderWelcomeScreen,
 }: {
   appState: UIAppState;
   actionManager: ActionManager;
-  showExitZenModeBtn: boolean;
   renderWelcomeScreen: boolean;
 }) => {
   const { FooterCenterTunnel, WelcomeScreenHelpHintTunnel } = useTunnels();
@@ -66,10 +64,6 @@ const Footer = ({
           />
         </div>
       </div>
-      <ExitZenModeButton
-        actionManager={actionManager}
-        showExitZenModeBtn={showExitZenModeBtn}
-      />
     </footer>
   );
 };

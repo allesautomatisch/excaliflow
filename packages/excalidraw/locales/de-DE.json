@@ -239,6 +239,12 @@
     "confirm": "Bestätigen",
     "embeddableInteractionButton": "Klicken, um zu interagieren"
   },
+  "loadDialog": {
+    "title": "Laden",
+    "load": "Laden",
+    "content": "Wähle eine Zeichnung aus deinen gespeicherten Server-Zeichnungen.",
+    "empty": "Keine Zeichnungen gefunden."
+  },
   "alerts": {
     "clearReset": "Dies wird die ganze Zeichenfläche löschen. Bist du dir sicher?",
     "couldNotCreateShareableLink": "Konnte keinen teilbaren Link erstellen.",

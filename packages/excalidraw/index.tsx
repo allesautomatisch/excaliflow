@@ -56,6 +56,8 @@ const ExcalidrawBase = (props: ExcalidrawProps) => {
     aiEnabled,
     showDeprecatedFonts,
     renderScrollbars,
+    getLoadDialogDrawings,
+    onLoadDrawing,
   } = props;
 
   const canvasActions = props.UIOptions?.canvasActions;
@@ -144,6 +146,8 @@ const ExcalidrawBase = (props: ExcalidrawProps) => {
           onPointerUp={onPointerUp}
           onScrollChange={onScrollChange}
           onDuplicate={onDuplicate}
+          getLoadDialogDrawings={getLoadDialogDrawings}
+          onLoadDrawing={onLoadDrawing}
           validateEmbeddable={validateEmbeddable}
           renderEmbeddable={renderEmbeddable}
           aiEnabled={aiEnabled !== false}

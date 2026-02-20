@@ -62,6 +62,7 @@ import { ImageExportDialog } from "./ImageExportDialog";
 import { Island } from "./Island";
 import { JSONExportDialog } from "./JSONExportDialog";
 import { LaserPointerButton } from "./LaserPointerButton";
+import { LoadDialog } from "./LoadDialog";
 
 import "./LayerUI.scss";
 import "./Toolbar.scss";
@@ -75,6 +76,7 @@ import type {
   ExcalidrawProps,
   BinaryFiles,
   UIAppState,
+  LoadDialogDrawing,
   AppClassProperties,
 } from "../types";
 
@@ -88,7 +90,6 @@ interface LayerUIProps {
   onLockToggle: () => void;
   onHandToolToggle: () => void;
   onPenModeToggle: AppClassProperties["togglePenMode"];
-  showExitZenModeBtn: boolean;
   langCode: Language["code"];
   renderTopLeftUI?: ExcalidrawProps["renderTopLeftUI"];
   renderTopRightUI?: ExcalidrawProps["renderTopRightUI"];
@@ -100,6 +101,8 @@ interface LayerUIProps {
   app: AppClassProperties;
   isCollaborating: boolean;
   generateLinkForSelection?: AppProps["generateLinkForSelection"];
+  getLoadDialogDrawings?: () => Promise<LoadDialogDrawing[]>;
+  onLoadDrawing?: ExcalidrawProps["onLoadDrawing"];
 }
 
 const DefaultMainMenu: React.FC<{
@@ -108,6 +111,7 @@ const DefaultMainMenu: React.FC<{
   return (
     <MainMenu __fallback>
       <MainMenu.DefaultItems.LoadScene />
+      <MainMenu.DefaultItems.LoadDialogItem />
       <MainMenu.DefaultItems.SaveToActiveFile />
       {/* FIXME we should to test for this inside the item itself */}
       {UIOptions.canvasActions.export && <MainMenu.DefaultItems.Export />}
@@ -148,7 +152,6 @@ const LayerUI = ({
   onLockToggle,
   onHandToolToggle,
   onPenModeToggle,
-  showExitZenModeBtn,
   renderTopLeftUI,
   renderTopRightUI,
   renderCustomStats,
@@ -159,6 +162,8 @@ const LayerUI = ({
   app,
   isCollaborating,
   generateLinkForSelection,
+  getLoadDialogDrawings,
+  onLoadDrawing,
 }: LayerUIProps) => {
   const editorInterface = useEditorInterface();
   const stylesPanelMode = useStylesPanelMode();
@@ -222,6 +227,20 @@ const LayerUI = ({
         onExportImage={onExportImage}
         onCloseRequest={() => setAppState({ openDialog: null })}
         name={app.getName()}
+      />
+    );
+  };
+
+  const renderLoadDialog = () => {
+    if (appState.openDialog?.name !== "load") {
+      return null;
+    }
+
+    return (
+      <LoadDialog
+        onCloseRequest={() => setAppState({ openDialog: null })}
+        getLoadDialogDrawings={getLoadDialogDrawings}
+        onLoadDrawing={onLoadDrawing}
       />
     );
   };
@@ -563,6 +582,7 @@ const LayerUI = ({
         />
       )}
       <tunnels.OverwriteConfirmDialogTunnel.Out />
+      {renderLoadDialog()}
       {renderImageExportDialog()}
       {renderJSONExportDialog()}
       {appState.pasteDialog.shown && (
@@ -611,7 +631,6 @@ const LayerUI = ({
             <Footer
               appState={appState}
               actionManager={actionManager}
-              showExitZenModeBtn={showExitZenModeBtn}
               renderWelcomeScreen={renderWelcomeScreen}
             />
             {appState.scrolledOutside && (

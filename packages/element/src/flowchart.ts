@@ -44,8 +44,8 @@ import type { Scene } from "./Scene";
 
 type LinkDirection = "up" | "right" | "down" | "left";
 
-const BASE_VERTICAL_OFFSET = 100;
-const BASE_HORIZONTAL_OFFSET = 100;
+const BASE_VERTICAL_OFFSET = 120;
+const BASE_HORIZONTAL_OFFSET = 200;
 
 export const getLinkDirectionFromKey = (key: string): LinkDirection => {
   switch (key) {

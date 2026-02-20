@@ -57,11 +57,20 @@ export const getSyncableElements = (
 
 const BACKEND_V2_GET = import.meta.env.VITE_APP_BACKEND_V2_GET_URL;
 const BACKEND_V2_POST = import.meta.env.VITE_APP_BACKEND_V2_POST_URL;
+const BACKEND_V2_ENCRYPTION_KEY =
+  import.meta.env.VITE_APP_BACKEND_V2_ENCRYPTION_KEY?.trim() || "";
 
 const generateRoomId = async () => {
   const buffer = new Uint8Array(ROOM_ID_BYTES);
   window.crypto.getRandomValues(buffer);
   return bytesToHexString(buffer);
+};
+
+const resolveBackendEncryptionKey = async () => {
+  if (BACKEND_V2_ENCRYPTION_KEY) {
+    return BACKEND_V2_ENCRYPTION_KEY;
+  }
+  return generateEncryptionKey("string");
 };
 
 export type EncryptedData = {
@@ -234,6 +243,149 @@ export const importFromBackend = async (
   }
 };
 
+export type BackendDrawingListItem = {
+  id: string;
+  name: string | null;
+  size_bytes: number;
+  created_at: string;
+  updated_at: string;
+  encryption_key?: string;
+};
+
+type ListDrawingsParams = {
+  q?: string;
+  ownerId?: string;
+  projectId?: string;
+  cursor?: string;
+  page?: string;
+  perPage?: number;
+  includeEncryptionKey?: boolean;
+};
+
+type ListDrawingsResponse = {
+  items: BackendDrawingListItem[];
+  meta: {
+    page: number;
+    per_page: number;
+    total: number;
+    has_more_pages: boolean;
+    next_cursor: string | null;
+  };
+};
+
+const listDrawingsPageFromBackend = async (
+  params: ListDrawingsParams = {},
+): Promise<ListDrawingsResponse> => {
+  const endpoint = new URL(BACKEND_V2_GET, window.location.href);
+
+  if (params.q) {
+    endpoint.searchParams.set("q", params.q);
+  }
+
+  if (params.ownerId) {
+    endpoint.searchParams.set("owner_id", params.ownerId);
+  }
+
+  if (params.projectId) {
+    endpoint.searchParams.set("project_id", params.projectId);
+  }
+
+  if (params.cursor) {
+    endpoint.searchParams.set("cursor", params.cursor);
+  }
+
+  if (params.page) {
+    endpoint.searchParams.set("page", params.page);
+  }
+
+  if (typeof params.perPage === "number") {
+    endpoint.searchParams.set("per_page", String(params.perPage));
+  }
+
+  if (params.includeEncryptionKey) {
+    endpoint.searchParams.set("include_encryption_key", "true");
+  }
+
+  const response = await fetch(endpoint.toString(), {
+    headers: {
+      Accept: "application/json",
+    },
+  });
+  const rawBody = await response.text();
+
+  if (!response.ok) {
+    const snippet = rawBody
+      ? rawBody.slice(0, 180).replace(/\s+/g, " ").trim()
+      : "";
+
+    throw new Error(
+      `${t("alerts.importBackendFailed")} (HTTP ${response.status}) - ${snippet}`,
+    );
+  }
+
+  let body: unknown;
+
+  try {
+    body = rawBody ? JSON.parse(rawBody) : null;
+  } catch (error) {
+    const snippet = rawBody
+      ? rawBody.slice(0, 180).replace(/\s+/g, " ").trim()
+      : "";
+
+    throw new Error(
+      `${t("alerts.importBackendFailed")} (Invalid JSON response) - ${snippet}`,
+    );
+  }
+
+  const parsedBody = body as Partial<ListDrawingsResponse> | null | undefined;
+
+  if (!parsedBody?.items || !Array.isArray(parsedBody.items)) {
+    return {
+      items: [],
+      meta: {
+        page: 1,
+        per_page: params.perPage || 0,
+        total: 0,
+        has_more_pages: false,
+        next_cursor: null,
+      },
+    };
+  }
+
+  return parsedBody as ListDrawingsResponse;
+};
+
+export const listDrawingsFromBackend = async ({
+  perPage = 100,
+  ...params
+}: ListDrawingsParams = {}): Promise<BackendDrawingListItem[]> => {
+  const drawings: BackendDrawingListItem[] = [];
+  const seenCursors = new Set<string>();
+  let cursor: string | undefined = params.cursor;
+
+  while (true) {
+    const payload = await listDrawingsPageFromBackend({
+      ...params,
+      cursor,
+      perPage,
+    });
+
+    drawings.push(...payload.items);
+
+    if (!payload.meta?.has_more_pages || !payload.meta?.next_cursor) {
+      break;
+    }
+
+    if (seenCursors.has(payload.meta.next_cursor)) {
+      break;
+    }
+    seenCursors.add(payload.meta.next_cursor);
+    cursor = payload.meta.next_cursor;
+  }
+
+  return drawings;
+};
+
 type ExportToBackendResult =
   | { url: null; errorMessage: string }
   | { url: string; errorMessage: null };
@@ -304,7 +456,7 @@ export const saveToBackend = async (
     persistEncryptionKey?: boolean;
   },
 ): Promise<SaveToBackendResult> => {
-  const encryptionKey = await generateEncryptionKey("string");
+  const encryptionKey = await resolveBackendEncryptionKey();
 
   const payload = await compressData(
     new TextEncoder().encode(

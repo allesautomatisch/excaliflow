@@ -244,6 +244,12 @@
     "confirm": "Confirm",
     "embeddableInteractionButton": "Click to interact"
   },
+  "loadDialog": {
+    "title": "Load",
+    "load": "Load",
+    "content": "Choose a drawing from your saved server drawings.",
+    "empty": "No drawings found."
+  },
   "alerts": {
     "clearReset": "This will clear the whole canvas. Are you sure?",
     "couldNotCreateShareableLink": "Couldn't create shareable link.",
