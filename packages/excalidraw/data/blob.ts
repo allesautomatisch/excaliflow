@@ -30,6 +30,20 @@ import type { AppState, DataURL, LibraryItem } from "../types";
 import type { FileSystemHandle } from "browser-fs-access";
 import type { ImportedLibraryData } from "./types";
 
+const getDrawingNameFromBlob = (
+  blob: Blob | File,
+  fileHandle?: FileSystemHandle | null,
+) => {
+  const filename =
+    ("name" in blob && blob.name) || (fileHandle && "name" in fileHandle && fileHandle.name);
+
+  if (!filename || typeof filename !== "string") {
+    return null;
+  }
+
+  return filename.replace(/\.[^/.]+$/, "");
+};
+
 const parseFileContents = async (blob: Blob | File): Promise<string> => {
   let contents: string;
 
@@ -157,6 +171,18 @@ export const loadSceneOrLibraryFromBlob = async (
       throw error;
     }
     if (isValidExcalidrawData(data)) {
+      const restoredAppState: Partial<AppState> = {
+        theme: localAppState?.theme,
+        fileHandle: fileHandle || blob.handle || null,
+        ...cleanAppStateForExport(data.appState || {}),
+        ...(localAppState
+          ? calculateScrollCenter(data.elements || [], localAppState)
+          : {}),
+      };
+      const drawingName = getDrawingNameFromBlob(blob, fileHandle);
+      if (drawingName) {
+        restoredAppState.name = drawingName;
+      }
       return {
         type: MIME_TYPES.excalidraw,
         data: {
@@ -164,17 +190,7 @@ export const loadSceneOrLibraryFromBlob = async (
             repairBindings: true,
             deleteInvisibleElements: true,
           }),
-          appState: restoreAppState(
-            {
-              theme: localAppState?.theme,
-              fileHandle: fileHandle || blob.handle || null,
-              ...cleanAppStateForExport(data.appState || {}),
-              ...(localAppState
-                ? calculateScrollCenter(data.elements || [], localAppState)
-                : {}),
-            },
-            localAppState,
-          ),
+          appState: restoreAppState(restoredAppState, localAppState),
           files: data.files || {},
         },
       };

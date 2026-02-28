@@ -100,6 +100,7 @@ interface LayerUIProps {
   children?: React.ReactNode;
   app: AppClassProperties;
   isCollaborating: boolean;
+  isDrawingChanged?: boolean;
   generateLinkForSelection?: AppProps["generateLinkForSelection"];
   getLoadDialogDrawings?: () => Promise<LoadDialogDrawing[]>;
   onLoadDrawing?: ExcalidrawProps["onLoadDrawing"];
@@ -142,6 +143,26 @@ const DefaultOverwriteConfirmDialog = () => {
   );
 };
 
+const TopLeftProjectInfo = ({
+  drawingName,
+  isDrawingChanged = false,
+}: {
+  drawingName: string;
+  isDrawingChanged?: boolean;
+}) => {
+  return (
+    <div className="excalidraw-top-left-project-info">
+      <div className="excalidraw-top-left-project-info__project">
+        Alles Automatisch
+      </div>
+      <div className="excalidraw-top-left-project-info__drawing">
+        {drawingName}
+        {isDrawingChanged ? " *" : ""}
+      </div>
+    </div>
+  );
+};
+
 const LayerUI = ({
   actionManager,
   appState,
@@ -163,6 +184,7 @@ const LayerUI = ({
   isCollaborating,
   generateLinkForSelection,
   getLoadDialogDrawings,
+  isDrawingChanged = false,
   onLoadDrawing,
 }: LayerUIProps) => {
   const editorInterface = useEditorInterface();
@@ -249,7 +271,13 @@ const LayerUI = ({
     <div style={{ position: "relative" }}>
       {/* wrapping to Fragment stops React from occasionally complaining
                 about identical Keys */}
-      <tunnels.MainMenuTunnel.Out />
+      <div className="excalidraw-ui-top-left">
+        <tunnels.MainMenuTunnel.Out />
+        <TopLeftProjectInfo
+          drawingName={appState.name || "Untitled Drawing"}
+          isDrawingChanged={isDrawingChanged}
+        />
+      </div>
       {renderWelcomeScreen && <tunnels.WelcomeScreenMenuHintTunnel.Out />}
     </div>
   );
@@ -612,6 +640,7 @@ const LayerUI = ({
           renderSidebars={renderSidebars}
           renderWelcomeScreen={renderWelcomeScreen}
           UIOptions={UIOptions}
+          isDrawingChanged={isDrawingChanged}
         />
       )}
       {editorInterface.formFactor !== "phone" && (

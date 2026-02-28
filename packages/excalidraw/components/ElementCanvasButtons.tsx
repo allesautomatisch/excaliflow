@@ -35,6 +35,8 @@ const getContainerCoords = (
   let sceneX = x2;
   let sceneY = y1;
 
+  const offset = position === "top" ? 25 : OFFSET;
+
   switch (position) {
     case "top-right":
       sceneX = x2;
@@ -71,7 +73,7 @@ const getContainerCoords = (
       x += OFFSET;
       break;
     case "top":
-      y -= OFFSET;
+      y -= offset;
       break;
     case "right":
       x += OFFSET;

@@ -55,16 +55,19 @@ import {
   share,
   youtubeIcon,
 } from "@excalidraw/excalidraw/components/icons";
-import { isElementLink } from "@excalidraw/element";
 import {
   bumpElementVersions,
   restoreAppState,
   restoreElements,
 } from "@excalidraw/excalidraw/data/restore";
 import { getNormalizedZoom } from "@excalidraw/excalidraw/scene";
-import { newElementWith } from "@excalidraw/element";
-import { isFlowchartNodeElement } from "@excalidraw/element";
-import { isInitializedImageElement } from "@excalidraw/element";
+import {
+  hashElementsVersion,
+  isElementLink,
+  isFlowchartNodeElement,
+  isInitializedImageElement,
+  newElementWith,
+} from "@excalidraw/element";
 import clsx from "clsx";
 import {
   parseLibraryTokensFromUrl,
@@ -75,6 +78,7 @@ import type { RemoteExcalidrawElement } from "@excalidraw/excalidraw/data/reconc
 import type { RestoredDataState } from "@excalidraw/excalidraw/data/restore";
 import type {
   FileId,
+  ExcalidrawElement,
   NonDeletedExcalidrawElement,
   OrderedExcalidrawElement,
 } from "@excalidraw/element/types";
@@ -692,6 +696,14 @@ const ExcalidrawWrapper = () => {
     appState: AppState,
     files: BinaryFiles,
   ) => {
+    const elementsHash = hashElementsVersion(elements);
+    if (savedDrawingHashRef.current === null) {
+      savedDrawingHashRef.current = elementsHash;
+      setIsDrawingChanged(false);
+    } else if (elementsHash !== savedDrawingHashRef.current) {
+      setIsDrawingChanged(true);
+    }
+
     if (collabAPI?.isCollaborating()) {
       collabAPI.syncElements(elements);
     }
@@ -744,6 +756,16 @@ const ExcalidrawWrapper = () => {
   );
   const [backendDrawingName, setBackendDrawingName] = useState<string | null>(
     null,
+  );
+  const [isDrawingChanged, setIsDrawingChanged] = useState(false);
+  const savedDrawingHashRef = useRef<number | null>(null);
+
+  const setDrawingAsSaved = useCallback(
+    (elements: readonly ExcalidrawElement[]) => {
+      savedDrawingHashRef.current = hashElementsVersion(elements);
+      setIsDrawingChanged(false);
+    },
+    [],
   );
 
   const onExportToBackend = async (
@@ -819,6 +841,7 @@ const ExcalidrawWrapper = () => {
       }
 
       if (id) {
+        setDrawingAsSaved(exportedElements);
         setBackendDrawingName(null);
         excalidrawAPI?.setToast({
           message: drawingName
@@ -890,6 +913,11 @@ const ExcalidrawWrapper = () => {
           theme: editorTheme,
           zoom: { value: getNormalizedZoom(1) },
         };
+        const drawingName = drawing.name?.trim();
+        if (drawingName) {
+          restoredAppState.name = drawingName;
+        }
+        setDrawingAsSaved(restoredElements);
 
         excalidrawAPI.updateScene({
           elements: restoredElements,
@@ -912,7 +940,7 @@ const ExcalidrawWrapper = () => {
         setErrorMessage(error.message || t("alerts.importBackendFailed"));
       }
     },
-    [excalidrawAPI, editorTheme],
+    [editorTheme, excalidrawAPI, setDrawingAsSaved],
   );
 
   const renderCustomStats = (
@@ -1086,6 +1114,7 @@ const ExcalidrawWrapper = () => {
           }
         }}
         getLoadDialogDrawings={getLoadDialogDrawings}
+        isDrawingChanged={isDrawingChanged}
         onLoadDrawing={onLoadDrawing}
       >
         <DefaultSidebar.Trigger style={{ display: "none" }} />

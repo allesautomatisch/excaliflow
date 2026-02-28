@@ -127,7 +127,7 @@ export const LoadDialog = ({
         <footer className="LoadDialog__footer">
           <ToolButton
             type="button"
-            className="Card-button"
+            className="Card-button LoadDialog__loadButton"
             aria-label={t("loadDialog.load")}
             title={t("loadDialog.load")}
             disabled={!selectedDrawing || !onLoadDrawing}

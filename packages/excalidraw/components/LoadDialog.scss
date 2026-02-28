@@ -104,6 +104,29 @@
     justify-content: flex-end;
   }
 
+  .LoadDialog__loadButton.ToolIcon_type_button {
+    height: 2.5rem;
+    margin-top: 1em;
+    margin-bottom: 0.3em;
+    background-color: var(--color-primary);
+
+    &:hover {
+      background-color: var(--color-primary-darker);
+    }
+
+    &:active {
+      background-color: var(--color-primary-darkest);
+    }
+
+    .ToolIcon__label {
+      color: #fff;
+    }
+
+    .Spinner {
+      --spinner-color: #fff;
+    }
+  }
+
   .LoadDialog__content p {
     margin: 0;
   }

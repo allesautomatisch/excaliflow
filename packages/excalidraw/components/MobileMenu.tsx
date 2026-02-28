@@ -46,6 +46,7 @@ type MobileMenuProps = {
   renderWelcomeScreen: boolean;
   UIOptions: AppProps["UIOptions"];
   app: AppClassProperties;
+  isDrawingChanged?: boolean;
 };
 
 export const MobileMenu = ({
@@ -60,8 +61,21 @@ export const MobileMenu = ({
   renderWelcomeScreen,
   UIOptions,
   app,
+  isDrawingChanged = false,
   onPenModeToggle,
 }: MobileMenuProps) => {
+  const renderTopLeftProjectInfo = (drawingName: string) => (
+    <div className="excalidraw-top-left-project-info">
+      <div className="excalidraw-top-left-project-info__project">
+        Alles Automatisch
+      </div>
+      <div className="excalidraw-top-left-project-info__drawing">
+        {drawingName}
+        {isDrawingChanged ? " *" : ""}
+      </div>
+    </div>
+  );
+
   const {
     WelcomeScreenCenterTunnel,
     MainMenuTunnel,
@@ -97,6 +111,7 @@ export const MobileMenu = ({
       <div className="excalidraw-ui-top-left">
         {renderTopLeftUI?.(true, appState)}
         <MainMenuTunnel.Out />
+        {renderTopLeftProjectInfo(appState.name || "Untitled Drawing")}
       </div>
     );
 

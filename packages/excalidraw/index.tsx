@@ -57,6 +57,7 @@ const ExcalidrawBase = (props: ExcalidrawProps) => {
     showDeprecatedFonts,
     renderScrollbars,
     getLoadDialogDrawings,
+    isDrawingChanged,
     onLoadDrawing,
   } = props;
 
@@ -148,6 +149,7 @@ const ExcalidrawBase = (props: ExcalidrawProps) => {
           onDuplicate={onDuplicate}
           getLoadDialogDrawings={getLoadDialogDrawings}
           onLoadDrawing={onLoadDrawing}
+          isDrawingChanged={isDrawingChanged}
           validateEmbeddable={validateEmbeddable}
           renderEmbeddable={renderEmbeddable}
           aiEnabled={aiEnabled !== false}

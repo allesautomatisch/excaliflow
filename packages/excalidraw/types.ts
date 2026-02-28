@@ -624,6 +624,7 @@ export interface ExcalidrawProps {
   onLoadDrawing?: (
     drawing: LoadDialogDrawing,
   ) => void | Promise<void>;
+  isDrawingChanged?: boolean;
   onPointerDown?: (
     activeTool: AppState["activeTool"],
     pointerDownState: PointerDownState,

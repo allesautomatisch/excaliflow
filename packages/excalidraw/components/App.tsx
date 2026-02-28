@@ -2115,6 +2115,7 @@ class App extends React.Component<AppProps, AppState> {
                               this.props.getLoadDialogDrawings
                             }
                             onLoadDrawing={this.props.onLoadDrawing}
+                            isDrawingChanged={this.props.isDrawingChanged}
                           >
                             {this.props.children}
                           </LayerUI>

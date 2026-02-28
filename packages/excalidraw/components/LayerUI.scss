@@ -168,4 +168,40 @@
       }
     }
   }
+
+  .excalidraw-top-left-project-info {
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    box-sizing: border-box;
+    height: var(--lg-button-size);
+    border: none;
+    border-radius: var(--border-radius-lg);
+    box-shadow: 0 0 0 1px var(--color-surface-lowest);
+    background-color: var(--color-surface-low);
+    padding: 0 0.75rem;
+    font-family: var(--ui-font);
+    color: var(--icon-fill-color);
+    line-height: 1.15;
+    pointer-events: var(--ui-pointerEvents);
+  }
+
+  .App-mobile-menu .excalidraw-top-left-project-info {
+    height: var(--default-button-size);
+  }
+
+  .excalidraw-ui-top-left .main-menu-trigger + .excalidraw-top-left-project-info {
+    margin-left: 0.5rem;
+  }
+
+  .excalidraw-top-left-project-info__project {
+    font-size: 0.65rem;
+    font-weight: 500;
+    opacity: 0.8;
+  }
+
+  .excalidraw-top-left-project-info__drawing {
+    font-size: 0.75rem;
+    font-weight: 500;
+  }
 }
