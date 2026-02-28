@@ -6291,15 +6291,14 @@ class App extends React.Component<AppProps, AppState> {
       existingTextElement = this.getTextElementAtPosition(sceneX, sceneY);
     }
 
-    const shouldUseBpdDefaultFont =
-      getFeatureFlag("BPD_FEATURES") &&
+    const shouldUseCodeDefaultFont =
       !!container &&
-      isFlowchartNodeElement(container) &&
-      !existingTextElement;
+      !existingTextElement &&
+      (isFlowchartNodeElement(container) || isArrowElement(container));
 
     const fontFamily =
       existingTextElement?.fontFamily ||
-      (shouldUseBpdDefaultFont
+      (shouldUseCodeDefaultFont
         ? BPD_DEFAULT_NODE_FONT_FAMILY
         : this.state.currentItemFontFamily);
 
