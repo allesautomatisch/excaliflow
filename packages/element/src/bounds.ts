@@ -579,8 +579,7 @@ export const getDiamondPoints = (element: ExcalidrawElement) => {
   return [topX, topY, rightX, rightY, bottomX, bottomY, leftX, leftY];
 };
 
-const getParallelogramOffset = (element: ExcalidrawParallelogramElement) =>
-  Math.min(Math.abs(element.width) * 0.25, Math.abs(element.height) * 0.5);
+const getParallelogramOffset = (_element: ExcalidrawParallelogramElement) => 20;
 
 export const getParallelogramPoints = (
   element: ExcalidrawParallelogramElement,

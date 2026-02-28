@@ -361,10 +361,10 @@ export const getContainerCoords = (container: NonDeletedExcalidrawElement) => {
     offsetX += (container.width / 2) * (1 - Math.sqrt(2) / 2);
     offsetY += (container.height / 2) * (1 - Math.sqrt(2) / 2);
   }
-  // The derivation of coordinates is explained in https://github.com/excalidraw/excalidraw/pull/6265
+  // Keep diamond containers centered while using rectangle-style padding behavior.
   if (container.type === "diamond") {
-    offsetX += container.width / 4;
-    offsetY += container.height / 4;
+    offsetX = BOUND_TEXT_PADDING * 2;
+    offsetY = BOUND_TEXT_PADDING * 2;
   }
   return {
     x: container.x + offsetX,
@@ -459,7 +459,7 @@ export const computeContainerDimensionForBoundText = (
     return dimension + padding * 8;
   }
   if (containerType === "diamond") {
-    return 2 * (dimension + padding);
+    return dimension + BOUND_TEXT_PADDING * 4;
   }
   return dimension + padding;
 };
@@ -482,9 +482,8 @@ export const getBoundTextMaxWidth = (
     return Math.round((width / 2) * Math.sqrt(2)) - BOUND_TEXT_PADDING * 2;
   }
   if (container.type === "diamond") {
-    // The width of the largest rectangle inscribed inside a rhombus is
-    // Math.round(width / 2) - https://github.com/excalidraw/excalidraw/pull/6265
-    return Math.round(width / 2) - BOUND_TEXT_PADDING * 2;
+    // Match rectangle behavior but with extra padding.
+    return Math.round(width - BOUND_TEXT_PADDING * 4);
   }
   return width - BOUND_TEXT_PADDING * 2;
 };
@@ -508,9 +507,8 @@ export const getBoundTextMaxHeight = (
     return Math.round((height / 2) * Math.sqrt(2)) - BOUND_TEXT_PADDING * 2;
   }
   if (container.type === "diamond") {
-    // The height of the largest rectangle inscribed inside a rhombus is
-    // Math.round(height / 2) - https://github.com/excalidraw/excalidraw/pull/6265
-    return Math.round(height / 2) - BOUND_TEXT_PADDING * 2;
+    // Match rectangle behavior but with extra padding.
+    return Math.round(height - BOUND_TEXT_PADDING * 4);
   }
   return height - BOUND_TEXT_PADDING * 2;
 };

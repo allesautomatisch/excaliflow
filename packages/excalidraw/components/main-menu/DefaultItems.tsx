@@ -1,3 +1,5 @@
+import { useRef } from "react";
+
 import clsx from "clsx";
 
 import { THEME } from "@excalidraw/common";
@@ -99,11 +101,14 @@ export const NewDrawing = () => {
   const elements = useExcalidrawElements();
   const setAppState = useExcalidrawSetAppState();
   const actionManager = useExcalidrawActionManager();
+  const newDrawingNameInputRef = useRef<HTMLInputElement | null>(null);
 
   const handleSelect = async () => {
+    const defaultDrawingName = t("labels.untitled");
+
     if (!elements.length) {
       actionManager.executeAction(actionClearCanvas);
-      setAppState({ name: t("labels.untitled") });
+      setAppState({ name: defaultDrawingName });
       return;
     }
 
@@ -111,11 +116,28 @@ export const NewDrawing = () => {
       appProps.isDrawingChanged || appState.fileHandle === null,
     );
 
-    const shouldProceed = await openConfirmModal({
+    const nextDrawingName = await openConfirmModal<string>({
       title: t("labels.newDrawing"),
       color: "warning",
       description: (
         <>
+          <label htmlFor="new-drawing-name">{t("labels.fileTitle")}</label>
+          <input
+            ref={newDrawingNameInputRef}
+            id="new-drawing-name"
+            type="text"
+            defaultValue={defaultDrawingName}
+            style={{
+              width: "100%",
+              marginBottom: "1rem",
+              marginTop: ".25rem",
+              padding: ".5rem",
+              borderRadius: "0.375rem",
+              border: "1px solid var(--icon-fill-color)",
+              background: "var(--overlay-bg-color)",
+              color: "var(--text-color)",
+            }}
+          />
           <p>{t("alerts.newDrawingDescription")}</p>
           {isUnsaved && (
             <p>
@@ -125,11 +147,16 @@ export const NewDrawing = () => {
         </>
       ),
       actionLabel: t("buttons.confirm"),
+      onConfirm: () => {
+        const typedName =
+          newDrawingNameInputRef.current?.value || defaultDrawingName;
+        return typedName.trim() || defaultDrawingName;
+      },
     });
 
-    if (shouldProceed) {
+    if (nextDrawingName && typeof nextDrawingName === "string") {
       actionManager.executeAction(actionClearCanvas);
-      setAppState({ name: t("labels.untitled") });
+      setAppState({ name: nextDrawingName });
     }
   };
 

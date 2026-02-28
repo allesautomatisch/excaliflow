@@ -12,9 +12,10 @@
 - Auto trigger type-inside after creating a shape.
 - Add-next-step handle/button on selected shape: creates new shape + connecting elbow arrow.
 - Add-next-step `+` button repositions to the nearest side of the selected node based on pointer position, and creates the next node in that chosen direction (up/right/down/left).
-- Add-next-step `+` button always creates the Step shape (blue rectangle with black outline).
+- Add-next-step `+` button and keyboard `Cmd/Ctrl + Arrow` flow creation always create the Step shape (blue rectangle with black outline).
 - Distance between nodes created via `+` should be `1.5x` the previous spacing.
 - Add a second contextual flowchart button (next to `+`) to quickly change the selected node shape via popup + shortcuts.
+- Keyboard `D/G/R/O/C` shortcut behavior: if one flowchart node is selected, convert it to diamond/parallelogram/rectangle/ellipse/capsule; otherwise select the corresponding drawing tool.
 - Deleting a shape also deletes all associated arrows.
 
 ## UX Details & Proposals
@@ -68,7 +69,7 @@
 3. For Add-next-step, should the default direction be rightward only, or should we detect nearest open side based on canvas space?
 
 ## Implemented Assumptions (Current)
-- Click-to-create standard size is `320x200`.
+- Click-to-create standard size is `180x180`.
 - Auto type-inside triggers for newly created BPD shapes, including while tool-lock is active.
 - Add-next-step `+` button is directional: its position follows pointer side (top/right/bottom/left), and clicking creates the next node on that side with an elbow arrow.
 - Add-next-step `+` always creates Step shape (`rectangle`) with black stroke and blue background.
@@ -79,10 +80,16 @@
 - In BPD mode, new node text insertion enforces `Comic Shanns` (does not inherit last-used font).
 - In BPD mode, newly created node shapes always use sharp corners (roundness reset to sharp), regardless of previously selected roundness.
 - In BPD mode, newly created arrows always use Triangle end arrowhead (toolbar arrows and `+`-created flow arrows), regardless of previously selected arrowhead.
+- In BPD mode, flowchart arrows generated via keyboard `Cmd/Ctrl + Arrow` preview also use the same `+` defaults (`startArrowhead: null`, `endArrowhead: triangle`).
 - In BPD mode, dragging selected shapes snaps to a 20px grid by default; holding Ctrl/Cmd temporarily disables drag-grid snapping for free positioning.
 - In BPD mode, dragged node size is applied unless both width and height are below half of the default node size; only those small drags snap to default size.
-- In BPD mode, `+` node creation uses a `1.5x` spacing multiplier.
+- In BPD mode, `+` and `Cmd/Ctrl + Arrow` flowchart node creation use square-grid spacing (`horizontal gap: 180`, `vertical gap: 180`).
 - In BPD mode, creating a node via `+` auto-opens bound text editing on the new node so typing can start immediately.
+- In BPD mode, keyboard `Cmd/Ctrl + Arrow` flowchart preview creation reuses the same spacing/grid and Step-style shape/color constants as the `+` button creation path.
+- In BPD mode, committing keyboard `Cmd/Ctrl + Arrow` flowchart creation auto-starts text editing in the first created node, matching `+` behavior.
+- Keyboard flowchart creation uses `flushSync` selection to the first created node before `startTextEditing`, preventing stale selection from reopening old node text.
+- Keyboard `D/G/R/O/C` shortcuts are context-aware for flowchart nodes: selected node converts to matching shape; no node selected keeps normal tool selection behavior.
+- In `+` menu shape-switch popup, shortcut labels display letter keys (`R/D/G/O/C`) instead of numeric keys.
 
 ## Extra Low-Risk QoL Ideas
 - Optional: BPD quick-style preset button (reapplies thick stroke + elbow arrows + architect roughness).

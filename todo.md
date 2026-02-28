@@ -28,7 +28,16 @@ Always update `PLAN.md` first, then reflect changes here. This file is for quick
 - [x] Auto-focus text editing when creating a node via `+`, so typing can start immediately
 - [x] Add adjacent shape-switch popup button with toolbar-like shape buttons and popup-priority shortcuts
 - [x] Delete associated arrows automatically when deleting a shape
-- [x] Increase `+` node spacing to 1.5x
+- [x] Set BPD default node size to `180x180`
+- [x] Set `+` / `Cmd/Ctrl + Arrow` flowchart spacing to square-grid gaps (`180x180`)
+- [x] Align `Cmd/Ctrl + Arrow` preview placement constants with `+` node creation
+- [x] Align `Cmd/Ctrl + Arrow` preview arrowheads with `+` node creation defaults
+- [x] Auto-start typing in first node after committing `Cmd/Ctrl + Arrow` flowchart creation
+- [x] Fix keyboard multi-add text focus race (select new node via `flushSync` before edit)
+- [x] Ensure keyboard flow-created nodes always use Step shape/color (not selected-node style)
+- [x] Make `D` shortcut context-aware: selected flow node -> diamond conversion, otherwise diamond tool
+- [x] Extend context-aware conversion to `G/R/O/C` for flow nodes (otherwise select corresponding tool)
+- [x] Show letter shortcuts (`R/D/G/O/C`) in `+` menu shape-switch popup instead of numeric keys
 
 ## Ops
 - [ ] Keep Vite + Basic-auth proxy running; auto-restart if killed

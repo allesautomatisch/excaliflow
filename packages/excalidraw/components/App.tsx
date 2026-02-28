@@ -514,8 +514,8 @@ import type { RoughCanvas } from "roughjs/bin/canvas";
 import type { Action, ActionResult } from "../actions/types";
 
 const BPD_STANDARD_SHAPE_SIZE = {
-  width: 200,
-  height: 120,
+  width: 180,
+  height: 180,
 } as const;
 
 const BPD_MIN_DRAGGED_SHAPE_SIZE = {
@@ -527,7 +527,7 @@ const BPD_FLOWCHART_ADD_NEXT_SPACING_MULTIPLIER = 1;
 const BPD_DEFAULT_NODE_FONT_FAMILY = FONT_FAMILY["Comic Shanns"];
 const BPD_DEFAULT_END_ARROWHEAD = "triangle" as const;
 const BPD_FLOWCHART_ADD_NEXT_STEP_GRID_SIZE = 20 as NullableGridSize;
-const NODE_MOVEMENT_GRID_SIZE = 10 as NullableGridSize;
+const NODE_MOVEMENT_GRID_SIZE = 20 as NullableGridSize;
 const NODE_RESIZE_GRID_SIZE = 20 as NullableGridSize;
 
 const BPD_DEFAULT_SHAPE_BACKGROUNDS = {
@@ -561,35 +561,30 @@ const FLOWCHART_SHAPE_PICKER_OPTIONS = [
     type: "rectangle",
     icon: RectangleIcon,
     key: KEYS.R,
-    numericKey: KEYS["2"],
     labelKey: "toolBar.rectangle",
   },
   {
     type: "diamond",
     icon: DiamondIcon,
     key: KEYS.D,
-    numericKey: KEYS["3"],
     labelKey: "toolBar.diamond",
   },
   {
     type: "parallelogram",
     icon: ParallelogramIcon,
     key: KEYS.G,
-    numericKey: KEYS["4"],
     labelKey: "toolBar.parallelogram",
   },
   {
     type: "ellipse",
     icon: EllipseIcon,
     key: KEYS.O,
-    numericKey: KEYS["5"],
     labelKey: "toolBar.ellipse",
   },
   {
     type: "capsule",
     icon: CapsuleIcon,
     key: KEYS.C,
-    numericKey: KEYS["6"],
     labelKey: "toolBar.capsule",
   },
 ] as const;
@@ -2198,10 +2193,8 @@ class App extends React.Component<AppProps, AppState> {
                                 {this.flowchartShapePickerOpen && (
                                   <div className="excalidraw-flowchart-shape-picker">
                                     {FLOWCHART_SHAPE_PICKER_OPTIONS.map(
-                                      ({ type, icon, key, numericKey, labelKey }) => {
-                                        const shortcut = `${key.toUpperCase()} ${t(
-                                          "helpDialog.or",
-                                        )} ${numericKey}`;
+                                      ({ type, icon, key, labelKey }) => {
+                                        const shortcutLabel = key.toUpperCase();
                                         return (
                                           <ToolButton
                                             className="Shape"
@@ -2211,10 +2204,10 @@ class App extends React.Component<AppProps, AppState> {
                                             checked={selectedFlowchartShapeType === type}
                                             name="flowchart-shape-picker"
                                             size="small"
-                                            title={`${t(labelKey)} — ${shortcut}`}
-                                            keyBindingLabel={numericKey}
+                                            title={`${t(labelKey)} — ${shortcutLabel}`}
+                                            keyBindingLabel={shortcutLabel}
                                             aria-label={t(labelKey)}
-                                            aria-keyshortcuts={shortcut}
+                                            aria-keyshortcuts={key}
                                             onChange={() =>
                                               this.onFlowchartShapePickerSelect(
                                                 type,
@@ -2622,23 +2615,20 @@ class App extends React.Component<AppProps, AppState> {
     }
   }
 
-  private onFlowchartAddNextStep = (
+  private createFlowchartPendingNodes = (
     startNode: NonDeleted<ExcalidrawFlowchartNodeElement>,
     direction: "up" | "right" | "down" | "left",
   ) => {
-    this.setFlowchartShapePickerOpen(false);
     this.flowChartCreator.createNodes(
       startNode,
       this.state,
       direction,
       this.scene,
       BPD_FLOWCHART_ADD_NEXT_SPACING_MULTIPLIER,
-      BPD_FLOWCHART_ADD_NEXT_STEP_GRID_SIZE,
+      NODE_MOVEMENT_GRID_SIZE,
     );
 
-    const pendingNodes = this.flowChartCreator.pendingNodes;
-    if (!pendingNodes?.length) {
-      this.flowChartCreator.clear();
+    if (!this.flowChartCreator.pendingNodes?.length) {
       return;
     }
 
@@ -2646,7 +2636,7 @@ class App extends React.Component<AppProps, AppState> {
       getBpdDefaultShapeBackgroundColor("rectangle") ??
       COLOR_PALETTE.blue[DEFAULT_ELEMENT_BACKGROUND_COLOR_INDEX];
 
-    const nextStepNodes: ExcalidrawElement[] = pendingNodes.map(
+    this.flowChartCreator.pendingNodes = this.flowChartCreator.pendingNodes.map(
       (pendingNode) => {
         if (isArrowElement(pendingNode)) {
           return {
@@ -2672,10 +2662,24 @@ class App extends React.Component<AppProps, AppState> {
         return nextStepNode;
       },
     );
+  };
 
-    this.scene.insertElements(nextStepNodes);
+  private onFlowchartAddNextStep = (
+    startNode: NonDeleted<ExcalidrawFlowchartNodeElement>,
+    direction: "up" | "right" | "down" | "left",
+  ) => {
+    this.setFlowchartShapePickerOpen(false);
+    this.createFlowchartPendingNodes(startNode, direction);
 
-    const firstNode = nextStepNodes.find(isFlowchartNodeElement);
+    const pendingNodes = this.flowChartCreator.pendingNodes;
+    if (!pendingNodes?.length) {
+      this.flowChartCreator.clear();
+      return;
+    }
+
+    this.scene.insertElements(pendingNodes);
+
+    const firstNode = pendingNodes.find(isFlowchartNodeElement);
 
     if (firstNode) {
       const firstNodeCenter = getContainerCenter(
@@ -5029,11 +5033,9 @@ class App extends React.Component<AppProps, AppState> {
             selectedElements.length === 1 &&
             isFlowchartNodeElement(selectedElements[0])
           ) {
-            this.flowChartCreator.createNodes(
+            this.createFlowchartPendingNodes(
               selectedElements[0],
-              this.state,
               getLinkDirectionFromKey(event.key),
-              this.scene,
             );
           }
 
@@ -5362,6 +5364,18 @@ class App extends React.Component<AppProps, AppState> {
       ) {
         const shape = findShapeByKey(event.key, this);
         if (shape) {
+          const selectedElements = this.scene.getSelectedElements(this.state);
+          const flowchartShape = isBpdFlowchartShapeType(shape) ? shape : null;
+          if (
+            flowchartShape &&
+            selectedElements.length === 1 &&
+            isFlowchartNodeElement(selectedElements[0])
+          ) {
+            this.onFlowchartShapePickerSelect(flowchartShape, "keyboard");
+            event.stopPropagation();
+            return;
+          }
+
           if (this.state.activeTool.type !== shape) {
             trackEvent(
               "toolbar",
@@ -5620,17 +5634,21 @@ class App extends React.Component<AppProps, AppState> {
           this.scene.insertElements(this.flowChartCreator.pendingNodes);
         }
 
-        const firstNode = this.flowChartCreator.pendingNodes?.[0];
+        const firstNode = this.flowChartCreator.pendingNodes?.find(
+          isFlowchartNodeElement,
+        );
 
         if (firstNode) {
-          this.setState((prevState) => ({
-            selectedElementIds: makeNextSelectedElementIds(
-              {
-                [firstNode.id]: true,
-              },
-              prevState,
-            ),
-          }));
+          flushSync(() => {
+            this.setState((prevState) => ({
+              selectedElementIds: makeNextSelectedElementIds(
+                {
+                  [firstNode.id]: true,
+                },
+                prevState,
+              ),
+            }));
+          });
 
           if (
             !isElementCompletelyInViewport(
@@ -5654,6 +5672,20 @@ class App extends React.Component<AppProps, AppState> {
               canvasOffsets: this.getEditorUIOffsets(),
             });
           }
+
+          const firstNodeCenter = getContainerCenter(
+            firstNode,
+            this.state,
+            this.scene.getNonDeletedElementsMap(),
+          );
+
+          this.startTextEditing({
+            sceneX: firstNodeCenter.x,
+            sceneY: firstNodeCenter.y,
+            insertAtParentCenter: true,
+            container: firstNode,
+            autoEdit: true,
+          });
         }
 
         this.flowChartCreator.clear();
@@ -9287,7 +9319,7 @@ class App extends React.Component<AppProps, AppState> {
       this.lastPointerDownEvent?.[KEYS.CTRL_OR_CMD]
         ? null
         : bpdDefaultBackgroundColor
-          ? NODE_RESIZE_GRID_SIZE
+          ? NODE_MOVEMENT_GRID_SIZE
           : this.getEffectiveGridSize(),
     );
 
@@ -12226,7 +12258,7 @@ class App extends React.Component<AppProps, AppState> {
     const dragGridSize = event[KEYS.CTRL_OR_CMD]
       ? null
       : isFlowchartNodeElement(newElement)
-        ? NODE_RESIZE_GRID_SIZE
+        ? NODE_MOVEMENT_GRID_SIZE
         : this.getEffectiveGridSize();
     const [originGridX, originGridY] = getGridPoint(
       pointerDownState.origin.x,
