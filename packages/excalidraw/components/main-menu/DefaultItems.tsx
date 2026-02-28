@@ -35,6 +35,7 @@ import {
   DeviceDesktopIcon,
   ExportIcon,
   ExportImageIcon,
+  NewSectionIcon,
   HelpIcon,
   UploadIcon,
   LoadIcon,
@@ -90,6 +91,59 @@ export const LoadScene = () => {
   );
 };
 LoadScene.displayName = "LoadScene";
+
+export const NewDrawing = () => {
+  const { t } = useI18n();
+  const appProps = useAppProps();
+  const appState = useUIAppState();
+  const elements = useExcalidrawElements();
+  const setAppState = useExcalidrawSetAppState();
+  const actionManager = useExcalidrawActionManager();
+
+  const handleSelect = async () => {
+    if (!elements.length) {
+      actionManager.executeAction(actionClearCanvas);
+      setAppState({ name: t("labels.untitled") });
+      return;
+    }
+
+    const isUnsaved = Boolean(
+      appProps.isDrawingChanged || appState.fileHandle === null,
+    );
+
+    const shouldProceed = await openConfirmModal({
+      title: t("labels.newDrawing"),
+      color: "warning",
+      description: (
+        <>
+          <p>{t("alerts.newDrawingDescription")}</p>
+          {isUnsaved && (
+            <p>
+              <strong>{t("alerts.newDrawingUnsavedWarning")}</strong>
+            </p>
+          )}
+        </>
+      ),
+      actionLabel: t("buttons.confirm"),
+    });
+
+    if (shouldProceed) {
+      actionManager.executeAction(actionClearCanvas);
+      setAppState({ name: t("labels.untitled") });
+    }
+  };
+
+  return (
+    <DropdownMenuItem
+      icon={NewSectionIcon}
+      onSelect={handleSelect}
+      data-testid="new-drawing-button"
+    >
+      {t("labels.newDrawing")}
+    </DropdownMenuItem>
+  );
+};
+NewDrawing.displayName = "NewDrawing";
 
 export const SaveToActiveFile = () => {
   const { t } = useI18n();

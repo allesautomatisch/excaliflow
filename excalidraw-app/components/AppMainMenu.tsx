@@ -14,6 +14,7 @@ export const AppMainMenu: React.FC<{
 }> = React.memo((props) => {
   return (
     <MainMenu>
+      <MainMenu.DefaultItems.NewDrawing />
       <MainMenu.DefaultItems.LoadScene />
       <MainMenu.DefaultItems.LoadDialogItem />
       <MainMenu.DefaultItems.SaveToActiveFile />

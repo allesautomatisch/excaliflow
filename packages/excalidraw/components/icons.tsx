@@ -626,7 +626,7 @@ export const LoadIcon = createIcon(
 );
 
 export const UploadIcon = createIcon(
-  <g strokeWidth="2">
+  <g strokeWidth="1.5">
     <path stroke="none" d="M0 0h24v24H0z" fill="none" />
     <path d="M4 17v2a2 2 0 0 0 2 2h12a2 2 0 0 0 2 -2v-2" />
     <path d="M7 9l5 -5l5 5" />
@@ -671,6 +671,16 @@ export const ExportImageIcon = createIcon(
     <path d="M14 14l1 -1c.617 -.593 1.328 -.793 2.009 -.598"></path>
     <path d="M19 16v6"></path>
     <path d="M22 19l-3 3l-3 -3"></path>
+  </g>,
+  tablerIconProps,
+);
+
+export const NewSectionIcon = createIcon(
+  <g strokeWidth="1.5">
+    <path stroke="none" d="M0 0h24v24H0z" fill="none" />
+    <path d="M9 12l6 0" />
+    <path d="M12 9l0 6" />
+    <path d="M4 6v-1a1 1 0 0 1 1 -1h1m5 0h2m5 0h1a1 1 0 0 1 1 1v1m0 5v2m0 5v1a1 1 0 0 1 -1 1h-1m-5 0h-2m-5 0h-1a1 1 0 0 1 -1 -1v-1m0 -5v-2m0 -5" />
   </g>,
   tablerIconProps,
 );

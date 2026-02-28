@@ -111,6 +111,7 @@ const DefaultMainMenu: React.FC<{
 }> = ({ UIOptions }) => {
   return (
     <MainMenu __fallback>
+      <MainMenu.DefaultItems.NewDrawing />
       <MainMenu.DefaultItems.LoadScene />
       <MainMenu.DefaultItems.LoadDialogItem />
       <MainMenu.DefaultItems.SaveToActiveFile />

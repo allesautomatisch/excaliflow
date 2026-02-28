@@ -102,6 +102,7 @@
     "libraryLoadingMessage": "Loading library…",
     "libraries": "Browse libraries",
     "loadingScene": "Loading scene…",
+    "newDrawing": "New",
     "loadScene": "Load scene from file",
     "align": "Align",
     "alignTop": "Align top",
@@ -252,6 +253,8 @@
   },
   "alerts": {
     "clearReset": "This will clear the whole canvas. Are you sure?",
+    "newDrawingDescription": "This will clear the current drawing and start a new one.",
+    "newDrawingUnsavedWarning": "Warning: Your current drawing is not saved. Unsaved changes will be permanently lost.",
     "couldNotCreateShareableLink": "Couldn't create shareable link.",
     "couldNotCreateShareableLinkTooBig": "Couldn't create shareable link: the scene is too big",
     "couldNotLoadInvalidFile": "Couldn't load invalid file",

@@ -100,6 +100,7 @@
     "removeFromLibrary": "Aus Bibliothek entfernen",
     "libraryLoadingMessage": "Lade Bibliothek…",
     "libraries": "Bibliotheken durchsuchen",
+    "newDrawing": "Neu",
     "loadingScene": "Lade Zeichnung…",
     "loadScene": "Szene aus Datei laden",
     "align": "Ausrichten",
@@ -247,6 +248,8 @@
   },
   "alerts": {
     "clearReset": "Dies wird die ganze Zeichenfläche löschen. Bist du dir sicher?",
+    "newDrawingDescription": "Dies löscht die aktuelle Zeichnung und startet eine neue Zeichnung.",
+    "newDrawingUnsavedWarning": "Warnung: Diese Zeichnung wurde noch nicht gespeichert. Ungespeicherte Änderungen gehen dauerhaft verloren.",
     "couldNotCreateShareableLink": "Konnte keinen teilbaren Link erstellen.",
     "couldNotCreateShareableLinkTooBig": "Konnte keinen teilbaren Link erstellen: Die Zeichnung ist zu groß",
     "couldNotLoadInvalidFile": "Ungültige Datei konnte nicht geladen werden",

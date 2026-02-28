@@ -59,6 +59,7 @@ import {
   isFreeDrawElement,
   isInitializedImageElement,
   isArrowElement,
+  isFlowchartNodeElement,
   hasBoundTextElement,
   isMagicFrameElement,
   isImageElement,
@@ -253,7 +254,7 @@ const generateElementCanvas = (
 
   const rc = rough.canvas(canvas);
 
-  drawElementOnCanvas(element, rc, context, renderConfig);
+  drawElementOnCanvas(element, rc, context, renderConfig, elementsMap);
 
   context.restore();
 
@@ -389,6 +390,7 @@ const drawElementOnCanvas = (
   rc: RoughCanvas,
   context: CanvasRenderingContext2D,
   renderConfig: StaticCanvasRenderConfig,
+  elementsMap: ReadonlyMap<ExcalidrawElement["id"], ExcalidrawElement>,
 ) => {
   switch (element.type) {
     case "rectangle":
@@ -557,7 +559,13 @@ const drawElementOnCanvas = (
         context.canvas.setAttribute("dir", rtl ? "rtl" : "ltr");
         context.save();
         context.font = getFontString(element);
-        const color = element.concealed ? "#d3d3d3" : element.strokeColor;
+        const concealedColor = "#d3d3d3";
+        const container = element.containerId
+          ? elementsMap.get(element.containerId) || null
+          : null;
+        const isTextInNode = !!container && isFlowchartNodeElement(container);
+        const shouldOverlayConcealedText = !!element.concealed && !isTextInNode;
+        const color = element.concealed ? concealedColor : element.strokeColor;
         context.fillStyle =
           renderConfig.theme === THEME.DARK
             ? applyDarkModeFilter(color)
@@ -591,6 +599,14 @@ const drawElementOnCanvas = (
             horizontalOffset,
             index * lineHeightPx + verticalOffset,
           );
+        }
+        if (shouldOverlayConcealedText) {
+          // For non-node text, conceal by covering the text bounds with an overlay.
+          context.fillStyle =
+            renderConfig.theme === THEME.DARK
+              ? applyDarkModeFilter(concealedColor)
+              : concealedColor;
+          context.fillRect(0, 0, element.width, element.height);
         }
         context.restore();
         if (shouldTemporarilyAttach) {
@@ -857,7 +873,7 @@ export const renderElement = (
         context.translate(cx, cy);
         context.rotate(element.angle);
         context.translate(-shiftX, -shiftY);
-        drawElementOnCanvas(element, rc, context, renderConfig);
+        drawElementOnCanvas(element, rc, context, renderConfig, elementsMap);
         context.restore();
       } else {
         const elementWithCanvas = generateElementWithCanvas(
@@ -945,7 +961,13 @@ export const renderElement = (
 
           tempCanvasContext.translate(-shiftX, -shiftY);
 
-          drawElementOnCanvas(element, tempRc, tempCanvasContext, renderConfig);
+          drawElementOnCanvas(
+            element,
+            tempRc,
+            tempCanvasContext,
+            renderConfig,
+            elementsMap,
+          );
 
           tempCanvasContext.translate(shiftX, shiftY);
 
@@ -984,7 +1006,7 @@ export const renderElement = (
           }
 
           context.translate(-shiftX, -shiftY);
-          drawElementOnCanvas(element, rc, context, renderConfig);
+          drawElementOnCanvas(element, rc, context, renderConfig, elementsMap);
         }
 
         context.restore();
