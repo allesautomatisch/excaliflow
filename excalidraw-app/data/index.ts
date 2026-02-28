@@ -252,6 +252,17 @@ export type BackendDrawingListItem = {
   encryption_key?: string;
 };
 
+export const toDrawingSlug = (name: string) => {
+  return name
+    .trim()
+    .normalize("NFKD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, "-")
+    .replace(/-{2,}/g, "-")
+    .replace(/^-|-$/g, "");
+};
+
 type ListDrawingsParams = {
   q?: string;
   ownerId?: string;
@@ -384,6 +395,37 @@ export const listDrawingsFromBackend = async ({
   }
 
   return drawings;
+};
+
+export const getDrawingBySlug = async (
+  slug: string,
+): Promise<BackendDrawingListItem | null> => {
+  const targetSlug = toDrawingSlug(slug);
+  if (!targetSlug) {
+    return null;
+  }
+
+  const queryCandidates = Array.from(
+    new Set([slug, slug.replace(/-/g, " ")]),
+  ).filter(Boolean);
+  const drawingPages = await Promise.all(
+    queryCandidates.map((query) =>
+      listDrawingsFromBackend({
+        q: query,
+        includeEncryptionKey: true,
+      }),
+    ),
+  );
+  const drawings = drawingPages.flatMap((batch) => batch);
+
+  return (
+    drawings.find((drawing) => {
+      if (!drawing.name) {
+        return false;
+      }
+      return toDrawingSlug(drawing.name) === targetSlug;
+    }) || null
+  );
 };
 
 type ExportToBackendResult =

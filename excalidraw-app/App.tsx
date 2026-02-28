@@ -92,6 +92,7 @@ import type {
 } from "@excalidraw/excalidraw/types";
 import type { ResolutionType } from "@excalidraw/common/utility-types";
 import type { ResolvablePromise } from "@excalidraw/common/utils";
+import type { ImportedDataState } from "@excalidraw/excalidraw/data/types";
 
 import CustomStats from "./CustomStats";
 import {
@@ -123,7 +124,9 @@ import {
   getCollaborationLinkData,
   importFromBackend,
   isCollaborationLink,
+  getDrawingBySlug,
   listDrawingsFromBackend,
+  toDrawingSlug,
   saveToBackend,
 } from "./data";
 
@@ -225,6 +228,32 @@ if (window.self !== window.top) {
   }
 }
 
+const getPathnameDrawingSlug = () => {
+  const pathname = window.location.pathname.replace(/\/+$/, "");
+
+  if (!pathname || pathname === "/") {
+    return null;
+  }
+
+  if (pathname === "/excalidraw-plus-export") {
+    return null;
+  }
+
+  const slug = pathname.split("/").pop() || "";
+  try {
+    return decodeURIComponent(slug).trim() || null;
+  } catch {
+    return slug.trim() || null;
+  }
+};
+
+const updateBrowserRoute = (drawingName?: string | null) => {
+  const currentUrl = new URL(window.location.href);
+  const slug = toDrawingSlug(drawingName || "");
+  currentUrl.pathname = slug ? `/${slug}` : "/";
+  window.history.replaceState({}, APP_NAME, currentUrl);
+};
+
 const shareableLinkConfirmDialog = {
   title: t("overwriteConfirm.modal.shareableLink.title"),
   description: (
@@ -252,9 +281,17 @@ const initializeScene = async (opts: {
   const jsonBackendMatch = window.location.hash.match(
     /^#json=([a-zA-Z0-9_-]+),([a-zA-Z0-9_-]+)$/,
   );
+  const isShareLinkLoad = Boolean(jsonBackendMatch);
   const externalUrlMatch = window.location.hash.match(/^#url=(.*)$/);
+  const pathnameDrawingSlug = getPathnameDrawingSlug();
 
   const localDataState = importFromLocalStorage();
+  let roomLinkData = getCollaborationLinkData(window.location.href);
+  const drawingFromSlug = !roomLinkData && pathnameDrawingSlug
+    ? !jsonBackendMatch
+      ? await getDrawingBySlug(pathnameDrawingSlug)
+      : null
+    : null;
 
   let scene: Omit<
     RestoredDataState,
@@ -271,8 +308,12 @@ const initializeScene = async (opts: {
     appState: restoreAppState(localDataState?.appState, null),
   };
 
-  let roomLinkData = getCollaborationLinkData(window.location.href);
-  const isExternalScene = !!(id || jsonBackendMatch || roomLinkData);
+  const isExternalScene = !!(
+    id ||
+    jsonBackendMatch ||
+    roomLinkData ||
+    pathnameDrawingSlug
+  );
   if (BPD_FEATURES_ENABLED && !localDataState?.appState && !isExternalScene) {
     scene = {
       ...scene,
@@ -289,33 +330,71 @@ const initializeScene = async (opts: {
       // don't prompt for collab scenes because we don't override local storage
       roomLinkData ||
       // otherwise, prompt whether user wants to override current scene
-      (await openConfirmModal(shareableLinkConfirmDialog))
+      (isShareLinkLoad && (await openConfirmModal(shareableLinkConfirmDialog)))
     ) {
+      let importedAppState:
+        | ImportedDataState["appState"]
+        | null
+        | undefined;
+      let importedElements:
+        | ImportedDataState["elements"]
+        | null
+        | undefined;
+
       if (jsonBackendMatch) {
         const imported = await importFromBackend(
           jsonBackendMatch[1],
           jsonBackendMatch[2],
         );
+        importedAppState = imported.appState;
+        importedElements = imported.elements;
+      } else if (drawingFromSlug) {
+        if (!drawingFromSlug.encryption_key) {
+          return {
+            scene: {
+              appState: {
+                errorMessage: t("alerts.importBackendFailed"),
+              },
+            },
+            isExternalScene: false,
+            id: null,
+            key: null,
+          };
+        }
+
+        const imported = await importFromBackend(
+          drawingFromSlug.id,
+          drawingFromSlug.encryption_key,
+        );
+        importedAppState = imported.appState;
+        importedElements = imported.elements;
+      }
+
+      if (importedElements !== undefined && importedAppState !== undefined) {
+        const restoredAppState = restoreAppState(
+          importedAppState,
+          localDataState?.appState,
+        );
+
+        if (drawingFromSlug?.name) {
+          restoredAppState.name = drawingFromSlug.name;
+        }
 
         scene = {
           elements: bumpElementVersions(
-            restoreElements(imported.elements, null, {
+            restoreElements(importedElements, null, {
               repairBindings: true,
               deleteInvisibleElements: true,
             }),
             localDataState?.elements,
           ),
-          appState: restoreAppState(
-            imported.appState,
-            // local appState when importing from backend to ensure we restore
-            // localStorage user settings which we do not persist on server.
-            localDataState?.appState,
-          ),
+          appState: restoredAppState,
         };
+        updateBrowserRoute(restoredAppState.name);
       }
       scene.scrollToContent = true;
       if (!roomLinkData) {
-        window.history.replaceState({}, APP_NAME, window.location.origin);
+        updateBrowserRoute(scene.appState?.name);
       }
     } else {
       // https://github.com/excalidraw/excalidraw/issues/1919
@@ -439,6 +518,12 @@ const ExcalidrawWrapper = () => {
   const [excalidrawAPI, excalidrawRefCallback] =
     useCallbackRefState<ExcalidrawImperativeAPI>();
 
+  const updateWindowTitle = (name?: string | null) => {
+    const drawingName = (name ?? "").trim();
+    document.title = drawingName ? `${drawingName} | ${APP_NAME}` : APP_NAME;
+    updateBrowserRoute(drawingName);
+  };
+
   const [, setShareDialogState] = useAtom(shareDialogStateAtom);
   const [collabAPI] = useAtom(collabAPIAtom);
   const [isCollaborating] = useAtomWithInitialValue(isCollaboratingAtom, () => {
@@ -467,6 +552,13 @@ const ExcalidrawWrapper = () => {
       }
       forceRefresh((prev) => !prev);
     }
+  }, [excalidrawAPI]);
+
+  useEffect(() => {
+    if (!excalidrawAPI) {
+      return;
+    }
+    updateWindowTitle(excalidrawAPI.getAppState().name);
   }, [excalidrawAPI]);
 
   useEffect(() => {
@@ -696,6 +788,8 @@ const ExcalidrawWrapper = () => {
     appState: AppState,
     files: BinaryFiles,
   ) => {
+    updateWindowTitle(appState.name);
+
     const elementsHash = hashElementsVersion(elements);
     if (savedDrawingHashRef.current === null) {
       savedDrawingHashRef.current = elementsHash;
@@ -917,6 +1011,7 @@ const ExcalidrawWrapper = () => {
         if (drawingName) {
           restoredAppState.name = drawingName;
         }
+        updateWindowTitle(restoredAppState.name);
         setDrawingAsSaved(restoredElements);
 
         excalidrawAPI.updateScene({
