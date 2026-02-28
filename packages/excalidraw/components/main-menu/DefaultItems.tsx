@@ -2,7 +2,16 @@ import { useRef } from "react";
 
 import clsx from "clsx";
 
-import { THEME } from "@excalidraw/common";
+import {
+  COLOR_PALETTE,
+  DEFAULT_ELEMENT_BACKGROUND_COLOR_INDEX,
+  FONT_FAMILY,
+  ROUGHNESS,
+  THEME,
+  getLineHeight,
+} from "@excalidraw/common";
+
+import { newElement, newElementWith, newTextElement } from "@excalidraw/element";
 
 import type { Theme } from "@excalidraw/element/types";
 
@@ -25,6 +34,7 @@ import {
   useExcalidrawActionManager,
   useExcalidrawElements,
   useAppProps,
+  useApp,
 } from "../App";
 import { openConfirmModal } from "../OverwriteConfirm/OverwriteConfirmState";
 import Trans from "../Trans";
@@ -97,18 +107,72 @@ LoadScene.displayName = "LoadScene";
 export const NewDrawing = () => {
   const { t } = useI18n();
   const appProps = useAppProps();
+  const app = useApp();
   const appState = useUIAppState();
   const elements = useExcalidrawElements();
   const setAppState = useExcalidrawSetAppState();
   const actionManager = useExcalidrawActionManager();
   const newDrawingNameInputRef = useRef<HTMLInputElement | null>(null);
 
+  const createDefaultNewDrawingElements = () => {
+    const newStartNode = newElement({
+      type: "capsule",
+      x: 0,
+      y: 0,
+      width: 120,
+      height: 80,
+      strokeColor: appState.currentItemStrokeColor,
+      backgroundColor:
+        COLOR_PALETTE.green[DEFAULT_ELEMENT_BACKGROUND_COLOR_INDEX],
+      fillStyle: "solid",
+      strokeWidth: appState.currentItemStrokeWidth,
+      strokeStyle: appState.currentItemStrokeStyle,
+      roughness: ROUGHNESS.architect,
+      opacity: appState.currentItemOpacity,
+      roundness: null,
+    });
+
+    const newStartNodeLabel = newTextElement({
+      x: 60,
+      y: 40,
+      text: "Start",
+      strokeColor: appState.currentItemStrokeColor,
+      backgroundColor: appState.currentItemBackgroundColor,
+      fillStyle: appState.currentItemFillStyle,
+      strokeWidth: appState.currentItemStrokeWidth,
+      strokeStyle: appState.currentItemStrokeStyle,
+      roughness: appState.currentItemRoughness,
+      opacity: appState.currentItemOpacity,
+      fontSize: appState.currentItemFontSize,
+      fontFamily: FONT_FAMILY.Cascadia,
+      lineHeight: getLineHeight(FONT_FAMILY.Cascadia),
+      textAlign: "center",
+      verticalAlign: "middle",
+      autoResize: true,
+      containerId: newStartNode.id,
+    });
+
+    const newStartNodeWithLabel = newElementWith(newStartNode, {
+      boundElements: [{ type: "text", id: newStartNodeLabel.id }],
+    });
+
+    return [
+      newStartNodeWithLabel,
+      newStartNodeLabel,
+    ];
+  };
+
+  const resetDrawing = (nextDrawingName: string) => {
+    actionManager.executeAction(actionClearCanvas);
+    setAppState({ name: nextDrawingName });
+    app.onInsertElements(createDefaultNewDrawingElements());
+  };
+
   const handleSelect = async () => {
     const defaultDrawingName = t("labels.untitled");
 
     if (!elements.length) {
-      actionManager.executeAction(actionClearCanvas);
-      setAppState({ name: defaultDrawingName });
+      resetDrawing(defaultDrawingName);
       return;
     }
 
@@ -155,8 +219,7 @@ export const NewDrawing = () => {
     });
 
     if (nextDrawingName && typeof nextDrawingName === "string") {
-      actionManager.executeAction(actionClearCanvas);
-      setAppState({ name: nextDrawingName });
+      resetDrawing(nextDrawingName);
     }
   };
 
