@@ -69,7 +69,7 @@
 3. For Add-next-step, should the default direction be rightward only, or should we detect nearest open side based on canvas space?
 
 ## Implemented Assumptions (Current)
-- Click-to-create standard size is `180x180`.
+- Click-to-create standard size is shape-aware: `capsule` uses `120x80`; other BPD node shapes use `120x120`.
 - Auto type-inside triggers for newly created BPD shapes, including while tool-lock is active.
 - Add-next-step `+` button is directional: its position follows pointer side (top/right/bottom/left), and clicking creates the next node on that side with an elbow arrow.
 - Add-next-step `+` always creates Step shape (`rectangle`) with black stroke and blue background.
@@ -82,8 +82,9 @@
 - In BPD mode, newly created arrows always use Triangle end arrowhead (toolbar arrows and `+`-created flow arrows), regardless of previously selected arrowhead.
 - In BPD mode, flowchart arrows generated via keyboard `Cmd/Ctrl + Arrow` preview also use the same `+` defaults (`startArrowhead: null`, `endArrowhead: triangle`).
 - In BPD mode, dragging selected shapes snaps to a 20px grid by default; holding Ctrl/Cmd temporarily disables drag-grid snapping for free positioning.
-- In BPD mode, dragged node size is applied unless both width and height are below half of the default node size; only those small drags snap to default size.
-- In BPD mode, `+` and `Cmd/Ctrl + Arrow` flowchart node creation use square-grid spacing (`horizontal gap: 180`, `vertical gap: 180`).
+- In BPD mode, dragged node size is applied unless both width and height are below half of that shape's default size (e.g. capsule `60x40`, others `60x60`); only those small drags snap to default size.
+- In BPD mode, `+` and `Cmd/Ctrl + Arrow` flowchart node creation use square-grid spacing (`horizontal gap: 120`, `vertical gap: 120`).
+- In BPD mode, nodes created via `+` or `Cmd/Ctrl + Arrow` are always forced to default size (`120x120`), independent of the selected/source node size.
 - In BPD mode, creating a node via `+` auto-opens bound text editing on the new node so typing can start immediately.
 - In BPD mode, keyboard `Cmd/Ctrl + Arrow` flowchart preview creation reuses the same spacing/grid and Step-style shape/color constants as the `+` button creation path.
 - In BPD mode, committing keyboard `Cmd/Ctrl + Arrow` flowchart creation auto-starts text editing in the first created node, matching `+` behavior.

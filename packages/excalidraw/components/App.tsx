@@ -514,14 +514,19 @@ import type { RoughCanvas } from "roughjs/bin/canvas";
 import type { Action, ActionResult } from "../actions/types";
 
 const BPD_STANDARD_SHAPE_SIZE = {
-  width: 180,
-  height: 180,
+  width: 120,
+  height: 120,
 } as const;
 
-const BPD_MIN_DRAGGED_SHAPE_SIZE = {
-  width: BPD_STANDARD_SHAPE_SIZE.width / 2,
-  height: BPD_STANDARD_SHAPE_SIZE.height / 2,
+const BPD_CAPSULE_STANDARD_SHAPE_SIZE = {
+  width: 120,
+  height: 80,
 } as const;
+
+const getBpdStandardShapeSize = (elementType: ExcalidrawGenericElement["type"]) =>
+  elementType === "capsule"
+    ? BPD_CAPSULE_STANDARD_SHAPE_SIZE
+    : BPD_STANDARD_SHAPE_SIZE;
 
 const BPD_FLOWCHART_ADD_NEXT_SPACING_MULTIPLIER = 1;
 const BPD_DEFAULT_NODE_FONT_FAMILY = FONT_FAMILY["Comic Shanns"];
@@ -2626,6 +2631,7 @@ class App extends React.Component<AppProps, AppState> {
       this.scene,
       BPD_FLOWCHART_ADD_NEXT_SPACING_MULTIPLIER,
       NODE_MOVEMENT_GRID_SIZE,
+      getBpdStandardShapeSize("rectangle"),
     );
 
     if (!this.flowChartCreator.pendingNodes?.length) {
@@ -9424,9 +9430,14 @@ class App extends React.Component<AppProps, AppState> {
     }
 
     const normalizedSize = getNormalizedDimensions(newElement);
+    const bpdStandardSize = getBpdStandardShapeSize(newElement.type);
+    const bpdMinDraggedShapeSize = {
+      width: bpdStandardSize.width / 2,
+      height: bpdStandardSize.height / 2,
+    };
     const isDraggedSizeTooSmall =
-      normalizedSize.width < BPD_MIN_DRAGGED_SHAPE_SIZE.width &&
-      normalizedSize.height < BPD_MIN_DRAGGED_SHAPE_SIZE.height;
+      normalizedSize.width < bpdMinDraggedShapeSize.width &&
+      normalizedSize.height < bpdMinDraggedShapeSize.height;
     const shouldUseDefaultSize = isDraggedSizeTooSmall;
 
     if (!shouldUseDefaultSize) {
@@ -9438,8 +9449,8 @@ class App extends React.Component<AppProps, AppState> {
       {
         x: pointerDownState.originInGrid.x,
         y: pointerDownState.originInGrid.y,
-        width: BPD_STANDARD_SHAPE_SIZE.width,
-        height: BPD_STANDARD_SHAPE_SIZE.height,
+        width: bpdStandardSize.width,
+        height: bpdStandardSize.height,
       },
       { informMutation: false, isDragging: false },
     );

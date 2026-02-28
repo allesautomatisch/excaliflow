@@ -43,9 +43,13 @@ import {
 import type { Scene } from "./Scene";
 
 type LinkDirection = "up" | "right" | "down" | "left";
+type FlowchartNodeDimensions = Pick<
+  ExcalidrawFlowchartNodeElement,
+  "width" | "height"
+>;
 
-const BASE_VERTICAL_OFFSET = 180;
-const BASE_HORIZONTAL_OFFSET = 180;
+const BASE_VERTICAL_OFFSET = 120;
+const BASE_HORIZONTAL_OFFSET = 120;
 
 export const getLinkDirectionFromKey = (key: string): LinkDirection => {
   switch (key) {
@@ -270,6 +274,7 @@ const addNewNode = (
   scene: Scene,
   spacingMultiplier: number,
   snapToGridSize: NullableGridSize = null,
+  nodeDimensions?: FlowchartNodeDimensions,
 ) => {
   const elementsMap = scene.getNonDeletedElementsMap();
   const successors = getSuccessors(element, elementsMap, direction);
@@ -289,13 +294,16 @@ const addNewNode = (
     snapToGridSize,
   );
 
+  const nextNodeWidth = nodeDimensions?.width ?? element.width;
+  const nextNodeHeight = nodeDimensions?.height ?? element.height;
+
   const nextNode = newElement({
     type: element.type,
     x: snappedNodePosition.x,
     y: snappedNodePosition.y,
     // TODO: extract this to a util
-    width: element.width,
-    height: element.height,
+    width: nextNodeWidth,
+    height: nextNodeHeight,
     roundness: element.roundness,
     roughness: element.roughness,
     backgroundColor: element.backgroundColor,
@@ -333,6 +341,7 @@ export const addNewNodes = (
   numberOfNodes: number,
   spacingMultiplier: number,
   snapToGridSize: NullableGridSize = null,
+  nodeDimensions?: FlowchartNodeDimensions,
 ) => {
   const [verticalOffset] = getGridPoint(
     BASE_VERTICAL_OFFSET * spacingMultiplier,
@@ -344,6 +353,9 @@ export const addNewNodes = (
     0,
     snapToGridSize,
   );
+  const nextNodeWidth = nodeDimensions?.width ?? startNode.width;
+  const nextNodeHeight = nodeDimensions?.height ?? startNode.height;
+
   // always start from 0 and distribute evenly
   const newNodes: ExcalidrawElement[] = [];
 
@@ -353,7 +365,7 @@ export const addNewNodes = (
     if (direction === "left" || direction === "right") {
       const totalHeight =
         verticalOffset * (numberOfNodes - 1) +
-        numberOfNodes * startNode.height;
+        numberOfNodes * nextNodeHeight;
 
       const startY = startNode.y + startNode.height / 2 - totalHeight / 2;
 
@@ -362,12 +374,12 @@ export const addNewNodes = (
         offsetX *= -1;
       }
       nextX = startNode.x + offsetX;
-      const offsetY = (verticalOffset + startNode.height) * i;
+      const offsetY = (verticalOffset + nextNodeHeight) * i;
       nextY = startY + offsetY;
     } else {
       const totalWidth =
         horizontalOffset * (numberOfNodes - 1) +
-        numberOfNodes * startNode.width;
+        numberOfNodes * nextNodeWidth;
       const startX = startNode.x + startNode.width / 2 - totalWidth / 2;
       let offsetY = verticalOffset + startNode.height;
 
@@ -375,7 +387,7 @@ export const addNewNodes = (
         offsetY *= -1;
       }
       nextY = startNode.y + offsetY;
-      const offsetX = (horizontalOffset + startNode.width) * i;
+      const offsetX = (horizontalOffset + nextNodeWidth) * i;
       nextX = startX + offsetX;
     }
 
@@ -390,8 +402,8 @@ export const addNewNodes = (
       x: snappedNodePosition.x,
       y: snappedNodePosition.y,
       // TODO: extract this to a util
-      width: startNode.width,
-      height: startNode.height,
+      width: nextNodeWidth,
+      height: nextNodeHeight,
       roundness: startNode.roundness,
       roughness: startNode.roughness,
       backgroundColor: startNode.backgroundColor,
@@ -699,6 +711,7 @@ export class FlowChartCreator {
     scene: Scene,
     spacingMultiplier = 1,
     snapToGridSize: NullableGridSize = null,
+    nodeDimensions?: FlowchartNodeDimensions,
   ) {
     const elementsMap = scene.getNonDeletedElementsMap();
     if (direction !== this.direction) {
@@ -709,6 +722,7 @@ export class FlowChartCreator {
         scene,
         spacingMultiplier,
         snapToGridSize,
+        nodeDimensions,
       );
 
       this.numberOfNodes = 1;
@@ -725,6 +739,7 @@ export class FlowChartCreator {
         this.numberOfNodes,
         spacingMultiplier,
         snapToGridSize,
+        nodeDimensions,
       );
 
       this.isCreatingChart = true;
