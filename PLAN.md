@@ -16,6 +16,7 @@
 - Distance between nodes created via `+` should be `1.5x` the previous spacing.
 - Add a second contextual flowchart button (next to `+`) to quickly change the selected node shape via popup + shortcuts.
 - Keyboard `D/G/R/O/C` shortcut behavior: if one flowchart node is selected, convert it to diamond/parallelogram/rectangle/ellipse/capsule; otherwise select the corresponding drawing tool.
+- Add a contextual flowchart icon selector (`none` and `automatic`) to the popup, with icon values stored on node customData.
 - Deleting a shape also deletes all associated arrows.
 
 ## UX Details & Proposals
@@ -91,6 +92,7 @@
 - Keyboard flowchart creation uses `flushSync` selection to the first created node before `startTextEditing`, preventing stale selection from reopening old node text.
 - Keyboard `D/G/R/O/C` shortcuts are context-aware for flowchart nodes: selected node converts to matching shape; no node selected keeps normal tool selection behavior.
 - In `+` menu shape-switch popup, shortcut labels display letter keys (`R/D/G/O/C`) instead of numeric keys.
+- Flowchart nodes support an icon setting with options `none` and `automatic`, stored as `customData.flowchartNodeIcon`; the icon is rendered in the node top-right in canvas and SVG export.
 
 ## Extra Low-Risk QoL Ideas
 - Optional: BPD quick-style preset button (reapplies thick stroke + elbow arrows + architect roughness).

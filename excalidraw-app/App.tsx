@@ -254,6 +254,17 @@ const updateBrowserRoute = (drawingName?: string | null) => {
   window.history.replaceState({}, APP_NAME, currentUrl);
 };
 
+const isDefaultUntitledDrawingName = (name: string) => {
+  const drawingName = name.trim();
+  const defaultPrefix = `${t("labels.untitled")}-`;
+  if (!drawingName.startsWith(defaultPrefix)) {
+    return false;
+  }
+
+  const trailing = drawingName.slice(defaultPrefix.length);
+  return /^\d{4}-\d{2}-\d{2}-\d{4}$/.test(trailing);
+};
+
 const shareableLinkConfirmDialog = {
   title: t("overwriteConfirm.modal.shareableLink.title"),
   description: (
@@ -284,9 +295,15 @@ const initializeScene = async (opts: {
   const isShareLinkLoad = Boolean(jsonBackendMatch);
   const externalUrlMatch = window.location.hash.match(/^#url=(.*)$/);
   const pathnameDrawingSlug = getPathnameDrawingSlug();
-
-  const localDataState = importFromLocalStorage();
   let roomLinkData = getCollaborationLinkData(window.location.href);
+  const hasUrlDrawingSource = Boolean(
+    id ||
+      jsonBackendMatch ||
+      externalUrlMatch ||
+      roomLinkData ||
+      pathnameDrawingSlug,
+  );
+  const localDataState = hasUrlDrawingSource ? null : importFromLocalStorage();
   const drawingFromSlug = !roomLinkData && pathnameDrawingSlug
     ? !jsonBackendMatch
       ? await getDrawingBySlug(pathnameDrawingSlug)
@@ -308,12 +325,7 @@ const initializeScene = async (opts: {
     appState: restoreAppState(localDataState?.appState, null),
   };
 
-  const isExternalScene = !!(
-    id ||
-    jsonBackendMatch ||
-    roomLinkData ||
-    pathnameDrawingSlug
-  );
+  const isExternalScene = hasUrlDrawingSource;
   if (BPD_FEATURES_ENABLED && !localDataState?.appState && !isExternalScene) {
     scene = {
       ...scene,
@@ -518,10 +530,17 @@ const ExcalidrawWrapper = () => {
   const [excalidrawAPI, excalidrawRefCallback] =
     useCallbackRefState<ExcalidrawImperativeAPI>();
 
+  const isDrawingPersistedRef = useRef<boolean>(Boolean(getPathnameDrawingSlug()));
+
   const updateWindowTitle = (name?: string | null) => {
     const drawingName = (name ?? "").trim();
     document.title = drawingName ? `${drawingName} | ${APP_NAME}` : APP_NAME;
-    updateBrowserRoute(drawingName);
+    if (
+      isDrawingPersistedRef.current &&
+      !isDefaultUntitledDrawingName(drawingName)
+    ) {
+      updateBrowserRoute(drawingName);
+    }
   };
 
   const [, setShareDialogState] = useAtom(shareDialogStateAtom);
@@ -634,6 +653,10 @@ const ExcalidrawWrapper = () => {
     };
 
     initializeScene({ collabAPI, excalidrawAPI }).then(async (data) => {
+      isDrawingPersistedRef.current =
+        isDrawingPersistedRef.current ||
+        data.isExternalScene ||
+        Boolean(getPathnameDrawingSlug());
       loadImages(data, /* isInitialLoad */ true);
       initialStatePromiseRef.current.promise.resolve(data.scene);
     });
@@ -651,6 +674,8 @@ const ExcalidrawWrapper = () => {
         excalidrawAPI.updateScene({ appState: { isLoading: true } });
 
         initializeScene({ collabAPI, excalidrawAPI }).then((data) => {
+          isDrawingPersistedRef.current =
+            isDrawingPersistedRef.current || data.isExternalScene;
           loadImages(data);
           if (data.scene) {
             excalidrawAPI.updateScene({
@@ -669,10 +694,20 @@ const ExcalidrawWrapper = () => {
       if (isTestEnv()) {
         return;
       }
-      if (
-        !document.hidden &&
-        ((collabAPI && !collabAPI.isCollaborating()) || isCollabDisabled)
-      ) {
+    if (
+      !document.hidden &&
+      ((collabAPI && !collabAPI.isCollaborating()) || isCollabDisabled)
+    ) {
+      const hasUrlDrawingSource = Boolean(
+        new URLSearchParams(window.location.search).get("id") ||
+          window.location.hash.match(/^#json=([a-zA-Z0-9_-]+),([a-zA-Z0-9_-]+)$/) ||
+          window.location.hash.match(/^#url=(.*)$/) ||
+          getPathnameDrawingSlug() ||
+          getCollaborationLinkData(window.location.href),
+      );
+      if (hasUrlDrawingSource) {
+        return;
+      }
         // don't sync if local state is newer or identical to browser state
         if (isBrowserStorageStateNewer(STORAGE_KEYS.VERSION_DATA_STATE)) {
           const localDataState = importFromLocalStorage();
@@ -788,6 +823,13 @@ const ExcalidrawWrapper = () => {
     appState: AppState,
     files: BinaryFiles,
   ) => {
+    if (
+      !elements.length &&
+      isDefaultUntitledDrawingName(appState.name || "")
+    ) {
+      isDrawingPersistedRef.current = false;
+    }
+
     updateWindowTitle(appState.name);
 
     const elementsHash = hashElementsVersion(elements);
@@ -936,6 +978,7 @@ const ExcalidrawWrapper = () => {
 
       if (id) {
         setDrawingAsSaved(exportedElements);
+        isDrawingPersistedRef.current = true;
         setBackendDrawingName(null);
         excalidrawAPI?.setToast({
           message: drawingName
@@ -1012,6 +1055,7 @@ const ExcalidrawWrapper = () => {
           restoredAppState.name = drawingName;
         }
         updateWindowTitle(restoredAppState.name);
+        isDrawingPersistedRef.current = true;
         setDrawingAsSaved(restoredElements);
 
         excalidrawAPI.updateScene({

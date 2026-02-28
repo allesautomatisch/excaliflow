@@ -156,6 +156,10 @@ import {
   isTextBindableContainer,
   isElbowArrow,
   isFlowchartNodeElement,
+  FLOWCHART_NODE_ICON_OPTIONS,
+  FLOWCHART_NODE_ICON_CUSTOM_DATA_KEY,
+  FlowchartNodeIconKey,
+  getFlowchartNodeIconKey,
   isBindableElement,
   isTextElement,
   getNormalizedDimensions,
@@ -458,6 +462,7 @@ import {
   DiamondIcon,
   DotsHorizontalIcon,
   EllipseIcon,
+  getFlowchartNodeIconPickerIcon,
   MagicIcon,
   ParallelogramIcon,
   PlusIcon,
@@ -593,6 +598,13 @@ const FLOWCHART_SHAPE_PICKER_OPTIONS = [
     labelKey: "toolBar.capsule",
   },
 ] as const;
+
+const FLOWCHART_NODE_ICON_PICKER_OPTIONS = FLOWCHART_NODE_ICON_OPTIONS.map(
+  ({ key }) => ({
+    key,
+    icon: getFlowchartNodeIconPickerIcon(key),
+  }),
+);
 
 const isBpdFlowchartShapeType = (
   shape: ReturnType<typeof findShapeByKey>,
@@ -2036,6 +2048,10 @@ class App extends React.Component<AppProps, AppState> {
         : flowchartAddNextDirection === "down"
         ? "bottom"
         : "left";
+    const selectedFlowchartNodeIconKey: FlowchartNodeIconKey =
+      selectedFlowchartNode
+        ? getFlowchartNodeIconKey(selectedFlowchartNode)
+        : "none";
     const selectedFlowchartShapeType: BpdFlowchartShapeType =
       selectedFlowchartNode
         ? selectedFlowchartNode.type
@@ -2197,32 +2213,68 @@ class App extends React.Component<AppProps, AppState> {
                                 />
                                 {this.flowchartShapePickerOpen && (
                                   <div className="excalidraw-flowchart-shape-picker">
-                                    {FLOWCHART_SHAPE_PICKER_OPTIONS.map(
-                                      ({ type, icon, key, labelKey }) => {
-                                        const shortcutLabel = key.toUpperCase();
-                                        return (
-                                          <ToolButton
-                                            className="Shape"
-                                            key={`flowchart-shape-${type}`}
-                                            type="radio"
-                                            icon={icon}
-                                            checked={selectedFlowchartShapeType === type}
-                                            name="flowchart-shape-picker"
-                                            size="small"
-                                            title={`${t(labelKey)} — ${shortcutLabel}`}
-                                            keyBindingLabel={shortcutLabel}
-                                            aria-label={t(labelKey)}
-                                            aria-keyshortcuts={key}
-                                            onChange={() =>
-                                              this.onFlowchartShapePickerSelect(
-                                                type,
-                                                "button",
-                                              )
-                                            }
-                                          />
-                                        );
-                                      },
-                                    )}
+                                    <div className="excalidraw-flowchart-shape-picker-row">
+                                      {FLOWCHART_SHAPE_PICKER_OPTIONS.map(
+                                        ({
+                                          type,
+                                          icon,
+                                          key,
+                                          labelKey,
+                                        }) => {
+                                          const shortcutLabel = key.toUpperCase();
+                                          return (
+                                            <ToolButton
+                                              className="Shape"
+                                              key={`flowchart-shape-${type}`}
+                                              type="radio"
+                                              icon={icon}
+                                              checked={
+                                                selectedFlowchartShapeType === type
+                                              }
+                                              name="flowchart-shape-picker"
+                                              size="small"
+                                              title={`${t(labelKey)} — ${shortcutLabel}`}
+                                              keyBindingLabel={shortcutLabel}
+                                              aria-label={t(labelKey)}
+                                              aria-keyshortcuts={key}
+                                              onChange={() =>
+                                                this.onFlowchartShapePickerSelect(
+                                                  type,
+                                                  "button",
+                                                )
+                                              }
+                                            />
+                                          );
+                                        },
+                                      )}
+                                    </div>
+                                    <div className="excalidraw-flowchart-shape-picker-row">
+                                      {FLOWCHART_NODE_ICON_PICKER_OPTIONS.map(
+                                        ({ key, icon }) => {
+                                          return (
+                                            <ToolButton
+                                              className="Shape"
+                                              key={`flowchart-node-icon-${key}`}
+                                              type="radio"
+                                              icon={icon}
+                                              checked={
+                                                selectedFlowchartNodeIconKey === key
+                                              }
+                                              name="flowchart-node-icon-picker"
+                                              size="small"
+                                              title={key}
+                                              aria-label={key}
+                                              onChange={() =>
+                                                this.onFlowchartNodeIconPickerSelect(
+                                                  key,
+                                                  "button",
+                                                )
+                                              }
+                                            />
+                                          );
+                                        },
+                                      )}
+                                    </div>
                                   </div>
                                 )}
                               </div>
@@ -2853,6 +2905,37 @@ class App extends React.Component<AppProps, AppState> {
     }
 
     trackEvent("flowchart", `change-shape-${type}`, source);
+    this.store.scheduleCapture();
+    this.setFlowchartShapePickerOpen(false);
+  };
+
+  private onFlowchartNodeIconPickerSelect = (
+    key: FlowchartNodeIconKey,
+    source: "button" | "keyboard",
+  ) => {
+    const selectedElements = getSelectedElements(
+      this.scene.getNonDeletedElementsMap(),
+      this.state,
+    );
+
+    if (
+      selectedElements.length !== 1 ||
+      !isFlowchartNodeElement(selectedElements[0])
+    ) {
+      this.setFlowchartShapePickerOpen(false);
+      return;
+    }
+
+    const selectedNode = selectedElements[0];
+
+    this.mutateElement(selectedNode, {
+      customData: {
+        ...selectedNode.customData,
+        [FLOWCHART_NODE_ICON_CUSTOM_DATA_KEY]: key === "none" ? "" : key,
+      },
+    });
+
+    trackEvent("flowchart", `change-node-icon-${key}`, source);
     this.store.scheduleCapture();
     this.setFlowchartShapePickerOpen(false);
   };

@@ -39,6 +39,8 @@ Always update `PLAN.md` first, then reflect changes here. This file is for quick
 - [x] Make `D` shortcut context-aware: selected flow node -> diamond conversion, otherwise diamond tool
 - [x] Extend context-aware conversion to `G/R/O/C` for flow nodes (otherwise select corresponding tool)
 - [x] Show letter shortcuts (`R/D/G/O/C`) in `+` menu shape-switch popup instead of numeric keys
+- [x] Add flowchart node icon selector in shape-switch popup with `none` + `automatic` options
+- [x] Add flowchart node icon rendering in canvas and SVG export output (top-right corner)
 
 ## Ops
 - [ ] Keep Vite + Basic-auth proxy running; auto-restart if killed

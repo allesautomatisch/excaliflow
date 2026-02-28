@@ -23,9 +23,17 @@ import { getBoundTextElement, getContainerElement } from "@excalidraw/element";
 import { getLineHeightInPx } from "@excalidraw/element";
 import {
   isArrowElement,
+  isFlowchartNodeElement,
   isIframeLikeElement,
   isInitializedImageElement,
   isTextElement,
+} from "@excalidraw/element";
+import {
+  FLOWCHART_NODE_ICON_MARGIN,
+  FLOWCHART_NODE_ICON_SIZE,
+  FLOWCHART_NODE_ICON_VIEWBOX,
+  getFlowchartNodeIcon,
+  getFlowchartNodeIconKey,
 } from "@excalidraw/element";
 
 import { getContainingFrame } from "@excalidraw/element";
@@ -82,6 +90,94 @@ const maybeWrapNodesInFrameClipPath = (
   }
 
   return null;
+};
+
+const renderFlowchartNodeIcon = (
+  element: NonDeletedExcalidrawElement,
+  svgRoot: SVGElement,
+  offsetX: number,
+  offsetY: number,
+  degree: number,
+  cx: number,
+  cy: number,
+  opacity: number,
+  renderConfig: SVGRenderConfig,
+) => {
+  const key = getFlowchartNodeIconKey(element);
+  const iconData = getFlowchartNodeIcon(key);
+
+  if (key === "none" || !iconData?.paths.length) {
+    return null;
+  }
+
+  const iconScale = FLOWCHART_NODE_ICON_SIZE / FLOWCHART_NODE_ICON_VIEWBOX;
+  const iconX =
+    element.width - FLOWCHART_NODE_ICON_SIZE - FLOWCHART_NODE_ICON_MARGIN;
+  const iconY = FLOWCHART_NODE_ICON_MARGIN;
+  const iconColor =
+    renderConfig.theme === THEME.DARK
+      ? applyDarkModeFilter(element.strokeColor)
+      : element.strokeColor;
+  const resolveIconColor = (color: string | undefined) =>
+    color && color !== "currentColor" ? color : iconColor;
+
+  const icon = svgRoot.ownerDocument.createElementNS(SVG_NS, "g");
+  iconData.paths.forEach((pathData) => {
+    const path = svgRoot.ownerDocument.createElementNS(SVG_NS, "path");
+    const hasStroke =
+      pathData.stroke !== undefined && pathData.stroke !== "none";
+    const hasFill = pathData.fill !== undefined && pathData.fill !== "none";
+
+    path.setAttribute("d", pathData.d);
+    if (pathData.fillRule) {
+      path.setAttribute("fill-rule", pathData.fillRule);
+    }
+    if (pathData.clipRule) {
+      path.setAttribute("clip-rule", pathData.clipRule);
+    }
+
+    if (hasFill) {
+      path.setAttribute("fill", resolveIconColor(pathData.fill));
+      if (pathData.fillRule) {
+        path.setAttribute("fill-rule", pathData.fillRule);
+      }
+    } else if (!hasStroke) {
+      path.setAttribute("fill", iconColor);
+    } else {
+      path.setAttribute("fill", "none");
+    }
+
+    if (hasStroke) {
+      path.setAttribute("stroke", resolveIconColor(pathData.stroke));
+      path.setAttribute("stroke-width", `${pathData.strokeWidth ?? "1.5"}`);
+      if (pathData.strokeLinecap) {
+        path.setAttribute("stroke-linecap", pathData.strokeLinecap);
+      }
+      if (pathData.strokeLinejoin) {
+        path.setAttribute("stroke-linejoin", pathData.strokeLinejoin);
+      }
+    } else if (!hasFill) {
+      path.setAttribute("stroke", "none");
+    }
+
+    if (opacity !== 1) {
+      if (hasStroke) {
+        path.setAttribute("stroke-opacity", `${opacity}`);
+      }
+      if (hasFill || !hasStroke) {
+        path.setAttribute("fill-opacity", `${opacity}`);
+      }
+    }
+
+    icon.appendChild(path);
+  });
+
+  icon.setAttribute(
+    "transform",
+    `translate(${offsetX || 0} ${offsetY || 0}) rotate(${degree} ${cx} ${cy}) translate(${iconX} ${iconY}) scale(${iconScale})`,
+  );
+
+  return icon;
 };
 
 const renderElementToSvg = (
@@ -168,15 +264,35 @@ const renderElementToSvg = (
         }) rotate(${degree} ${cx} ${cy})`,
       );
 
+      const icon = isFlowchartNodeElement(element)
+        ? renderFlowchartNodeIcon(
+            element,
+            svgRoot,
+            offsetX,
+            offsetY,
+            degree,
+            cx,
+            cy,
+            opacity,
+            renderConfig,
+          )
+        : null;
+
+      const nodes = [node, ...(icon ? [icon] : [])];
+
       const g = maybeWrapNodesInFrameClipPath(
         element,
         root,
-        [node],
+        nodes,
         renderConfig.frameRendering,
         elementsMap,
       );
 
-      addToRoot(g || node, element);
+      if (g) {
+        addToRoot(g, element);
+      } else {
+        nodes.forEach((svgNode) => addToRoot(svgNode, element));
+      }
       break;
     }
     case "iframe":

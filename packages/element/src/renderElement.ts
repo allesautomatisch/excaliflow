@@ -64,6 +64,13 @@ import {
   isMagicFrameElement,
   isImageElement,
 } from "./typeChecks";
+import {
+  FLOWCHART_NODE_ICON_MARGIN,
+  FLOWCHART_NODE_ICON_SIZE,
+  FLOWCHART_NODE_ICON_VIEWBOX,
+  getFlowchartNodeIcon,
+  getFlowchartNodeIconKey,
+} from "./flowchartNodeIcons";
 import { getContainingFrame } from "./frame";
 import { getCornerRadius } from "./utils";
 
@@ -77,6 +84,7 @@ import type {
   ExcalidrawImageElement,
   ExcalidrawTextElementWithContainer,
   ExcalidrawFrameLikeElement,
+  ExcalidrawFlowchartNodeElement,
   NonDeletedSceneElementsMap,
   ElementsMap,
 } from "./types";
@@ -104,6 +112,84 @@ const getCanvasPadding = (element: ExcalidrawElement) => {
     default:
       return 20;
   }
+};
+
+const drawFlowchartNodeIcon = (
+  element: ExcalidrawFlowchartNodeElement,
+  context: CanvasRenderingContext2D,
+  renderConfig: StaticCanvasRenderConfig,
+) => {
+  const key = getFlowchartNodeIconKey(element);
+  const icon = getFlowchartNodeIcon(key);
+
+  if (key === "none" || !icon?.paths.length) {
+    return;
+  }
+
+  const iconColor =
+    renderConfig.theme === THEME.DARK
+      ? applyDarkModeFilter(element.strokeColor)
+      : element.strokeColor;
+  const iconScale = FLOWCHART_NODE_ICON_SIZE / FLOWCHART_NODE_ICON_VIEWBOX;
+  const iconX =
+    element.width - FLOWCHART_NODE_ICON_SIZE - FLOWCHART_NODE_ICON_MARGIN;
+  const iconY = FLOWCHART_NODE_ICON_MARGIN;
+  const resolveIconColor = (color: string | undefined) =>
+    color && color !== "currentColor" ? color : iconColor;
+
+  context.save();
+  context.translate(iconX, iconY);
+  context.scale(iconScale, iconScale);
+
+  icon.paths.forEach((path) => {
+    const pathShape = new Path2D(path.d);
+    const hasStroke = path.stroke !== undefined && path.stroke !== "none";
+    const hasFill = path.fill !== undefined && path.fill !== "none";
+
+    if (hasStroke) {
+      context.strokeStyle = resolveIconColor(path.stroke);
+      context.lineWidth = parseFloat(path.strokeWidth || "1.5");
+      context.lineCap = (path.strokeLinecap as CanvasLineCap) || "butt";
+      context.lineJoin = (path.strokeLinejoin as CanvasLineJoin) || "miter";
+      context.stroke(pathShape);
+    }
+
+    if (hasFill) {
+      const fillRule = (path.fillRule || "nonzero") as CanvasFillRule;
+      context.fillStyle = resolveIconColor(path.fill);
+      context.fill(pathShape, fillRule);
+      return;
+    }
+
+    if (!hasStroke) {
+      const fillRule = (path.fillRule || "nonzero") as CanvasFillRule;
+      context.fillStyle = iconColor;
+      context.fill(pathShape, fillRule);
+    }
+  });
+
+  context.restore();
+};
+
+const drawFlowchartNodeIconInSceneSpace = (
+  element: ExcalidrawFlowchartNodeElement,
+  elementsMap: ElementsMap,
+  context: CanvasRenderingContext2D,
+  appState: StaticCanvasAppState | InteractiveCanvasAppState,
+  renderConfig: StaticCanvasRenderConfig,
+) => {
+  const [x1, y1, x2, y2] = getElementAbsoluteCoords(element, elementsMap);
+  const cx = (x1 + x2) / 2 + appState.scrollX;
+  const cy = (y1 + y2) / 2 + appState.scrollY;
+  const shiftX = (x2 - x1) / 2 - (element.x - x1);
+  const shiftY = (y2 - y1) / 2 - (element.y - y1);
+
+  context.save();
+  context.translate(cx, cy);
+  context.rotate(element.angle);
+  context.translate(-shiftX, -shiftY);
+  drawFlowchartNodeIcon(element, context, renderConfig);
+  context.restore();
 };
 
 export const getRenderOpacity = (
@@ -1007,6 +1093,9 @@ export const renderElement = (
 
           context.translate(-shiftX, -shiftY);
           drawElementOnCanvas(element, rc, context, renderConfig, elementsMap);
+          if (isFlowchartNodeElement(element)) {
+            drawFlowchartNodeIcon(element, context, renderConfig);
+          }
         }
 
         context.restore();
@@ -1083,6 +1172,15 @@ export const renderElement = (
           appState,
           allElementsMap,
         );
+        if (isFlowchartNodeElement(element)) {
+          drawFlowchartNodeIconInSceneSpace(
+            element,
+            allElementsMap,
+            context,
+            appState,
+            renderConfig,
+          );
+        }
 
         // reset
         context.imageSmoothingEnabled = currentImageSmoothingStatus;

@@ -10,6 +10,10 @@ import clsx from "clsx";
 import React from "react";
 
 import { THEME } from "@excalidraw/common";
+import {
+  getFlowchartNodeIcon,
+  type FlowchartNodeIconKey,
+} from "@excalidraw/element";
 
 import type { Theme } from "@excalidraw/element/types";
 
@@ -332,6 +336,49 @@ export const RectangleIcon = createIcon(
   </g>,
   tablerIconProps,
 );
+
+export const FlowchartNodeIconNoneIcon = createIcon(
+  <g strokeWidth="1.5">
+    <path stroke="none" d="M0 0h24v24H0z" fill="none" />
+    <circle cx="12" cy="12" r="8" />
+    <line x1="4" y1="4" x2="20" y2="20" />
+  </g>,
+  tablerIconProps,
+);
+
+const automaticFlowchartNodeIcon = getFlowchartNodeIcon("automatic");
+
+export const FlowchartNodeIconAutomaticIcon = automaticFlowchartNodeIcon?.svg ? (
+  <span
+    aria-hidden="true"
+    className="excalidraw-flowchart-node-icon-picker-icon"
+    dangerouslySetInnerHTML={{
+      __html: automaticFlowchartNodeIcon.svg,
+    }}
+  />
+) : null;
+
+const getFlowchartNodeIconSVG = (key: Exclude<FlowchartNodeIconKey, "none">) => {
+  const icon = getFlowchartNodeIcon(key);
+
+  return icon?.svg ? (
+    <span
+      aria-hidden="true"
+      className="excalidraw-flowchart-node-icon-picker-icon"
+      dangerouslySetInnerHTML={{
+        __html: icon.svg,
+      }}
+    />
+  ) : null;
+};
+
+export const getFlowchartNodeIconPickerIcon = (key: FlowchartNodeIconKey) => {
+  if (key === "none") {
+    return FlowchartNodeIconNoneIcon;
+  }
+
+  return getFlowchartNodeIconSVG(key);
+};
 
 export const ParallelogramIcon = createIcon(
   <g strokeWidth="1.5">
