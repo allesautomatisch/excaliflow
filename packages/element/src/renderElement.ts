@@ -126,10 +126,12 @@ const drawFlowchartNodeIcon = (
     return;
   }
 
+  const concealedColor = "#d3d3d3";
+  const iconBaseColor = element.concealed ? concealedColor : element.strokeColor;
   const iconColor =
     renderConfig.theme === THEME.DARK
-      ? applyDarkModeFilter(element.strokeColor)
-      : element.strokeColor;
+      ? applyDarkModeFilter(iconBaseColor)
+      : iconBaseColor;
   const iconScale = FLOWCHART_NODE_ICON_SIZE / FLOWCHART_NODE_ICON_VIEWBOX;
   const iconX =
     element.width - FLOWCHART_NODE_ICON_SIZE - FLOWCHART_NODE_ICON_MARGIN;

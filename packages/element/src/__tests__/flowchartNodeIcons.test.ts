@@ -50,4 +50,24 @@ describe("Flowchart node icon key resolution", () => {
       }),
     ).toBe("user");
   });
+
+  it("returns star for valid values", () => {
+    expect(
+      getFlowchartNodeIconKey({
+        customData: {
+          [FLOWCHART_NODE_ICON_CUSTOM_DATA_KEY]: "star",
+        },
+      }),
+    ).toBe("star");
+  });
+
+  it("returns sparkles for valid values", () => {
+    expect(
+      getFlowchartNodeIconKey({
+        customData: {
+          [FLOWCHART_NODE_ICON_CUSTOM_DATA_KEY]: "sparkles",
+        },
+      }),
+    ).toBe("sparkles");
+  });
 });

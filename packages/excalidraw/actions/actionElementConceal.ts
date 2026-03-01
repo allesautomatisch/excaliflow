@@ -1,7 +1,12 @@
 import { KEYS, arrayToMap } from "@excalidraw/common";
 
-import { CaptureUpdateAction, newElementWith } from "@excalidraw/element";
-import { isArrowElement, isFlowchartNodeElement } from "@excalidraw/element";
+import {
+  CaptureUpdateAction,
+  getBoundTextElement,
+  isArrowElement,
+  isFlowchartNodeElement,
+  newElementWith,
+} from "@excalidraw/element";
 
 import type { ExcalidrawElement } from "@excalidraw/element/types";
 
@@ -89,33 +94,51 @@ export const actionToggleElementConceal = register({
     const selectedNodes = selectedElements.filter(isFlowchartNodeElement);
     const selectedNodeIds = new Set(selectedNodes.map((node) => node.id));
     const elementsMap = new Map(elements.map((element) => [element.id, element]));
+    const nextConcealedElements = new Map<string, boolean>();
 
-    const nextElements = elements.map((element) => {
-      if (!selectedElementsMap.has(element.id)) {
-        if (isArrowElement(element)) {
-          const shouldConcealArrow = getArrowConnectedNodeConcealStates(
-            element,
-            elementsMap,
-            nextConcealState,
-            selectedNodeIds,
-          );
-
-          if (shouldConcealArrow === null) {
-            return element;
-          }
-
-          if (shouldConcealArrow !== !!element.concealed) {
-            return newElementWith(element, {
-              concealed: shouldConcealArrow,
-            });
-          }
-        }
-
-        return element;
+    for (const element of elements) {
+      if (selectedElementsMap.has(element.id)) {
+        nextConcealedElements.set(element.id, nextConcealState);
+        continue;
       }
 
+      if (!isArrowElement(element)) {
+        continue;
+      }
+
+      const shouldConcealArrow = getArrowConnectedNodeConcealStates(
+        element,
+        elementsMap,
+        nextConcealState,
+        selectedNodeIds,
+      );
+
+      if (
+        shouldConcealArrow === null ||
+        shouldConcealArrow === !!element.concealed
+      ) {
+        continue;
+      }
+
+      nextConcealedElements.set(element.id, shouldConcealArrow);
+
+      const boundTextElement = getBoundTextElement(element, elementsMap);
+      if (!boundTextElement || selectedElementsMap.has(boundTextElement.id)) {
+        continue;
+      }
+
+      if (shouldConcealArrow !== !!boundTextElement.concealed) {
+        nextConcealedElements.set(boundTextElement.id, shouldConcealArrow);
+      }
+    }
+
+    const nextElements = elements.map((element) => {
+      const nextConcealedState = nextConcealedElements.get(element.id);
+      if (nextConcealedState === undefined || nextConcealedState === element.concealed) {
+        return element;
+      }
       return newElementWith(element, {
-        concealed: nextConcealState,
+        concealed: nextConcealedState,
       });
     });
 
