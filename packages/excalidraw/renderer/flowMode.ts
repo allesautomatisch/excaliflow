@@ -384,20 +384,16 @@ export const updateFlowModeSimulation = ({
   }
 
   let nextParticleId = flowState.nextParticleId;
-  for (let i = 0; i < spawnCount; i++) {
-    const spawnNodeIds = topology.startNodeIds;
-    if (spawnNodeIds.length === 0) {
-      continue;
-    }
-
-    for (let spawnNodeIndex = 0; spawnNodeIndex < spawnNodeIds.length; spawnNodeIndex++) {
-      const startNodeId = spawnNodeIds[spawnNodeIndex];
-      if (!startNodeId) {
+  const spawnNodeIds = topology.startNodeIds;
+  if (spawnNodeIds.length > 0) {
+    for (let spawnIndex = 0; spawnIndex < spawnCount; spawnIndex++) {
+      const seed = nextParticleId++;
+      const spawnNodeId = spawnNodeIds[seed % spawnNodeIds.length];
+      if (!spawnNodeId) {
         continue;
       }
 
-      const seed = nextParticleId++;
-      const start = topology.nodePositions.get(startNodeId);
+      const start = topology.nodePositions.get(spawnNodeId);
       if (!start) {
         continue;
       }
@@ -405,7 +401,7 @@ export const updateFlowModeSimulation = ({
       const nextNodeChoiceSeed = nextFlowChoiceSeed(seed);
       const firstTarget = pickNextNodeId(
         topology,
-        startNodeId,
+        spawnNodeId,
         nextNodeChoiceSeed,
       );
       if (!firstTarget) {
@@ -437,7 +433,7 @@ export const updateFlowModeSimulation = ({
         y: spawnPosition.y,
         vx: Math.cos(jitter) * (speed * 0.2),
         vy: Math.sin(jitter) * (speed * 0.2),
-        currentNodeId: startNodeId,
+        currentNodeId: spawnNodeId,
         targetNodeId: firstTarget.targetNodeId,
         targetX: firstTargetPosition.x,
         targetY: firstTargetPosition.y,
@@ -448,10 +444,10 @@ export const updateFlowModeSimulation = ({
           y: waypoint.y,
         })),
       });
-
-      flowState.nextParticleId = nextParticleId;
     }
   }
+
+  flowState.nextParticleId = nextParticleId;
 
   const aliveParticles: FlowParticle[] = [];
 
