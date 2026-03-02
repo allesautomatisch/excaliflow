@@ -1,4 +1,4 @@
-import { clamp, pointDistance, pointFrom } from "@excalidraw/math";
+import { clamp } from "@excalidraw/math";
 import { THEME } from "@excalidraw/common";
 
 import {
@@ -68,8 +68,6 @@ const FLOW_SPAWN_INTERVAL_MS = 212;
 const FLOW_MIN_SPAWN_RADIUS = 4;
 const FLOW_PARTICLE_MAX_SPEED_VARIATION = 0.2;
 const FLOW_TARGET_TURN_STRENGTH = 0.28;
-const FLOW_SEPARATION_RADIUS = 16;
-const FLOW_SEPARATION_STRENGTH = 120;
 const FLOW_TARGET_RANDOM_RADIUS_FACTOR = 0.45;
 const FLOW_DIAMOND_SPAWN_RATE_INCREMENT = 0.75;
 const FLOW_MAX_DIAMOND_SPAWN_MULTIPLIER = 6;
@@ -296,39 +294,6 @@ const drawFlowParticle = (
   context.restore();
 };
 
-const computeBoids = (
-  particle: FlowParticle,
-  allParticles: readonly FlowParticle[],
-) => {
-  let separationX = 0;
-  let separationY = 0;
-
-  for (const other of allParticles) {
-    if (other.id === particle.id) {
-      continue;
-    }
-
-    const dist = pointDistance(
-      pointFrom(particle.x, particle.y),
-      pointFrom(other.x, other.y),
-    );
-    if (dist <= 0 || dist > FLOW_SEPARATION_RADIUS) {
-      continue;
-    }
-
-    if (dist < FLOW_SEPARATION_RADIUS) {
-      const weight = (FLOW_SEPARATION_RADIUS - dist) / dist;
-      separationX += (particle.x - other.x) * weight;
-      separationY += (particle.y - other.y) * weight;
-    }
-  }
-
-  return {
-    sx: clamp(-FLOW_SEPARATION_STRENGTH, FLOW_SEPARATION_STRENGTH, separationX),
-    sy: clamp(-FLOW_SEPARATION_STRENGTH, FLOW_SEPARATION_STRENGTH, separationY),
-  };
-};
-
 export const updateFlowModeSimulation = ({
   context,
   appState,
@@ -467,10 +432,8 @@ export const updateFlowModeSimulation = ({
     const normalizedDx = dx / distance;
     const normalizedDy = dy / distance;
 
-    const flock = computeBoids(particle, flowState.particles);
-
-    const fx = normalizedDx * FLOW_FLOW_FORCE + flock.sx;
-    const fy = normalizedDy * FLOW_FLOW_FORCE + flock.sy;
+    const fx = normalizedDx * FLOW_FLOW_FORCE;
+    const fy = normalizedDy * FLOW_FLOW_FORCE;
 
     particle.vx += fx * dt;
     particle.vy += fy * dt;
