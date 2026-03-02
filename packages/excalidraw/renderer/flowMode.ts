@@ -4,6 +4,7 @@ import { THEME } from "@excalidraw/common";
 import {
   LinearElementEditor,
   elementCenterPoint,
+  getBoundTextElement,
   isArrowElement,
   isFlowchartNodeElement,
 } from "@excalidraw/element";
@@ -53,13 +54,14 @@ type FlowTopology = {
         x: number;
         y: number;
       }[];
+      pathChancePercent: number;
     }[]
   >;
   diamondNodeCount: number;
   version: string;
 };
 
-const FLOW_PARTICLE_RADIUS = 2.8;
+const FLOW_PARTICLE_RADIUS = 4.2;
 const FLOW_PARTICLE_BASE_SPEED = 190;
 const FLOW_PARTICLE_MAX_SPEED = 280;
 const FLOW_FLOW_FORCE = 1680;
@@ -71,21 +73,111 @@ const FLOW_TARGET_TURN_STRENGTH = 0.28;
 const FLOW_TARGET_RANDOM_RADIUS_FACTOR = 0.45;
 const FLOW_DIAMOND_SPAWN_RATE_INCREMENT = 0.75;
 const FLOW_MAX_DIAMOND_SPAWN_MULTIPLIER = 6;
+const FLOW_PATH_PERCENTAGE_NORMALIZATION_TARGET = 100;
+const FLOW_PERCENTAGE_REGEX = /(-?\d+(?:\.\d+)?)\s*%/;
+
+type FlowTopologyEdge = {
+  targetNodeId: string;
+  waypoints: {
+    x: number;
+    y: number;
+  }[];
+  explicitPathChancePercent: number | null;
+};
+
+type FlowTopologyResolvedEdge = {
+  targetNodeId: string;
+  waypoints: {
+    x: number;
+    y: number;
+  }[];
+  pathChancePercent: number;
+};
+
+const getArrowPathPercentage = (
+  arrow: Parameters<typeof getBoundTextElement>[0],
+  allElementsMap: NonDeletedSceneElementsMap,
+) => {
+  const boundTextElement = getBoundTextElement(arrow, allElementsMap);
+  if (!boundTextElement?.text) {
+    return null;
+  }
+
+  const percentageMatch = boundTextElement.text.match(FLOW_PERCENTAGE_REGEX);
+  if (!percentageMatch?.[1]) {
+    return null;
+  }
+
+  const parsed = Number(percentageMatch[1]);
+  if (!Number.isFinite(parsed)) {
+    return null;
+  }
+
+  return clamp(parsed, 0, FLOW_PATH_PERCENTAGE_NORMALIZATION_TARGET);
+};
+
+const normalizePathProbabilities = (
+  edges: FlowTopologyEdge[],
+): FlowTopologyResolvedEdge[] => {
+  if (edges.length === 0) {
+    return [];
+  }
+
+  const labeledEdgeCount = edges.filter(
+    (edge) => edge.explicitPathChancePercent !== null,
+  ).length;
+  const unlabeledEdgeCount = edges.length - labeledEdgeCount;
+  const labeledWeight = edges.reduce(
+    (sum, edge) => sum + (edge.explicitPathChancePercent || 0),
+    0,
+  );
+  const remainingWeight =
+    FLOW_PATH_PERCENTAGE_NORMALIZATION_TARGET - labeledWeight;
+  const remainingWeightPerUnlabeledEdge =
+    unlabeledEdgeCount > 0 ? remainingWeight / unlabeledEdgeCount : 0;
+
+  const edgesWithBaseWeights = edges.map((edge) => ({
+    targetNodeId: edge.targetNodeId,
+    waypoints: edge.waypoints,
+    pathChancePercent:
+      edge.explicitPathChancePercent === null
+        ? remainingWeightPerUnlabeledEdge
+        : edge.explicitPathChancePercent,
+  }));
+
+  const totalWeight = edgesWithBaseWeights.reduce(
+    (sum, edge) => sum + edge.pathChancePercent,
+    0,
+  );
+
+  if (totalWeight <= 0) {
+    const fallbackWeight = FLOW_PATH_PERCENTAGE_NORMALIZATION_TARGET / edges.length;
+    return edges.map((edge) => ({
+      targetNodeId: edge.targetNodeId,
+      waypoints: edge.waypoints,
+      pathChancePercent: fallbackWeight,
+    }));
+  }
+
+  const normalizationFactor =
+    FLOW_PATH_PERCENTAGE_NORMALIZATION_TARGET / totalWeight;
+
+  if (normalizationFactor === 1) {
+    return edgesWithBaseWeights;
+  }
+
+  return edgesWithBaseWeights.map((edge) => ({
+    ...edge,
+    pathChancePercent: edge.pathChancePercent * normalizationFactor,
+  }));
+};
 
 const getFlowTopology = (
   elementsMap: NonDeletedSceneElementsMap,
 ): FlowTopology => {
   const nodePositions = new Map<string, FlowNodeInfo>();
-  const outgoingByNodeId = new Map<
-    string,
-    {
-      targetNodeId: string;
-      waypoints: {
-        x: number;
-        y: number;
-      }[];
-    }[]
-  >();
+  const outgoingByNodeId = new Map<string, FlowTopologyResolvedEdge[]>();
+  const pendingOutgoingByNodeId = new Map<string, FlowTopologyEdge[]>();
   const incomingByNodeId = new Map<string, string[]>();
   let diamondNodeCount = 0;
   const nodeIds: string[] = [];
@@ -111,6 +203,7 @@ const getFlowTopology = (
     }
 
     outgoingByNodeId.set(element.id, []);
+    pendingOutgoingByNodeId.set(element.id, []);
     incomingByNodeId.set(element.id, []);
     nodeIds.push(element.id);
   });
@@ -135,12 +228,22 @@ const getFlowTopology = (
 
     const points = LinearElementEditor.getPointsGlobalCoordinates(element, elementsMap);
     const waypoints = points.length > 2 ? points.slice(1, -1) : [];
-    outgoingByNodeId.get(sourceNodeId)?.push({
+    const pendingEdges = pendingOutgoingByNodeId.get(sourceNodeId);
+    if (!pendingEdges) {
+      return;
+    }
+
+    const explicitPathChancePercent = getArrowPathPercentage(
+      element,
+      elementsMap,
+    );
+    pendingEdges.push({
       targetNodeId,
       waypoints: waypoints.map((point) => ({
         x: point[0],
         y: point[1],
       })),
+      explicitPathChancePercent,
     });
     incomingByNodeId.get(targetNodeId)?.push(sourceNodeId);
 
@@ -148,6 +251,19 @@ const getFlowTopology = (
       `${sourceNodeId}->${targetNodeId}${
         points.length > 2 ? `:${waypoints.length}` : ""
       }`,
+    );
+  });
+
+  pendingOutgoingByNodeId.forEach((edges, sourceNodeId) => {
+    const resolvedEdges = normalizePathProbabilities(edges);
+    outgoingByNodeId.set(sourceNodeId, resolvedEdges);
+    topologyBits.push(
+      ...resolvedEdges.map(
+        (edge) =>
+          `${sourceNodeId}->${edge.targetNodeId}:${edge.pathChancePercent.toFixed(
+            4,
+          )}`,
+      ),
     );
   });
 
@@ -184,16 +300,28 @@ const pickNextNodeId = (
     x: number;
     y: number;
   }[];
+  pathChancePercent: number;
 } | null => {
   const outgoingEdges = topology.outgoingByNodeId.get(currentNodeId) || [];
   if (outgoingEdges.length === 0) {
     return null;
   }
 
-  const randomIndex = Math.floor(
-    getDeterministicRandom(randomOffset) * outgoingEdges.length,
-  );
-  return outgoingEdges[randomIndex] || null;
+  if (outgoingEdges.length === 1) {
+    return outgoingEdges[0] || null;
+  }
+
+  const randomChoice = getDeterministicRandom(randomOffset) * 100;
+  let cumulativeChance = 0;
+
+  for (const edge of outgoingEdges) {
+    cumulativeChance += edge.pathChancePercent;
+    if (randomChoice <= cumulativeChance) {
+      return edge;
+    }
+  }
+
+  return outgoingEdges[outgoingEdges.length - 1] || null;
 };
 
 const clampColor = (v: number) => clamp(v, 0, 1);
