@@ -92,6 +92,26 @@ export type StaticSceneRenderConfig = {
 
 export type InteractiveSceneRenderAnimationState = {
   bindingHighlight: { runtime: number } | undefined;
+  flowMode?: FlowModeAnimationState;
+};
+
+export type FlowModeAnimationState = {
+  particles: {
+    id: number;
+    x: number;
+    y: number;
+    vx: number;
+    vy: number;
+    currentNodeId: string | null;
+    targetNodeId: string | null;
+    targetX: number;
+    targetY: number;
+    nextNodeChoiceSeed: number;
+    maxSpeed: number;
+  }[];
+  spawnAccumulator: number;
+  nextParticleId: number;
+  topologyVersion: string;
 };
 
 export type InteractiveSceneRenderConfig = {

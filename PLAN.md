@@ -57,12 +57,20 @@
    - Test checkpoint: create each shape, bind text, resize/rotate, and export SVG.
 
 3. **Add-Next-Step Handle**
-   - Add a contextual handle on selected BPD shapes.
-   - Implement auto-creation of the next shape with an elbow arrow, preserving styles.
-   - Make the `+` button directional with 4 side positions and side-aware creation.
-   - Ensure `+` always creates a Step node and add a shape-switch popup button with shortcut handling.
-   - Ensure undo/redo integrity and bindings for new shapes.
-   - Test checkpoint: create chain of steps, undo/redo, move shapes and observe arrow bindings.
+    - Add a contextual handle on selected BPD shapes.
+    - Implement auto-creation of the next shape with an elbow arrow, preserving styles.
+    - Make the `+` button directional with 4 side positions and side-aware creation.
+    - Ensure `+` always creates a Step node and add a shape-switch popup button with shortcut handling.
+    - Ensure undo/redo integrity and bindings for new shapes.
+    - Test checkpoint: create chain of steps, undo/redo, move shapes and observe arrow bindings.
+
+4. **Flow Visualization Prototype**
+    - Add a desktop-only right-click toggle for flow-mode overlay in Canvas and view-mode context menus.
+    - Add a lightweight particle simulation to animate lead/client flow across flowchart nodes and arrows.
+    - Spawn particles from source nodes at fixed intervals and remove them when they reach sink nodes.
+    - Add boids-style movement so motion is visually readable during the first pass.
+    - Keep implementation intentionally simple and extensible for future rule changes.
+    - Test checkpoint: enable flow mode and verify particles move continuously on a directed flowgraph.
 
 ## Clarifying Questions
 1. For the default “standard size” on click, is `160x100` acceptable, or do you prefer another size?

@@ -82,6 +82,7 @@ const getRelevantAppStateProps = (appState: AppState): StaticCanvasAppState => {
     width: appState.width,
     height: appState.height,
     viewModeEnabled: appState.viewModeEnabled,
+    flowModeEnabled: appState.flowModeEnabled,
     openDialog: appState.openDialog,
     hoveredElementIds: appState.hoveredElementIds,
     offsetLeft: appState.offsetLeft,

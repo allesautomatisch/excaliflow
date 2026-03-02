@@ -317,6 +317,7 @@ import {
   actionSendToBack,
   actionToggleGridMode,
   actionToggleStats,
+  actionToggleFlowMode,
   actionToggleZenMode,
   actionUnbindText,
   actionBindText,
@@ -824,6 +825,7 @@ class App extends React.Component<AppProps, AppState> {
       zenModeEnabled = false,
       gridModeEnabled = false,
       objectsSnapModeEnabled = false,
+      flowModeEnabled = false,
       theme = defaultAppState.theme,
       name = `${t("labels.untitled")}-${getDateTime()}`,
     } = props;
@@ -835,6 +837,7 @@ class App extends React.Component<AppProps, AppState> {
       viewModeEnabled,
       zenModeEnabled,
       objectsSnapModeEnabled,
+      flowModeEnabled,
       gridModeEnabled: gridModeEnabled ?? defaultAppState.gridModeEnabled,
       name,
       width: window.innerWidth,
@@ -3096,6 +3099,7 @@ class App extends React.Component<AppProps, AppState> {
     if (actionResult.appState || editingTextElement || this.state.contextMenu) {
       let viewModeEnabled = actionResult?.appState?.viewModeEnabled || false;
       let zenModeEnabled = actionResult?.appState?.zenModeEnabled || false;
+      let flowModeEnabled = actionResult?.appState?.flowModeEnabled || false;
       const theme =
         actionResult?.appState?.theme || this.props.theme || THEME.LIGHT;
       const name = actionResult?.appState?.name ?? this.state.name;
@@ -3107,6 +3111,10 @@ class App extends React.Component<AppProps, AppState> {
 
       if (typeof this.props.zenModeEnabled !== "undefined") {
         zenModeEnabled = this.props.zenModeEnabled;
+      }
+
+      if (typeof this.props.flowModeEnabled !== "undefined") {
+        flowModeEnabled = this.props.flowModeEnabled;
       }
 
       editingTextElement = actionResult.appState?.editingTextElement || null;
@@ -3142,6 +3150,7 @@ class App extends React.Component<AppProps, AppState> {
           editingTextElement,
           viewModeEnabled,
           zenModeEnabled,
+          flowModeEnabled,
           theme,
           name,
           errorMessage,
@@ -3771,6 +3780,10 @@ class App extends React.Component<AppProps, AppState> {
 
     if (prevProps.zenModeEnabled !== this.props.zenModeEnabled) {
       this.setState({ zenModeEnabled: !!this.props.zenModeEnabled });
+    }
+
+    if (prevProps.flowModeEnabled !== this.props.flowModeEnabled) {
+      this.setState({ flowModeEnabled: !!this.props.flowModeEnabled });
     }
 
     if (prevProps.theme !== this.props.theme && this.props.theme) {
@@ -12684,6 +12697,7 @@ class App extends React.Component<AppProps, AppState> {
         return [
           ...options,
           actionToggleGridMode,
+          actionToggleFlowMode,
           actionToggleZenMode,
           actionToggleViewMode,
           actionToggleStats,
@@ -12702,6 +12716,7 @@ class App extends React.Component<AppProps, AppState> {
         CONTEXT_MENU_SEPARATOR,
         actionToggleGridMode,
         actionToggleObjectsSnapMode,
+        actionToggleFlowMode,
         actionToggleZenMode,
         actionToggleViewMode,
         actionToggleStats,

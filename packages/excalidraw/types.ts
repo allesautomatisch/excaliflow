@@ -194,6 +194,7 @@ type _CommonCanvasAppState = {
   offsetLeft: AppState["offsetLeft"];
   offsetTop: AppState["offsetTop"];
   theme: AppState["theme"];
+  flowModeEnabled: AppState["flowModeEnabled"];
 };
 
 export type StaticCanvasAppState = Readonly<
@@ -232,6 +233,7 @@ export type InteractiveCanvasAppState = Readonly<
     // SnapLines
     snapLines: AppState["snapLines"];
     zenModeEnabled: AppState["zenModeEnabled"];
+    flowModeEnabled: AppState["flowModeEnabled"];
     editingTextElement: AppState["editingTextElement"];
     // Cropping
     isCropping: AppState["isCropping"];
@@ -439,6 +441,7 @@ export interface AppState {
     y: number;
   } | null;
   objectsSnapModeEnabled: boolean;
+  flowModeEnabled: boolean;
   /** the user's socket id & username who is being followed on the canvas */
   userToFollow: UserToFollow | null;
   /** the socket ids of the users following the current user */
@@ -600,6 +603,7 @@ export interface ExcalidrawProps {
   zenModeEnabled?: boolean;
   gridModeEnabled?: boolean;
   objectsSnapModeEnabled?: boolean;
+  flowModeEnabled?: boolean;
   libraryReturnUrl?: string;
   theme?: Theme;
   // @TODO come with better API before v0.18.0

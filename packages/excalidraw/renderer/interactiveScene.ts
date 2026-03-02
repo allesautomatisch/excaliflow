@@ -96,6 +96,7 @@ import type {
   InteractiveSceneRenderConfig,
   RenderableElementsMap,
 } from "../scene/types";
+import { updateFlowModeSimulation } from "./flowMode";
 
 const renderElbowArrowMidPointHighlight = (
   context: CanvasRenderingContext2D,
@@ -1759,6 +1760,17 @@ const _renderInteractiveScene = ({
   });
 
   renderSnaps(context, appState);
+
+  nextAnimationState = {
+    ...nextAnimationState,
+    flowMode: updateFlowModeSimulation({
+      context,
+      appState,
+      allElementsMap,
+      state: nextAnimationState,
+      deltaTime,
+    }),
+  };
 
   context.restore();
 

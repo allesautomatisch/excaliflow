@@ -34,6 +34,7 @@ const ExcalidrawBase = (props: ExcalidrawProps) => {
     viewModeEnabled,
     zenModeEnabled,
     gridModeEnabled,
+    flowModeEnabled,
     libraryReturnUrl,
     theme,
     name,
@@ -130,6 +131,7 @@ const ExcalidrawBase = (props: ExcalidrawProps) => {
           viewModeEnabled={viewModeEnabled}
           zenModeEnabled={zenModeEnabled}
           gridModeEnabled={gridModeEnabled}
+          flowModeEnabled={flowModeEnabled}
           libraryReturnUrl={libraryReturnUrl}
           theme={theme}
           name={name}

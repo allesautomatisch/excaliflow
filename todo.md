@@ -42,6 +42,12 @@ Always update `PLAN.md` first, then reflect changes here. This file is for quick
 - [x] Add flowchart node icon selector in shape-switch popup with `none` + `automatic` options
 - [x] Add flowchart node icon rendering in canvas and SVG export output (top-right corner)
 
+## Milestone 4 (Flow visualization prototype)
+- [x] Add flow mode toggle in context menu (Zen-style integration).
+- [x] Add flow simulation rendering pipeline for particles in the interactive renderer.
+- [x] Add flow node topology extraction from flowchart nodes + arrows.
+- [x] Add particle spawn/advance logic and sink-node termination for particles.
+
 ## Ops
 - [ ] Keep Vite + Basic-auth proxy running; auto-restart if killed
 - [x] Keep TypeScript checker at 0 errors
