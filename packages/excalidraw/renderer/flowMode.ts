@@ -329,6 +329,14 @@ const clampColor = (v: number) => clamp(v, 0, 1);
 const getDeterministicRandom = (seed: number) =>
   Math.sin(seed) - Math.floor(Math.sin(seed));
 
+const isPageRenderable = () =>
+  typeof document === "undefined" ||
+  (document.visibilityState === "visible" &&
+    typeof document.hasFocus === "function"
+      ? document.hasFocus()
+      : true);
+const FLOW_MAX_DELTA_TIME = 100;
+
 const getRandomPointInNodeArea = (
   nodeInfo: FlowNodeInfo,
   seed: number,
@@ -439,6 +447,10 @@ export const updateFlowModeSimulation = ({
     return undefined;
   }
 
+  if (!isPageRenderable()) {
+    return state?.flowMode;
+  }
+
   const topology = getFlowTopology(allElementsMap);
   const hasNodes = topology.nodePositions.size > 0;
   const spawnRateMultiplier = getSpawnRateMultiplier(topology.diamondNodeCount);
@@ -465,10 +477,15 @@ export const updateFlowModeSimulation = ({
     };
   }
 
-  const dt = Math.max(deltaTime, 0) / 1000;
+  if (!isPageRenderable()) {
+    return state?.flowMode;
+  }
 
-  if (deltaTime > 0) {
-    flowState.spawnAccumulator += deltaTime;
+  const dtMs = Math.min(Math.max(deltaTime, 0), FLOW_MAX_DELTA_TIME);
+  const dt = dtMs / 1000;
+
+  if (dtMs > 0) {
+    flowState.spawnAccumulator += dtMs;
   }
 
   const spawnCount = Math.floor(flowState.spawnAccumulator / spawnInterval);
