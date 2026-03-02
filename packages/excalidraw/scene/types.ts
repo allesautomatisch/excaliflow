@@ -108,6 +108,10 @@ export type FlowModeAnimationState = {
     targetY: number;
     nextNodeChoiceSeed: number;
     maxSpeed: number;
+    waypoints: {
+      x: number;
+      y: number;
+    }[];
   }[];
   spawnAccumulator: number;
   nextParticleId: number;

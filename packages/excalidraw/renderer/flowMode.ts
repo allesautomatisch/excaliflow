@@ -2,6 +2,7 @@ import { clamp, pointDistance, pointFrom } from "@excalidraw/math";
 import { THEME } from "@excalidraw/common";
 
 import {
+  LinearElementEditor,
   elementCenterPoint,
   isArrowElement,
   isFlowchartNodeElement,
@@ -27,6 +28,10 @@ type FlowParticle = {
   targetY: number;
   nextNodeChoiceSeed: number;
   maxSpeed: number;
+  waypoints: {
+    x: number;
+    y: number;
+  }[];
 };
 
 type FlowNodeInfo = {
@@ -40,7 +45,16 @@ type FlowNodeInfo = {
 type FlowTopology = {
   startNodeIds: string[];
   nodePositions: Map<string, FlowNodeInfo>;
-  outgoingByNodeId: Map<string, string[]>;
+  outgoingByNodeId: Map<
+    string,
+    {
+      targetNodeId: string;
+      waypoints: {
+        x: number;
+        y: number;
+      }[];
+    }[]
+  >;
   diamondNodeCount: number;
   version: string;
 };
@@ -64,7 +78,16 @@ const getFlowTopology = (
   elementsMap: NonDeletedSceneElementsMap,
 ): FlowTopology => {
   const nodePositions = new Map<string, FlowNodeInfo>();
-  const outgoingByNodeId = new Map<string, string[]>();
+  const outgoingByNodeId = new Map<
+    string,
+    {
+      targetNodeId: string;
+      waypoints: {
+        x: number;
+        y: number;
+      }[];
+    }[]
+  >();
   const incomingByNodeId = new Map<string, string[]>();
   let diamondNodeCount = 0;
   const nodeIds: string[] = [];
@@ -112,10 +135,22 @@ const getFlowTopology = (
       return;
     }
 
-    outgoingByNodeId.get(sourceNodeId)?.push(targetNodeId);
+    const points = LinearElementEditor.getPointsGlobalCoordinates(element, elementsMap);
+    const waypoints = points.length > 2 ? points.slice(1, -1) : [];
+    outgoingByNodeId.get(sourceNodeId)?.push({
+      targetNodeId,
+      waypoints: waypoints.map((point) => ({
+        x: point[0],
+        y: point[1],
+      })),
+    });
     incomingByNodeId.get(targetNodeId)?.push(sourceNodeId);
 
-    topologyBits.push(`${sourceNodeId}->${targetNodeId}`);
+    topologyBits.push(
+      `${sourceNodeId}->${targetNodeId}${
+        points.length > 2 ? `:${waypoints.length}` : ""
+      }`,
+    );
   });
 
   const startNodeIds = nodeIds.filter((nodeId) => {
@@ -141,37 +176,26 @@ const getSpawnRateMultiplier = (diamondNodeCount: number) =>
     FLOW_MAX_DIAMOND_SPAWN_MULTIPLIER,
   );
 
-const pickStartNodeId = (
-  topology: FlowTopology,
-  randomOffset: number,
-): string | null => {
-  if (topology.startNodeIds.length > 0) {
-    return topology.startNodeIds[randomOffset % topology.startNodeIds.length];
-  }
-
-  if (topology.nodePositions.size > 0) {
-    const firstNodeId = topology.nodePositions.keys().next().value;
-    return typeof firstNodeId === "string" ? firstNodeId : null;
-  }
-
-  return null;
-};
-
 const pickNextNodeId = (
   topology: FlowTopology,
   currentNodeId: string,
   randomOffset: number,
-): string | null => {
-  const nextIds = topology.outgoingByNodeId.get(currentNodeId) || [];
-  if (nextIds.length === 0) {
+): {
+  targetNodeId: string;
+  waypoints: {
+    x: number;
+    y: number;
+  }[];
+} | null => {
+  const outgoingEdges = topology.outgoingByNodeId.get(currentNodeId) || [];
+  if (outgoingEdges.length === 0) {
     return null;
   }
 
-  const uniqueNextIds = [...new Set(nextIds)];
   const randomIndex = Math.floor(
-    getDeterministicRandom(randomOffset) * uniqueNextIds.length,
+    getDeterministicRandom(randomOffset) * outgoingEdges.length,
   );
-  return uniqueNextIds[randomIndex];
+  return outgoingEdges[randomIndex] || null;
 };
 
 const clampColor = (v: number) => clamp(v, 0, 1);
@@ -328,7 +352,10 @@ export const updateFlowModeSimulation = ({
   const spawnInterval = FLOW_SPAWN_INTERVAL_MS / spawnRateMultiplier;
 
   const flowState: FlowModeAnimationState = {
-    particles: [...(state?.flowMode?.particles || [])],
+    particles: (state?.flowMode?.particles || []).map((particle) => ({
+      ...particle,
+      waypoints: particle.waypoints || [],
+    })),
     spawnAccumulator: state?.flowMode?.spawnAccumulator || 0,
     nextParticleId: state?.flowMode?.nextParticleId || 0,
     topologyVersion: state?.flowMode?.topologyVersion || "",
@@ -356,61 +383,74 @@ export const updateFlowModeSimulation = ({
     flowState.spawnAccumulator %= spawnInterval;
   }
 
+  let nextParticleId = flowState.nextParticleId;
   for (let i = 0; i < spawnCount; i++) {
-    const seed = flowState.nextParticleId + i + 1;
-    const startNodeId = pickStartNodeId(topology, seed);
-
-    if (!startNodeId) {
+    const spawnNodeIds = topology.startNodeIds;
+    if (spawnNodeIds.length === 0) {
       continue;
     }
 
-    const start = topology.nodePositions.get(startNodeId);
-    if (!start) {
-      continue;
+    for (let spawnNodeIndex = 0; spawnNodeIndex < spawnNodeIds.length; spawnNodeIndex++) {
+      const startNodeId = spawnNodeIds[spawnNodeIndex];
+      if (!startNodeId) {
+        continue;
+      }
+
+      const seed = nextParticleId++;
+      const start = topology.nodePositions.get(startNodeId);
+      if (!start) {
+        continue;
+      }
+
+      const nextNodeChoiceSeed = nextFlowChoiceSeed(seed);
+      const firstTarget = pickNextNodeId(
+        topology,
+        startNodeId,
+        nextNodeChoiceSeed,
+      );
+      if (!firstTarget) {
+        continue;
+      }
+
+      const jitter = (seed * 31.5) % (Math.PI * 2);
+      const speed = clamp(
+        FLOW_PARTICLE_BASE_SPEED + ((seed % 70) - 35),
+        150,
+        FLOW_PARTICLE_MAX_SPEED,
+      );
+      const spawnPosition = getRandomPointInNodeArea(start, seed);
+      const firstTargetNode = topology.nodePositions.get(
+        firstTarget.targetNodeId,
+      );
+      if (!firstTargetNode) {
+        continue;
+      }
+
+      const firstTargetPosition = getRandomPointInTargetCircle(
+        firstTargetNode,
+        nextNodeChoiceSeed,
+      );
+
+      flowState.particles.push({
+        id: seed,
+        x: spawnPosition.x,
+        y: spawnPosition.y,
+        vx: Math.cos(jitter) * (speed * 0.2),
+        vy: Math.sin(jitter) * (speed * 0.2),
+        currentNodeId: startNodeId,
+        targetNodeId: firstTarget.targetNodeId,
+        targetX: firstTargetPosition.x,
+        targetY: firstTargetPosition.y,
+        nextNodeChoiceSeed,
+        maxSpeed: getParticleMaxSpeed(nextNodeChoiceSeed),
+        waypoints: firstTarget.waypoints.map((waypoint) => ({
+          x: waypoint.x,
+          y: waypoint.y,
+        })),
+      });
+
+      flowState.nextParticleId = nextParticleId;
     }
-
-    const nextNodeChoiceSeed = nextFlowChoiceSeed(seed);
-    const firstTarget = pickNextNodeId(
-      topology,
-      startNodeId,
-      nextNodeChoiceSeed,
-    );
-    if (!firstTarget) {
-      continue;
-    }
-
-    const jitter = (seed * 31.5) % (Math.PI * 2);
-    const speed = clamp(
-      FLOW_PARTICLE_BASE_SPEED + ((seed % 70) - 35),
-      150,
-      FLOW_PARTICLE_MAX_SPEED,
-    );
-    const spawnPosition = getRandomPointInNodeArea(start, seed);
-    const firstTargetNode = topology.nodePositions.get(firstTarget);
-    if (!firstTargetNode) {
-      continue;
-    }
-
-    const firstTargetPosition = getRandomPointInTargetCircle(
-      firstTargetNode,
-      nextNodeChoiceSeed,
-    );
-
-    flowState.particles.push({
-      id: seed,
-      x: spawnPosition.x,
-      y: spawnPosition.y,
-      vx: Math.cos(jitter) * (speed * 0.2),
-      vy: Math.sin(jitter) * (speed * 0.2),
-      currentNodeId: startNodeId,
-      targetNodeId: firstTarget,
-      targetX: firstTargetPosition.x,
-      targetY: firstTargetPosition.y,
-      nextNodeChoiceSeed,
-      maxSpeed: getParticleMaxSpeed(nextNodeChoiceSeed),
-    });
-
-    flowState.nextParticleId = seed + 1;
   }
 
   const aliveParticles: FlowParticle[] = [];
@@ -421,8 +461,12 @@ export const updateFlowModeSimulation = ({
       continue;
     }
 
-    const dx = particle.targetX - particle.x;
-    const dy = particle.targetY - particle.y;
+    const hasCornerTarget = particle.waypoints.length > 0;
+    const activeTarget = hasCornerTarget
+      ? particle.waypoints[0]
+      : { x: particle.targetX, y: particle.targetY };
+    const dx = activeTarget.x - particle.x;
+    const dy = activeTarget.y - particle.y;
     const distance = Math.max(1, Math.hypot(dx, dy));
     const normalizedDx = dx / distance;
     const normalizedDy = dy / distance;
@@ -445,43 +489,63 @@ export const updateFlowModeSimulation = ({
     particle.y += particle.vy * dt;
 
     if (distance <= FLOW_ARRIVAL_DISTANCE) {
-      const nextNodeChoiceSeed = nextFlowChoiceSeed(
-        particle.nextNodeChoiceSeed,
-      );
-      const nextTargetNodeId = pickNextNodeId(
-        topology,
-        targetNodeId,
-        nextNodeChoiceSeed,
-      );
-      if (!nextTargetNodeId) {
-        continue;
+      if (particle.waypoints.length > 0) {
+        particle.waypoints.shift();
+        const nextTarget = particle.waypoints[0] || {
+          x: particle.targetX,
+          y: particle.targetY,
+        };
+        const nextDx = nextTarget.x - particle.x;
+        const nextDy = nextTarget.y - particle.y;
+        const nextVelocity = rotateTowards(particle.vx, particle.vy, nextDx, nextDy);
+        particle.vx = nextVelocity.vx;
+        particle.vy = nextVelocity.vy;
+      } else {
+        const nextNodeChoiceSeed = nextFlowChoiceSeed(
+          particle.nextNodeChoiceSeed,
+        );
+        const nextTarget = pickNextNodeId(
+          topology,
+          targetNodeId,
+          nextNodeChoiceSeed,
+        );
+        if (!nextTarget) {
+          continue;
+        }
+
+        const nextTargetNode = topology.nodePositions.get(
+          nextTarget.targetNodeId,
+        );
+        if (!nextTargetNode) {
+          continue;
+        }
+
+        const nextTargetPosition = getRandomPointInTargetCircle(
+          nextTargetNode,
+          nextNodeChoiceSeed,
+        );
+        const nextFollowTarget = nextTarget.waypoints[0] || nextTargetPosition;
+        const turnTargetDx = nextFollowTarget.x - particle.x;
+        const turnTargetDy = nextFollowTarget.y - particle.y;
+        const turnedVelocity = rotateTowards(
+          particle.vx,
+          particle.vy,
+          turnTargetDx,
+          turnTargetDy,
+        );
+
+        particle.vx = turnedVelocity.vx;
+        particle.vy = turnedVelocity.vy;
+        particle.currentNodeId = targetNodeId;
+        particle.targetNodeId = nextTarget.targetNodeId;
+        particle.waypoints = nextTarget.waypoints.map((waypoint) => ({
+          x: waypoint.x,
+          y: waypoint.y,
+        }));
+        particle.targetX = nextTargetPosition.x;
+        particle.targetY = nextTargetPosition.y;
+        particle.nextNodeChoiceSeed = nextNodeChoiceSeed;
       }
-
-      const nextTargetNode = topology.nodePositions.get(nextTargetNodeId);
-      if (!nextTargetNode) {
-        continue;
-      }
-
-      const nextTargetPosition = getRandomPointInTargetCircle(
-        nextTargetNode,
-        nextNodeChoiceSeed,
-      );
-      const turnTargetDx = nextTargetPosition.x - particle.x;
-      const turnTargetDy = nextTargetPosition.y - particle.y;
-      const turnedVelocity = rotateTowards(
-        particle.vx,
-        particle.vy,
-        turnTargetDx,
-        turnTargetDy,
-      );
-
-      particle.vx = turnedVelocity.vx;
-      particle.vy = turnedVelocity.vy;
-      particle.currentNodeId = targetNodeId;
-      particle.targetNodeId = nextTargetNodeId;
-      particle.targetX = nextTargetPosition.x;
-      particle.targetY = nextTargetPosition.y;
-      particle.nextNodeChoiceSeed = nextNodeChoiceSeed;
     }
 
     drawFlowParticle(context, appState, particle);
