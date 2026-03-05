@@ -39,7 +39,15 @@ import type {
 } from "@excalidraw/excalidraw/types";
 import type { MaybePromise } from "@excalidraw/common/utility-types";
 
-import { SAVE_TO_LOCAL_STORAGE_TIMEOUT, STORAGE_KEYS } from "../app_constants";
+import {
+  IS_LOCAL_STORAGE_ENABLED,
+  SAVE_TO_LOCAL_STORAGE_TIMEOUT,
+  STORAGE_KEYS,
+} from "../app_constants";
+import {
+  clearLegacyLibraryFromLocalStorage,
+  getLegacyLibraryFromLocalStorage,
+} from "./localStorage";
 
 import { FileManager } from "./FileManager";
 import { Locker } from "./Locker";
@@ -73,6 +81,9 @@ const saveDataStateToLocalStorage = (
   elements: readonly ExcalidrawElement[],
   appState: AppState,
 ) => {
+  if (!IS_LOCAL_STORAGE_ENABLED) {
+    return;
+  }
   const localStorageQuotaExceeded = appJotaiStore.get(
     localStorageQuotaExceededAtom,
   );
@@ -121,6 +132,11 @@ export class LocalData {
       files: BinaryFiles,
       onFilesSaved: () => void,
     ) => {
+      if (!IS_LOCAL_STORAGE_ENABLED) {
+        onFilesSaved();
+        return;
+      }
+
       saveDataStateToLocalStorage(elements, appState);
 
       await this.fileStorage.saveFiles({
@@ -257,9 +273,7 @@ export class LibraryIndexedDBAdapter {
  * to indexedDB */
 export class LibraryLocalStorageMigrationAdapter {
   static load() {
-    const LSData = localStorage.getItem(
-      STORAGE_KEYS.__LEGACY_LOCAL_STORAGE_LIBRARY,
-    );
+    const LSData = getLegacyLibraryFromLocalStorage();
     if (LSData != null) {
       const libraryItems: ImportedDataState["libraryItems"] =
         JSON.parse(LSData);
@@ -270,6 +284,6 @@ export class LibraryLocalStorageMigrationAdapter {
     return null;
   }
   static clear() {
-    localStorage.removeItem(STORAGE_KEYS.__LEGACY_LOCAL_STORAGE_LIBRARY);
+    clearLegacyLibraryFromLocalStorage();
   }
 }

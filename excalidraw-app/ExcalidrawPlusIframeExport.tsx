@@ -8,7 +8,7 @@ import type {
 } from "@excalidraw/element/types";
 import type { AppState, BinaryFileData } from "@excalidraw/excalidraw/types";
 
-import { STORAGE_KEYS } from "./app_constants";
+import { IS_LOCAL_STORAGE_ENABLED, STORAGE_KEYS } from "./app_constants";
 import { LocalData } from "./data/LocalData";
 
 const EVENT_REQUEST_SCENE = "REQUEST_SCENE";
@@ -162,6 +162,10 @@ export const ExcalidrawPlusIframeExport = () => {
       if (event.data.type === EVENT_REQUEST_SCENE) {
         if (!event.data.jwt) {
           throw new ExcalidrawError("JWT is missing");
+        }
+
+        if (!IS_LOCAL_STORAGE_ENABLED) {
+          throw new ExcalidrawError("Local storage persistence is disabled");
         }
 
         try {

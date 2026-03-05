@@ -1,4 +1,7 @@
-import { STORAGE_KEYS } from "../app_constants";
+import {
+  IS_LOCAL_STORAGE_ENABLED,
+  STORAGE_KEYS,
+} from "../app_constants";
 
 // in-memory state (this tab's current state) versions. Currently just
 // timestamps of the last time the state was saved to browser storage.
@@ -10,11 +13,17 @@ const LOCAL_STATE_VERSIONS = {
 type BrowserStateTypes = keyof typeof LOCAL_STATE_VERSIONS;
 
 export const isBrowserStorageStateNewer = (type: BrowserStateTypes) => {
+  if (!IS_LOCAL_STORAGE_ENABLED) {
+    return false;
+  }
   const storageTimestamp = JSON.parse(localStorage.getItem(type) || "-1");
   return storageTimestamp > LOCAL_STATE_VERSIONS[type];
 };
 
 export const updateBrowserStateVersion = (type: BrowserStateTypes) => {
+  if (!IS_LOCAL_STORAGE_ENABLED) {
+    return;
+  }
   const timestamp = Date.now();
   try {
     localStorage.setItem(type, JSON.stringify(timestamp));
@@ -25,6 +34,9 @@ export const updateBrowserStateVersion = (type: BrowserStateTypes) => {
 };
 
 export const resetBrowserStateVersions = () => {
+  if (!IS_LOCAL_STORAGE_ENABLED) {
+    return;
+  }
   try {
     for (const key of Object.keys(
       LOCAL_STATE_VERSIONS,

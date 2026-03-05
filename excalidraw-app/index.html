@@ -69,15 +69,24 @@
         }
 
         function getTheme() {
-          const theme = window.localStorage.getItem("excalidraw-theme");
+          const isLocalStorageEnabled =
+            typeof VITE_APP_ENABLE_LOCAL_STORAGE != "undefined" &&
+            VITE_APP_ENABLE_LOCAL_STORAGE == true;
 
-          if (theme && theme === "system") {
+          if (!isLocalStorageEnabled) {
             return window.matchMedia("(prefers-color-scheme: dark)").matches
               ? "dark"
               : "light";
-          } else {
-            return theme || "light";
           }
+
+          const theme = window.localStorage.getItem("excalidraw-theme");
+          if (theme === "system") {
+            return window.matchMedia("(prefers-color-scheme: dark)").matches
+              ? "dark"
+              : "light";
+          }
+
+          return theme || "light";
         }
 
         setTheme(getTheme());

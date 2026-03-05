@@ -33,6 +33,9 @@ interface ImportMetaEnv {
   // Enable PWA in dev server
   VITE_APP_ENABLE_PWA: string;
 
+  // set to true to re-enable browser localStorage persistence
+  VITE_APP_ENABLE_LOCAL_STORAGE: string;
+
   VITE_APP_PLUS_LP: string;
 
   VITE_APP_PLUS_APP: string;

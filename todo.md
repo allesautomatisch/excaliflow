@@ -49,5 +49,6 @@ Always update `PLAN.md` first, then reflect changes here. This file is for quick
 - [x] Add particle spawn/advance logic and sink-node termination for particles.
 
 ## Ops
+- [x] Add a feature flag (`VITE_APP_ENABLE_LOCAL_STORAGE`) to allow enabling/disabling scene localStorage persistence, and default persistence off.
 - [ ] Keep Vite + Basic-auth proxy running; auto-restart if killed
 - [x] Keep TypeScript checker at 0 errors

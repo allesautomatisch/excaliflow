@@ -1,5 +1,8 @@
 // time constants (ms)
 export const SAVE_TO_LOCAL_STORAGE_TIMEOUT = 300;
+export const IS_LOCAL_STORAGE_ENABLED =
+  import.meta.env.VITE_APP_ENABLE_LOCAL_STORAGE === "true";
+
 export const INITIAL_SCENE_UPDATE_TIMEOUT = 5000;
 export const FILE_UPLOAD_TIMEOUT = 300;
 export const LOAD_IMAGES_TIMEOUT = 500;

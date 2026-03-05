@@ -4,13 +4,16 @@ import { useEffect, useLayoutEffect, useState } from "react";
 
 import type { Theme } from "@excalidraw/element/types";
 
-import { STORAGE_KEYS } from "./app_constants";
+import { IS_LOCAL_STORAGE_ENABLED, STORAGE_KEYS } from "./app_constants";
 
 const getDarkThemeMediaQuery = (): MediaQueryList | undefined =>
   window.matchMedia?.("(prefers-color-scheme: dark)");
 
 export const useHandleAppTheme = () => {
   const [appTheme, setAppTheme] = useState<Theme | "system">(() => {
+    if (!IS_LOCAL_STORAGE_ENABLED) {
+      return THEME.LIGHT;
+    }
     return (
       (localStorage.getItem(STORAGE_KEYS.LOCAL_STORAGE_THEME) as
         | Theme
@@ -55,7 +58,9 @@ export const useHandleAppTheme = () => {
   }, [appTheme, editorTheme, setAppTheme]);
 
   useLayoutEffect(() => {
-    localStorage.setItem(STORAGE_KEYS.LOCAL_STORAGE_THEME, appTheme);
+    if (IS_LOCAL_STORAGE_ENABLED) {
+      localStorage.setItem(STORAGE_KEYS.LOCAL_STORAGE_THEME, appTheme);
+    }
 
     if (appTheme === "system") {
       setEditorTheme(
