@@ -443,7 +443,7 @@ export class API {
       text?: string;
       frameId?: ExcalidrawElement["id"] | null;
     };
-  }) => {
+  }): [ExcalidrawLinearElement, ExcalidrawTextElement] => {
     const arrow = API.createElement({
       type: "arrow",
       frameId: opts?.frameId || null,

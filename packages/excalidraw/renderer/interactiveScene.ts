@@ -1290,6 +1290,31 @@ const renderTextBox = (
   context.restore();
 };
 
+const renderSelectionInfo = (
+  context: CanvasRenderingContext2D,
+  appState: InteractiveCanvasAppState,
+  bounds: readonly [number, number, number, number],
+  selectionColor: InteractiveCanvasRenderConfig["selectionColor"],
+) => {
+  const [x1, y1, x2, y2] = bounds;
+  const width = x2 - x1;
+  const height = y2 - y1;
+  const label = `x:${Math.round(x1)} y:${Math.round(y1)} w:${Math.round(
+    width,
+  )} h:${Math.round(height)}`;
+  const fontSize = 11 / appState.zoom.value;
+  const padding = 3 / appState.zoom.value;
+
+  context.save();
+  context.translate(appState.scrollX, appState.scrollY);
+  context.font = `${fontSize}px ui-monospace, monospace`;
+  context.textAlign = "left";
+  context.textBaseline = "bottom";
+  context.fillStyle = selectionColor;
+  context.fillText(label, x1 + padding, y2 - padding);
+  context.restore();
+};
+
 const _renderInteractiveScene = ({
   app,
   canvas,
@@ -1523,6 +1548,7 @@ const _renderInteractiveScene = ({
     if (showBoundingBox) {
       // Optimisation for finding quickly relevant element ids
       const locallySelectedIds = arrayToMap(selectedElements);
+      const selectionBounds = getCommonBounds(selectedElements, elementsMap);
 
       const selections: ElementSelectionBorder[] = [];
 
@@ -1620,6 +1646,13 @@ const _renderInteractiveScene = ({
 
       selections.forEach((selection) =>
         renderSelectionBorder(context, appState, selection),
+      );
+
+      renderSelectionInfo(
+        context,
+        appState,
+        selectionBounds,
+        selectionColor,
       );
     }
     // Paint resize transformHandles

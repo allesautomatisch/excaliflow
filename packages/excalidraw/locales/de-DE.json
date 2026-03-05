@@ -96,6 +96,8 @@
     "ungroup": "Gruppierung aufheben",
     "collaborators": "Mitarbeitende",
     "toggleGrid": "Raster umschalten",
+    "gridSize20": "Raster Größe: 20",
+    "gridSize120": "Raster Größe: 120",
     "addToLibrary": "Zur Bibliothek hinzufügen",
     "removeFromLibrary": "Aus Bibliothek entfernen",
     "libraryLoadingMessage": "Lade Bibliothek…",

@@ -7,11 +7,18 @@ import {
   DEFAULT_ELEMENT_BACKGROUND_COLOR_INDEX,
   FONT_FAMILY,
   ROUGHNESS,
+  STROKE_WIDTH,
+  sceneCoordsToViewportCoords,
   THEME,
   getLineHeight,
 } from "@excalidraw/common";
 
-import { newElement, newElementWith, newTextElement } from "@excalidraw/element";
+import {
+  getCommonBounds,
+  newElement,
+  newElementWith,
+  newTextElement,
+} from "@excalidraw/element";
 
 import type { Theme } from "@excalidraw/element/types";
 
@@ -115,17 +122,19 @@ export const NewDrawing = () => {
   const newDrawingNameInputRef = useRef<HTMLInputElement | null>(null);
 
   const createDefaultNewDrawingElements = () => {
+    const defaultStrokeWidth = STROKE_WIDTH.bold;
+
     const newStartNode = newElement({
       type: "capsule",
-      x: 0,
-      y: 0,
+      x: 60,
+      y: 40,
       width: 120,
       height: 80,
       strokeColor: appState.currentItemStrokeColor,
       backgroundColor:
         COLOR_PALETTE.green[DEFAULT_ELEMENT_BACKGROUND_COLOR_INDEX],
       fillStyle: "solid",
-      strokeWidth: appState.currentItemStrokeWidth,
+      strokeWidth: defaultStrokeWidth,
       strokeStyle: appState.currentItemStrokeStyle,
       roughness: ROUGHNESS.architect,
       opacity: appState.currentItemOpacity,
@@ -133,13 +142,13 @@ export const NewDrawing = () => {
     });
 
     const newStartNodeLabel = newTextElement({
-      x: 60,
-      y: 40,
+      x: 120,
+      y: 80,
       text: "Start",
       strokeColor: appState.currentItemStrokeColor,
       backgroundColor: appState.currentItemBackgroundColor,
       fillStyle: appState.currentItemFillStyle,
-      strokeWidth: appState.currentItemStrokeWidth,
+      strokeWidth: defaultStrokeWidth,
       strokeStyle: appState.currentItemStrokeStyle,
       roughness: appState.currentItemRoughness,
       opacity: appState.currentItemOpacity,
@@ -164,8 +173,33 @@ export const NewDrawing = () => {
 
   const resetDrawing = (nextDrawingName: string) => {
     actionManager.executeAction(actionClearCanvas);
+    const newDrawingElements = createDefaultNewDrawingElements();
+    const [minX, minY] = getCommonBounds(newDrawingElements);
+    const insertionPoint = sceneCoordsToViewportCoords(
+      {
+        sceneX: minX,
+        sceneY: minY + 20,
+      },
+      app.state,
+    );
+
+    const insertedDrawingElements = app.onInsertElements(newDrawingElements, {
+      position: {
+        clientX: insertionPoint.x,
+        clientY: insertionPoint.y,
+      },
+    });
+    app.scrollToContent(insertedDrawingElements);
+
+    if (appProps.gridModeEnabled === undefined) {
+      setAppState({
+        name: nextDrawingName,
+        gridModeEnabled: true,
+      });
+      return;
+    }
+
     setAppState({ name: nextDrawingName });
-    app.onInsertElements(createDefaultNewDrawingElements());
   };
 
   const handleSelect = async () => {

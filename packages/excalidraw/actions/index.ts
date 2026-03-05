@@ -47,6 +47,7 @@ export { actionCopyStyles, actionPasteStyles } from "./actionStyles";
 export { actionShortcuts } from "./actionMenu";
 
 export { actionGroup, actionUngroup } from "./actionGroup";
+export { actionToggleGridSize } from "./actionToggleGridSize";
 
 export { actionGoToCollaborator } from "./actionNavigate";
 

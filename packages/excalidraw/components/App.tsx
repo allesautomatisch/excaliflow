@@ -124,6 +124,7 @@ import {
   shouldEnableBindingForPointerEvent,
   updateBoundElements,
   LinearElementEditor,
+  updateBoundPoint,
   newElementWith,
   newFrameElement,
   newFreeDrawElement,
@@ -250,11 +251,13 @@ import {
   calculateFixedPointForNonElbowArrowBinding,
   bindOrUnbindBindingElement,
   mutateElement,
+  unbindBindingElement,
   getElementBounds,
   doBoundsIntersect,
   isPointInElement,
   maxBindingDistance_simple,
   convertToExcalidrawElements,
+  updateElbowArrowPoints,
   type ExcalidrawElementSkeleton,
   handleFocusPointDrag,
   handleFocusPointHover,
@@ -316,6 +319,7 @@ import {
   actionSendBackward,
   actionSendToBack,
   actionToggleGridMode,
+  actionToggleGridSize,
   actionToggleStats,
   actionToggleFlowMode,
   actionToggleZenMode,
@@ -537,7 +541,6 @@ const getBpdStandardShapeSize = (elementType: ExcalidrawGenericElement["type"]) 
 const BPD_FLOWCHART_ADD_NEXT_SPACING_MULTIPLIER = 1;
 const BPD_DEFAULT_NODE_FONT_FAMILY = FONT_FAMILY["Comic Shanns"];
 const BPD_DEFAULT_END_ARROWHEAD = "triangle" as const;
-const BPD_FLOWCHART_ADD_NEXT_STEP_GRID_SIZE = 20 as NullableGridSize;
 const NODE_MOVEMENT_GRID_SIZE = 20 as NullableGridSize;
 const NODE_RESIZE_GRID_SIZE = 20 as NullableGridSize;
 
@@ -823,7 +826,7 @@ class App extends React.Component<AppProps, AppState> {
       excalidrawAPI,
       viewModeEnabled = false,
       zenModeEnabled = false,
-      gridModeEnabled = false,
+      gridModeEnabled = true,
       objectsSnapModeEnabled = false,
       flowModeEnabled = false,
       theme = defaultAppState.theme,
@@ -1326,6 +1329,10 @@ class App extends React.Component<AppProps, AppState> {
     return (
       isGridModeEnabled(this) ? this.state.gridSize : null
     ) as NullableGridSize;
+  };
+
+  private getMovementGridSize = () => {
+    return this.state.gridSize as NullableGridSize;
   };
 
   private getHTMLIFrameElement(
@@ -2038,11 +2045,23 @@ class App extends React.Component<AppProps, AppState> {
     ) {
       selectedFlowchartNode = firstSelectedElement;
     }
+
+    const selectedFlowchartArrow = selectedElements.length === 1 &&
+      isArrowElement(firstSelectedElement)
+      ? this.getFlowchartNodesFromArrow(firstSelectedElement)
+      : null;
+
     const flowchartAddNextDirection =
       selectedFlowchartNode &&
       this.lastPointerMoveCoords
         ? this.getFlowchartAddNextDirection(selectedFlowchartNode)
+        : selectedFlowchartArrow
+          ? this.getFlowchartAddNextDirectionForNodes(
+              selectedFlowchartArrow.sourceNode,
+              selectedFlowchartArrow.targetNode,
+            )
         : this.flowchartAddNextDirection;
+
     const flowchartAddNextButtonPosition: ElementCanvasButtonsPosition =
       flowchartAddNextDirection === "up"
         ? "top"
@@ -2186,9 +2205,9 @@ class App extends React.Component<AppProps, AppState> {
                             </ElementCanvasButtons>
                           )}
                         {getFeatureFlag("BPD_FEATURES") &&
-                          selectedFlowchartNode && (
+                          (selectedFlowchartNode || selectedFlowchartArrow) && (
                             <ElementCanvasButtons
-                              element={selectedFlowchartNode}
+                              element={firstSelectedElement}
                               elementsMap={elementsMap}
                               position={flowchartAddNextButtonPosition}
                             >
@@ -2198,23 +2217,30 @@ class App extends React.Component<AppProps, AppState> {
                                   icon={PlusIcon}
                                   checked={false}
                                   onChange={() =>
-                                    this.onFlowchartAddNextStep(
-                                      selectedFlowchartNode,
-                                      flowchartAddNextDirection,
-                                    )
+                                    selectedFlowchartNode
+                                      ? this.onFlowchartAddNextStep(
+                                          selectedFlowchartNode,
+                                          flowchartAddNextDirection,
+                                        )
+                                      : this.onFlowchartAddNextStepForArrow(
+                                          selectedFlowchartArrow!.arrow,
+                                        )
                                   }
                                 />
-                                <ElementCanvasButton
-                                  title={t("toolBar.convertElementType")}
-                                  icon={DotsHorizontalIcon}
-                                  checked={this.flowchartShapePickerOpen}
-                                  onChange={() =>
-                                    this.setFlowchartShapePickerOpen(
-                                      !this.flowchartShapePickerOpen,
-                                    )
-                                  }
-                                />
-                                {this.flowchartShapePickerOpen && (
+                                {selectedFlowchartNode && (
+                                  <ElementCanvasButton
+                                    title={t("toolBar.convertElementType")}
+                                    icon={DotsHorizontalIcon}
+                                    checked={this.flowchartShapePickerOpen}
+                                    onChange={() =>
+                                      this.setFlowchartShapePickerOpen(
+                                        !this.flowchartShapePickerOpen,
+                                      )
+                                    }
+                                  />
+                                )}
+                                {selectedFlowchartNode &&
+                                  this.flowchartShapePickerOpen && (
                                   <div className="excalidraw-flowchart-shape-picker">
                                     <div className="excalidraw-flowchart-shape-picker-row">
                                       {FLOWCHART_SHAPE_PICKER_OPTIONS.map(
@@ -2482,10 +2508,19 @@ class App extends React.Component<AppProps, AppState> {
     return this.scene.getNonDeletedElements();
   };
 
-  public onInsertElements = (elements: readonly ExcalidrawElement[]) => {
-    this.addElementsFromPasteOrLibrary({
+  public onInsertElements = (
+    elements: readonly ExcalidrawElement[],
+    opts?: {
+      position?:
+        | { clientX: number; clientY: number }
+        | "cursor"
+        | "center"
+        | "topLeft";
+    },
+  ) => {
+    return this.addElementsFromPasteOrLibrary({
       elements,
-      position: "center",
+      position: opts?.position ?? "center",
       files: null,
     });
   };
@@ -2794,6 +2829,514 @@ class App extends React.Component<AppProps, AppState> {
     this.syncActionResult({
       captureUpdate: CaptureUpdateAction.IMMEDIATELY,
     });
+  };
+
+  private getFlowchartNodesFromArrow = (
+    arrow: NonDeleted<ExcalidrawArrowElement>,
+  ): {
+    arrow: NonDeleted<ExcalidrawArrowElement>;
+    sourceNode: NonDeleted<ExcalidrawFlowchartNodeElement>;
+    targetNode: NonDeleted<ExcalidrawFlowchartNodeElement>;
+  } | null => {
+    const elementsMap = this.scene.getNonDeletedElementsMap();
+    const sourceNode =
+      arrow.startBinding && elementsMap.get(arrow.startBinding.elementId);
+    const targetNode =
+      arrow.endBinding && elementsMap.get(arrow.endBinding.elementId);
+
+    if (
+      !sourceNode ||
+      !targetNode ||
+      !isFlowchartNodeElement(sourceNode) ||
+      !isFlowchartNodeElement(targetNode)
+    ) {
+      return null;
+    }
+
+    return {
+      arrow,
+      sourceNode,
+      targetNode,
+    };
+  };
+
+  private onFlowchartAddNextStepForArrow = (
+    arrow: NonDeleted<ExcalidrawArrowElement>,
+  ) => {
+    const insertionData = this.getFlowchartNodesFromArrow(arrow);
+    if (!insertionData) {
+      return;
+    }
+
+    const { sourceNode, targetNode } = insertionData;
+    const endBinding = arrow.endBinding;
+    if (!endBinding) {
+      return;
+    }
+
+    const direction = this.getFlowchartAddNextDirectionForNodes(
+      sourceNode,
+      targetNode,
+    );
+    const originalEndBinding = { ...endBinding };
+
+    this.setFlowchartShapePickerOpen(false);
+    this.flowChartCreator.clear();
+    this.createFlowchartPendingNodes(sourceNode, direction);
+
+    const pendingNodes = this.flowChartCreator.pendingNodes;
+    if (!pendingNodes?.length) {
+      this.flowChartCreator.clear();
+      return;
+    }
+
+    const newNode = pendingNodes.find(isFlowchartNodeElement);
+    if (!newNode) {
+      this.flowChartCreator.clear();
+      return;
+    }
+
+    const shift = {
+      x: newNode.x - sourceNode.x,
+      y: newNode.y - sourceNode.y,
+    };
+    const insertionPoint = {
+      x: targetNode.x,
+      y: targetNode.y,
+    };
+
+    if (direction === "left" || direction === "right") {
+      shift.y = 0;
+    } else {
+      shift.x = 0;
+    }
+
+    if (shift.x !== 0 || shift.y !== 0) {
+      const sourceCenter = getContainerCenter(
+        sourceNode,
+        this.state,
+        this.scene.getNonDeletedElementsMap(),
+      );
+      const targetCenter = getContainerCenter(
+        targetNode,
+        this.state,
+        this.scene.getNonDeletedElementsMap(),
+      );
+      if (sourceCenter && targetCenter) {
+        this.moveFlowchartFollowingNodes(
+          targetNode,
+          shift,
+          direction,
+          sourceCenter,
+          targetCenter,
+        );
+      } else {
+        this.moveFlowchartFollowingNodes(
+          targetNode,
+          shift,
+          direction,
+          { x: sourceNode.x, y: sourceNode.y },
+          { x: targetNode.x, y: targetNode.y },
+        );
+      }
+    }
+
+    const newNodeWithPosition = {
+      ...newNode,
+      x: insertionPoint.x,
+      y: insertionPoint.y,
+    } as NonDeleted<ExcalidrawFlowchartNodeElement>;
+
+    this.scene.insertElement(newNodeWithPosition);
+    unbindBindingElement(arrow, "end", this.scene);
+    const updatedEndBinding = {
+      ...endBinding,
+      elementId: newNodeWithPosition.id,
+    };
+    this.scene.mutateElement(arrow, {
+      endBinding: updatedEndBinding,
+    });
+
+    const newTargetNode = this.scene.getNonDeletedElementsMap().get(
+      newNodeWithPosition.id,
+    );
+    if (
+      newTargetNode &&
+      isBindableElement(newTargetNode) &&
+      !(newTargetNode.boundElements || []).some(
+        (boundElement) => boundElement.id === arrow.id,
+      )
+    ) {
+      this.scene.mutateElement(newTargetNode, {
+        boundElements: (newTargetNode.boundElements || []).concat({
+          id: arrow.id,
+          type: "arrow",
+        }),
+      });
+    }
+
+    const updatedEndPoint = updateBoundPoint(
+      arrow,
+      "endBinding",
+      updatedEndBinding,
+      newNodeWithPosition,
+      this.scene.getNonDeletedElementsMap(),
+    );
+    if (updatedEndPoint) {
+      LinearElementEditor.movePoints(
+        arrow,
+        this.scene,
+        new Map([[arrow.points.length - 1, { point: updatedEndPoint }]]),
+      );
+    }
+
+    if (isElbowArrow(arrow)) {
+      const updatedPoints = updateElbowArrowPoints(
+        arrow,
+        this.scene.getNonDeletedElementsMap(),
+        { points: arrow.points },
+      );
+      this.scene.mutateElement(arrow, updatedPoints);
+    }
+
+    const newArrowStartBinding = {
+      elementId: newNodeWithPosition.id,
+      fixedPoint: this.getOppositeFlowchartFixedPointForDirection(
+        originalEndBinding.fixedPoint,
+        direction,
+      ),
+      mode: originalEndBinding.mode,
+    };
+    const newArrowEndBinding = {
+      ...originalEndBinding,
+      elementId: targetNode.id,
+    };
+
+    const newArrow = newArrowElement({
+      type: "arrow",
+      x: newNodeWithPosition.x,
+      y: newNodeWithPosition.y,
+      startArrowhead: arrow.startArrowhead,
+      endArrowhead: arrow.endArrowhead,
+      strokeColor: arrow.strokeColor,
+      backgroundColor: arrow.backgroundColor,
+      fillStyle: arrow.fillStyle,
+      strokeWidth: arrow.strokeWidth,
+      strokeStyle: arrow.strokeStyle,
+      roughness: arrow.roughness,
+      opacity: arrow.opacity,
+      roundness: arrow.roundness,
+      locked: false,
+      frameId: arrow.frameId,
+      elbowed: arrow.elbowed,
+      fixedSegments: arrow.elbowed ? [] : null,
+      points: [
+        pointFrom<LocalPoint>(0, 0),
+        pointFrom<LocalPoint>(
+          targetNode.x - newNodeWithPosition.x,
+          targetNode.y - newNodeWithPosition.y,
+        ),
+      ],
+    });
+
+    this.scene.insertElement(newArrow);
+    this.scene.mutateElement(newArrow, {
+      startBinding: newArrowStartBinding,
+      endBinding: newArrowEndBinding,
+    });
+
+    this.scene.mutateElement(newNodeWithPosition, {
+      boundElements: (newNodeWithPosition.boundElements || []).concat({
+        id: newArrow.id,
+        type: "arrow",
+      }),
+    });
+    this.scene.mutateElement(targetNode, {
+      boundElements: (targetNode.boundElements || []).concat({
+        id: newArrow.id,
+        type: "arrow",
+      }),
+    });
+
+    const elementsMap = this.scene.getNonDeletedElementsMap();
+    const updatedNewArrowStartPoint = updateBoundPoint(
+      newArrow,
+      "startBinding",
+      newArrowStartBinding,
+      newNodeWithPosition,
+      elementsMap,
+    );
+    const updatedNewArrowEndPoint = updateBoundPoint(
+      newArrow,
+      "endBinding",
+      newArrowEndBinding,
+      targetNode,
+      elementsMap,
+    );
+
+    const updatedPoints = new Map<number, { point: LocalPoint }>();
+    if (updatedNewArrowStartPoint) {
+      updatedPoints.set(0, { point: updatedNewArrowStartPoint });
+    }
+    if (updatedNewArrowEndPoint) {
+      updatedPoints.set(newArrow.points.length - 1, {
+        point: updatedNewArrowEndPoint,
+      });
+    }
+
+    if (updatedPoints.size > 0) {
+      LinearElementEditor.movePoints(newArrow, this.scene, updatedPoints);
+    }
+
+    if (isElbowArrow(newArrow)) {
+      const updatedArrowPoints = updateElbowArrowPoints(
+        newArrow,
+        this.scene.getNonDeletedElementsMap(),
+        { points: newArrow.points },
+      );
+      this.scene.mutateElement(newArrow, updatedArrowPoints);
+    }
+
+    const firstNodeCenter = getContainerCenter(
+      newNodeWithPosition,
+      this.state,
+      this.scene.getNonDeletedElementsMap(),
+    );
+
+    flushSync(() => {
+      this.setState((prevState) => ({
+        selectedElementIds: makeNextSelectedElementIds(
+          { [newNodeWithPosition.id]: true },
+          prevState,
+        ),
+      }));
+    });
+
+    if (
+      !isElementCompletelyInViewport(
+        [newNodeWithPosition],
+        this.canvas.width / window.devicePixelRatio,
+        this.canvas.height / window.devicePixelRatio,
+        {
+          offsetLeft: this.state.offsetLeft,
+          offsetTop: this.state.offsetTop,
+          scrollX: this.state.scrollX,
+          scrollY: this.state.scrollY,
+          zoom: this.state.zoom,
+        },
+        this.scene.getNonDeletedElementsMap(),
+        this.getEditorUIOffsets(),
+      )
+    ) {
+      this.scrollToContent(newNodeWithPosition, {
+        animate: true,
+        duration: 300,
+        canvasOffsets: this.getEditorUIOffsets(),
+      });
+    }
+
+    if (firstNodeCenter) {
+      this.startTextEditing({
+        sceneX: firstNodeCenter.x,
+        sceneY: firstNodeCenter.y,
+        insertAtParentCenter: true,
+        container: newNodeWithPosition,
+        autoEdit: true,
+      });
+    }
+
+    this.flowChartCreator.clear();
+
+    this.syncActionResult({
+      captureUpdate: CaptureUpdateAction.IMMEDIATELY,
+    });
+  };
+
+  private getOppositeFlowchartFixedPointForDirection = (
+    fixedPoint: [number, number],
+    direction: "up" | "right" | "down" | "left",
+  ): [number, number] => {
+    const [x, y] = fixedPoint;
+
+    switch (direction) {
+      case "left":
+        return [0, y];
+      case "right":
+        return [1, y];
+      case "up":
+        return [x, 0];
+      case "down":
+        return [x, 1];
+    }
+  };
+
+  private moveFlowchartFollowingNodes = (
+    startNode: NonDeleted<ExcalidrawFlowchartNodeElement>,
+    shift: { x: number; y: number },
+    direction: "up" | "right" | "down" | "left",
+    sourceCenter: { x: number; y: number },
+    targetCenter: { x: number; y: number },
+  ) => {
+    const elements = this.scene.getNonDeletedElements();
+    const elementsMap = this.scene.getNonDeletedElementsMap();
+    const queue = [startNode];
+    const visited = new Set<string>([startNode.id]);
+    const nodesToMove: NonDeleted<ExcalidrawFlowchartNodeElement>[] = [];
+
+    while (queue.length > 0) {
+      const currentNode = queue.shift();
+      if (!currentNode) {
+        continue;
+      }
+
+      nodesToMove.push(currentNode);
+
+      for (const element of elements) {
+        if (!isArrowElement(element)) {
+          continue;
+        }
+
+        if (!element.startBinding) {
+          continue;
+        }
+
+        const nextNode =
+          element.endBinding && elementsMap.get(element.endBinding.elementId);
+        if (!nextNode) {
+          continue;
+        }
+
+        if (
+          isFlowchartNodeElement(nextNode) &&
+          currentNode.id === element.startBinding.elementId &&
+          this.shouldMoveFlowchartFollowingNode(
+            nextNode,
+            direction,
+            sourceCenter,
+            targetCenter,
+          ) &&
+          !visited.has(nextNode.id)
+        ) {
+          visited.add(nextNode.id);
+          queue.push(nextNode);
+        }
+      }
+    }
+
+    const movedNodeIds = new Set(nodesToMove.map((node) => node.id));
+
+    elements.forEach((element) => {
+      if (
+        !isElbowArrow(element) ||
+        !element.startBinding ||
+        !element.endBinding ||
+        !movedNodeIds.has(element.startBinding.elementId) ||
+        !movedNodeIds.has(element.endBinding.elementId)
+      ) {
+        return;
+      }
+
+      this.scene.mutateElement(element, {
+        x: element.x + shift.x,
+        y: element.y + shift.y,
+      });
+
+      const boundTextElement = getBoundTextElement(element, elementsMap);
+      if (boundTextElement) {
+        this.scene.mutateElement(boundTextElement, {
+          x: boundTextElement.x + shift.x,
+          y: boundTextElement.y + shift.y,
+        });
+      }
+    });
+
+    nodesToMove.forEach((node) => {
+      this.scene.mutateElement(node, {
+        x: node.x + shift.x,
+        y: node.y + shift.y,
+      });
+
+      const boundTextElement = getBoundTextElement(node, elementsMap);
+      if (boundTextElement) {
+        this.scene.mutateElement(boundTextElement, {
+          x: boundTextElement.x + shift.x,
+          y: boundTextElement.y + shift.y,
+        });
+      }
+
+      updateBoundElements(node, this.scene);
+    });
+
+    const updatedElementsMap = this.scene.getNonDeletedElementsMap();
+    elements.forEach((element) => {
+      if (!isArrowElement(element) || !isElbowArrow(element)) {
+        return;
+      }
+
+      const updatedPoints = updateElbowArrowPoints(
+        element,
+        updatedElementsMap,
+        { points: element.points },
+      );
+      this.scene.mutateElement(element, updatedPoints);
+    });
+  };
+
+  private shouldMoveFlowchartFollowingNode = (
+    node: NonDeleted<ExcalidrawFlowchartNodeElement>,
+    direction: "up" | "right" | "down" | "left",
+    sourceCenter: { x: number; y: number },
+    targetCenter: { x: number; y: number },
+  ): boolean => {
+    const nodeCenter = getContainerCenter(
+      node,
+      this.state,
+      this.scene.getNonDeletedElementsMap(),
+    );
+
+    if (!nodeCenter) {
+      return false;
+    }
+
+    switch (direction) {
+      case "left":
+        return nodeCenter.x <= Math.min(sourceCenter.x, targetCenter.x);
+      case "right":
+        return nodeCenter.x >= Math.max(sourceCenter.x, targetCenter.x);
+      case "up":
+        return nodeCenter.y <= Math.min(sourceCenter.y, targetCenter.y);
+      case "down":
+        return nodeCenter.y >= Math.max(sourceCenter.y, targetCenter.y);
+    }
+  };
+
+  private getFlowchartAddNextDirectionForNodes = (
+    sourceNode: NonDeleted<ExcalidrawFlowchartNodeElement>,
+    targetNode: NonDeleted<ExcalidrawFlowchartNodeElement>,
+  ): "up" | "right" | "down" | "left" => {
+    const sourceCenter = getContainerCenter(
+      sourceNode,
+      this.state,
+      this.scene.getNonDeletedElementsMap(),
+    );
+    const targetCenter = getContainerCenter(
+      targetNode,
+      this.state,
+      this.scene.getNonDeletedElementsMap(),
+    );
+
+    if (!sourceCenter || !targetCenter) {
+      return "right";
+    }
+
+    const dx = targetCenter.x - sourceCenter.x;
+    const dy = targetCenter.y - sourceCenter.y;
+
+    if (Math.abs(dx) >= Math.abs(dy)) {
+      return dx >= 0 ? "right" : "left";
+    }
+
+    return dy >= 0 ? "down" : "up";
   };
 
   private getFlowchartAddNextDirection = (
@@ -4178,7 +4721,11 @@ class App extends React.Component<AppProps, AppState> {
   addElementsFromPasteOrLibrary = (opts: {
     elements: readonly ExcalidrawElement[];
     files: BinaryFiles | null;
-    position: { clientX: number; clientY: number } | "cursor" | "center";
+    position:
+      | { clientX: number; clientY: number }
+      | "cursor"
+      | "center"
+      | "topLeft";
     retainSeed?: boolean;
     fitToContent?: boolean;
   }) => {
@@ -4189,18 +4736,25 @@ class App extends React.Component<AppProps, AppState> {
 
     const elementsCenterX = distance(minX, maxX) / 2;
     const elementsCenterY = distance(minY, maxY) / 2;
+    const shouldAlignToTopLeft = opts.position === "topLeft";
 
     const clientX =
       typeof opts.position === "object"
         ? opts.position.clientX
         : opts.position === "cursor"
         ? this.lastViewportPosition.x
+        : opts.position === "topLeft"
+        ? this.state.offsetLeft +
+          this.state.scrollX * this.state.zoom.value
         : this.state.width / 2 + this.state.offsetLeft;
     const clientY =
       typeof opts.position === "object"
         ? opts.position.clientY
         : opts.position === "cursor"
         ? this.lastViewportPosition.y
+        : opts.position === "topLeft"
+        ? this.state.offsetTop +
+          this.state.scrollY * this.state.zoom.value
         : this.state.height / 2 + this.state.offsetTop;
 
     const { x, y } = viewportCoordsToSceneCoords(
@@ -4208,8 +4762,8 @@ class App extends React.Component<AppProps, AppState> {
       this.state,
     );
 
-    const dx = x - elementsCenterX;
-    const dy = y - elementsCenterY;
+    const dx = x - (shouldAlignToTopLeft ? minX : elementsCenterX);
+    const dy = y - (shouldAlignToTopLeft ? minY : elementsCenterY);
 
     const [gridX, gridY] = getGridPoint(dx, dy, this.getEffectiveGridSize());
 
@@ -4324,6 +4878,8 @@ class App extends React.Component<AppProps, AppState> {
         canvasOffsets: this.getEditorUIOffsets(),
       });
     }
+
+    return duplicatedElements;
   };
 
   // TODO rewrite this to paste both text & images at the same time if
@@ -9420,7 +9976,7 @@ class App extends React.Component<AppProps, AppState> {
       this.lastPointerDownEvent?.[KEYS.CTRL_OR_CMD]
         ? null
         : bpdDefaultBackgroundColor
-          ? NODE_MOVEMENT_GRID_SIZE
+          ? this.getMovementGridSize()
           : this.getEffectiveGridSize(),
     );
 
@@ -10137,17 +10693,9 @@ class App extends React.Component<AppProps, AppState> {
           // when we're editing the name of a frame, we want the user to be
           // able to select and interact with the text input
           if (!this.state.editingFrame) {
-            const dragGridSize = (
-              getFeatureFlag("BPD_FEATURES")
-                ? event[KEYS.CTRL_OR_CMD]
-                  ? null
-                  : selectedElements.every(isFlowchartNodeElement)
-                    ? NODE_MOVEMENT_GRID_SIZE
-                    : BPD_FLOWCHART_ADD_NEXT_STEP_GRID_SIZE
-                : event[KEYS.CTRL_OR_CMD]
-                  ? null
-                  : this.getEffectiveGridSize()
-            ) as NullableGridSize;
+            const dragGridSize = event[KEYS.CTRL_OR_CMD]
+              ? null
+              : this.getMovementGridSize();
 
             dragSelectedElements(
               pointerDownState,
@@ -12363,9 +12911,7 @@ class App extends React.Component<AppProps, AppState> {
 
     const dragGridSize = event[KEYS.CTRL_OR_CMD]
       ? null
-      : isFlowchartNodeElement(newElement)
-        ? NODE_MOVEMENT_GRID_SIZE
-        : this.getEffectiveGridSize();
+      : this.getMovementGridSize();
     const [originGridX, originGridY] = getGridPoint(
       pointerDownState.origin.x,
       pointerDownState.origin.y,
@@ -12697,6 +13243,7 @@ class App extends React.Component<AppProps, AppState> {
         return [
           ...options,
           actionToggleGridMode,
+          actionToggleGridSize,
           actionToggleFlowMode,
           actionToggleZenMode,
           actionToggleViewMode,
@@ -12715,6 +13262,7 @@ class App extends React.Component<AppProps, AppState> {
         actionUnlockAllElements,
         CONTEXT_MENU_SEPARATOR,
         actionToggleGridMode,
+        actionToggleGridSize,
         actionToggleObjectsSnapMode,
         actionToggleFlowMode,
         actionToggleZenMode,

@@ -157,6 +157,8 @@ const getOffsets = (
   linkedNodes: ExcalidrawElement[],
   direction: LinkDirection,
   spacingMultiplier: number,
+  nextNodeWidth: number,
+  nextNodeHeight: number,
   snapToGridSize: NullableGridSize = null,
 ) => {
   const [verticalOffset] = getGridPoint(
@@ -170,10 +172,12 @@ const getOffsets = (
     snapToGridSize,
   );
   const _HORIZONTAL_OFFSET = horizontalOffset + element.width;
+  const _VERTICAL_OFFSET = verticalOffset + element.height;
+  const centeredX = (element.width - nextNodeWidth) / 2;
+  const centeredY = (element.height - nextNodeHeight) / 2;
 
   // check if vertical space or horizontal space is available first
   if (direction === "up" || direction === "down") {
-    const _VERTICAL_OFFSET = verticalOffset + element.height;
     // check vertical space
     const minX = element.x;
     const maxX = element.x + element.width;
@@ -186,7 +190,7 @@ const getOffsets = (
       )
     ) {
       return {
-        x: 0,
+        x: centeredX,
         y: _VERTICAL_OFFSET * (direction === "up" ? -1 : 1),
       };
     }
@@ -203,13 +207,12 @@ const getOffsets = (
       return {
         x:
           (horizontalOffset + element.width) * (direction === "left" ? -1 : 1),
-        y: 0,
+        y: centeredY,
       };
     }
   }
 
   if (direction === "up" || direction === "down") {
-    const _VERTICAL_OFFSET = verticalOffset + element.height;
     const y = linkedNodes.length === 0 ? _VERTICAL_OFFSET : _VERTICAL_OFFSET;
     const x =
       linkedNodes.length === 0
@@ -220,18 +223,17 @@ const getOffsets = (
 
     if (direction === "up") {
       return {
-        x,
+        x: x + centeredX,
         y: y * -1,
       };
     }
 
     return {
-      x,
+      x: x + centeredX,
       y,
     };
   }
 
-  const _VERTICAL_OFFSET = verticalOffset + element.height;
   const x =
     (linkedNodes.length === 0 ? horizontalOffset : horizontalOffset) +
     element.width;
@@ -244,12 +246,12 @@ const getOffsets = (
 
   if (direction === "left") {
     return {
-      x: x * -1,
+      x: x * -1 + centeredX,
       y,
     };
   }
   return {
-    x,
+    x: x + centeredX,
     y,
   };
 };
@@ -279,12 +281,16 @@ const addNewNode = (
   const elementsMap = scene.getNonDeletedElementsMap();
   const successors = getSuccessors(element, elementsMap, direction);
   const predeccessors = getPredecessors(element, elementsMap, direction);
+  const nextNodeWidth = nodeDimensions?.width ?? element.width;
+  const nextNodeHeight = nodeDimensions?.height ?? element.height;
 
   const offsets = getOffsets(
     element,
     [...successors, ...predeccessors],
     direction,
     spacingMultiplier,
+    nextNodeWidth,
+    nextNodeHeight,
     snapToGridSize,
   );
 
@@ -293,9 +299,6 @@ const addNewNode = (
     element.y + offsets.y,
     snapToGridSize,
   );
-
-  const nextNodeWidth = nodeDimensions?.width ?? element.width;
-  const nextNodeHeight = nodeDimensions?.height ?? element.height;
 
   const nextNode = newElement({
     type: element.type,
