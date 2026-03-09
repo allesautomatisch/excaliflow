@@ -233,6 +233,7 @@ export type InteractiveCanvasAppState = Readonly<
     // SnapLines
     snapLines: AppState["snapLines"];
     zenModeEnabled: AppState["zenModeEnabled"];
+    selectionMetricsEnabled: AppState["selectionMetricsEnabled"];
     flowModeEnabled: AppState["flowModeEnabled"];
     editingTextElement: AppState["editingTextElement"];
     // Cropping
@@ -404,6 +405,7 @@ export interface AppState {
   gridSize: number;
   gridStep: number;
   gridModeEnabled: boolean;
+  selectionMetricsEnabled: boolean;
   viewModeEnabled: boolean;
 
   /** top-most selected groups (i.e. does not include nested groups) */
@@ -767,6 +769,7 @@ export type AppClassProperties = {
   dismissLinearEditor: App["dismissLinearEditor"];
   flowChartCreator: App["flowChartCreator"];
   getEffectiveGridSize: App["getEffectiveGridSize"];
+  getArrowGridSize: App["getArrowGridSize"];
   setPlugins: App["setPlugins"];
   plugins: App["plugins"];
   getEditorUIOffsets: App["getEditorUIOffsets"];

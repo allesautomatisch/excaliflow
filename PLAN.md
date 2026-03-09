@@ -22,7 +22,7 @@
 ## UX Details & Proposals
 - BPD mode is gated by a feature flag (`BPD_FEATURES`) to keep changes safe and isolate behavior.
 - Default style in BPD mode:
-  - `strokeWidth`: `extraBold` (visually thick for process diagrams).
+  - `strokeWidth`: `bold` (2px, visually thicker for process diagrams).
   - `roughness`: `architect` (clean/straight).
   - `arrowType`: `elbow` (orthogonal connectors).
 - Click-to-create:
@@ -78,7 +78,7 @@
 3. For Add-next-step, should the default direction be rightward only, or should we detect nearest open side based on canvas space?
 
 ## Implemented Assumptions (Current)
-- Click-to-create standard size is shape-aware: `capsule` uses `120x80`; other BPD node shapes use `120x120`.
+- Click-to-create standard size is `120x120` for all BPD node shapes, including `capsule`.
 - Auto type-inside triggers for newly created BPD shapes, including while tool-lock is active.
 - Add-next-step `+` button is directional: its position follows pointer side (top/right/bottom/left), and clicking creates the next node on that side with an elbow arrow.
 - Add-next-step `+` always creates Step shape (`rectangle`) with black stroke and blue background.
@@ -90,8 +90,12 @@
 - In BPD mode, newly created node shapes always use sharp corners (roundness reset to sharp), regardless of previously selected roundness.
 - In BPD mode, newly created arrows always use Triangle end arrowhead (toolbar arrows and `+`-created flow arrows), regardless of previously selected arrowhead.
 - In BPD mode, flowchart arrows generated via keyboard `Cmd/Ctrl + Arrow` preview also use the same `+` defaults (`startArrowhead: null`, `endArrowhead: triangle`).
-- In BPD mode, dragging selected shapes snaps to a 20px grid by default; holding Ctrl/Cmd temporarily disables drag-grid snapping for free positioning.
-- In BPD mode, dragged node size is applied unless both width and height are below half of that shape's default size (e.g. capsule `60x40`, others `60x60`); only those small drags snap to default size.
+- In BPD mode, dragging selected shapes snaps to the selected grid size by default (`120px` initially, toggleable to `20px`); holding Ctrl/Cmd temporarily disables drag-grid snapping for free positioning.
+- Arrows always use a `20px` snap grid for creation and editing, independent of the selected node grid size.
+- The visible canvas grid is always rendered at `20px` spacing, independent of the selected snap grid size.
+- The grid is visible by default.
+- Selection box metrics are hidden by default and can be toggled from the canvas context menu.
+- In BPD mode, dragged node size is applied unless both width and height are below half of that shape's default size (`60x60`); only those small drags snap to default size.
 - In BPD mode, `+` and `Cmd/Ctrl + Arrow` flowchart node creation use square-grid spacing (`horizontal gap: 120`, `vertical gap: 120`).
 - In BPD mode, nodes created via `+` or `Cmd/Ctrl + Arrow` are always forced to default size (`120x120`), independent of the selected/source node size.
 - In BPD mode, creating a node via `+` auto-opens bound text editing on the new node so typing can start immediately.

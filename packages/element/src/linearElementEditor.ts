@@ -319,7 +319,11 @@ export class LinearElementEditor {
         elementsMap,
         pivotPoint,
         pointFrom(scenePointerX, scenePointerY),
-        event[KEYS.CTRL_OR_CMD] ? null : app.getEffectiveGridSize(),
+        event[KEYS.CTRL_OR_CMD]
+          ? null
+          : isArrowElement(element)
+            ? app.getArrowGridSize()
+            : app.getEffectiveGridSize(),
         customLineAngle,
       );
       const target = pointFrom<LocalPoint>(
@@ -335,7 +339,11 @@ export class LinearElementEditor {
         elementsMap,
         scenePointerX - linearElementEditor.pointerOffset.x,
         scenePointerY - linearElementEditor.pointerOffset.y,
-        event[KEYS.CTRL_OR_CMD] ? null : app.getEffectiveGridSize(),
+        event[KEYS.CTRL_OR_CMD]
+          ? null
+          : isArrowElement(element)
+            ? app.getArrowGridSize()
+            : app.getEffectiveGridSize(),
       );
       deltaX = newDraggingPointPosition[0] - point[0];
       deltaY = newDraggingPointPosition[1] - point[1];
@@ -497,7 +505,11 @@ export class LinearElementEditor {
         elementsMap,
         pivotPoint,
         pointFrom(scenePointerX, scenePointerY),
-        event[KEYS.CTRL_OR_CMD] ? null : app.getEffectiveGridSize(),
+        event[KEYS.CTRL_OR_CMD]
+          ? null
+          : isArrowElement(element)
+            ? app.getArrowGridSize()
+            : app.getEffectiveGridSize(),
         customLineAngle,
       );
       const target = pointFrom<LocalPoint>(
@@ -512,7 +524,11 @@ export class LinearElementEditor {
         elementsMap,
         scenePointerX - linearElementEditor.pointerOffset.x,
         scenePointerY - linearElementEditor.pointerOffset.y,
-        event[KEYS.CTRL_OR_CMD] ? null : app.getEffectiveGridSize(),
+        event[KEYS.CTRL_OR_CMD]
+          ? null
+          : isArrowElement(element)
+            ? app.getArrowGridSize()
+            : app.getEffectiveGridSize(),
       );
       deltaX = newDraggingPointPosition[0] - draggingPoint[0];
       deltaY = newDraggingPointPosition[1] - draggingPoint[1];
@@ -1173,7 +1189,11 @@ export class LinearElementEditor {
         elementsMap,
         anchor,
         pointFrom(scenePointerX, scenePointerY),
-        event[KEYS.CTRL_OR_CMD] ? null : app.getEffectiveGridSize(),
+        event[KEYS.CTRL_OR_CMD]
+          ? null
+          : isArrowElement(element)
+            ? app.getArrowGridSize()
+            : app.getEffectiveGridSize(),
       );
 
       newPoint = pointFrom(width + anchor[0], height + anchor[1]);
@@ -1183,9 +1203,13 @@ export class LinearElementEditor {
         elementsMap,
         scenePointerX - appState.selectedLinearElement.pointerOffset.x,
         scenePointerY - appState.selectedLinearElement.pointerOffset.y,
-        event[KEYS.CTRL_OR_CMD] || isElbowArrow(element)
+        event[KEYS.CTRL_OR_CMD]
           ? null
-          : app.getEffectiveGridSize(),
+          : isArrowElement(element)
+            ? app.getArrowGridSize()
+            : isElbowArrow(element)
+              ? null
+              : app.getEffectiveGridSize(),
       );
     }
 
@@ -1665,7 +1689,13 @@ export class LinearElementEditor {
       elementsMap,
       pointerCoords.x,
       pointerCoords.y,
-      snapToGrid && !isElbowArrow(element) ? app.getEffectiveGridSize() : null,
+      snapToGrid
+        ? isArrowElement(element)
+          ? app.getArrowGridSize()
+          : !isElbowArrow(element)
+            ? app.getEffectiveGridSize()
+            : null
+        : null,
     );
     const points = [
       ...element.points.slice(0, segmentMidpoint.index!),

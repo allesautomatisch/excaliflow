@@ -165,7 +165,7 @@ import type { CollabAPI } from "./collab/Collab";
 const BPD_FEATURES_ENABLED = true;
 
 const BPD_APP_DEFAULTS: Partial<AppState> = {
-  currentItemStrokeWidth: STROKE_WIDTH.extraBold,
+  currentItemStrokeWidth: STROKE_WIDTH.bold,
   currentItemRoughness: ROUGHNESS.architect,
   currentItemArrowType: ARROW_TYPE.elbow,
   currentItemEndArrowhead: "triangle",
@@ -1175,6 +1175,7 @@ const ExcalidrawWrapper = () => {
         initialData={initialStatePromiseRef.current.promise}
         isCollaborating={isCollaborating}
         onPointerUpdate={collabAPI?.onPointerUpdate}
+        validateEmbeddable={true}
         UIOptions={{
           canvasActions: {
             toggleTheme: true,

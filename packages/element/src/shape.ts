@@ -11,6 +11,7 @@ import {
 } from "@excalidraw/utils/shape";
 
 import {
+  curve,
   polygon,
   pointFrom,
   pointDistance,
@@ -53,7 +54,12 @@ import {
   isIframeLikeElement,
   isLinearElement,
 } from "./typeChecks";
-import { getCornerRadius, isPathALoop } from "./utils";
+import {
+  deconstructRectanguloidElement,
+  getCapsuleRenderableBounds,
+  getCornerRadius,
+  isPathALoop,
+} from "./utils";
 import { headingForPointIsHorizontal } from "./heading";
 
 import { canChangeRoundness } from "./comparisons";
@@ -670,14 +676,13 @@ const _generateElementShape = (
   const isDarkMode = theme === THEME.DARK;
   switch (element.type) {
     case "rectangle":
-    case "capsule":
     case "iframe":
     case "embeddable": {
       let shape: ElementShapes[typeof element.type];
       // this is for rendering the stroke/bg of the embeddable, especially
       // when the src url is not set
 
-      if (element.roundness || element.type === "capsule") {
+      if (element.roundness) {
         const w = element.width;
         const h = element.height;
         const r = getCornerRadius(Math.min(w, h), element);
@@ -715,6 +720,45 @@ const _generateElementShape = (
         );
       }
       return shape;
+    }
+    case "capsule": {
+      const bounds = getCapsuleRenderableBounds({
+        x: 0,
+        y: 0,
+        width: element.width,
+        height: element.height,
+      });
+      const capsuleHeight = Math.max(bounds.height, 0.01);
+      const radius = Math.min(
+        getCornerRadius(Math.min(bounds.width, capsuleHeight), element),
+        bounds.width / 2,
+        capsuleHeight / 2,
+      );
+
+      return generator.path(
+        `M ${bounds.x + radius} ${bounds.y} L ${bounds.x + bounds.width - radius} ${
+          bounds.y
+        } Q ${bounds.x + bounds.width} ${bounds.y}, ${bounds.x + bounds.width} ${
+          bounds.y + radius
+        } L ${bounds.x + bounds.width} ${bounds.y + capsuleHeight - radius} Q ${
+          bounds.x + bounds.width
+        } ${bounds.y + capsuleHeight}, ${bounds.x + bounds.width - radius} ${
+          bounds.y + capsuleHeight
+        } L ${bounds.x + radius} ${bounds.y + capsuleHeight} Q ${bounds.x} ${
+          bounds.y + capsuleHeight
+        }, ${bounds.x} ${bounds.y + capsuleHeight - radius} L ${bounds.x} ${
+          bounds.y + radius
+        } Q ${bounds.x} ${bounds.y}, ${bounds.x + radius} ${bounds.y}`,
+        generateRoughOptions(
+          modifyIframeLikeForRoughOptions(
+            element,
+            isExporting,
+            embedsValidationStatus,
+          ),
+          true,
+          isDarkMode,
+        ),
+      );
     }
     case "parallelogram": {
       const [
@@ -998,9 +1042,25 @@ export const getElementShape = <Point extends GlobalPoint | LocalPoint>(
   element: ExcalidrawElement,
   elementsMap: ElementsMap,
 ): GeometricShape<Point> => {
+  const lineSegmentToCurve = (
+    start: Point,
+    end: Point,
+  ) =>
+    curve<Point>(
+      start,
+      pointFrom<Point>(
+        start[0] + (end[0] - start[0]) / 3,
+        start[1] + (end[1] - start[1]) / 3,
+      ),
+      pointFrom<Point>(
+        start[0] + ((end[0] - start[0]) * 2) / 3,
+        start[1] + ((end[1] - start[1]) * 2) / 3,
+      ),
+      end,
+    );
+
   switch (element.type) {
     case "rectangle":
-    case "capsule":
     case "diamond":
     case "parallelogram":
     case "frame":
@@ -1055,6 +1115,54 @@ export const getElementShape = <Point extends GlobalPoint | LocalPoint>(
         };
       }
       return getPolygonShape(element);
+    case "capsule": {
+      const [sides, corners] = deconstructRectanguloidElement(element);
+      const center = pointFrom<Point>(
+        element.x + element.width / 2,
+        element.y + element.height / 2,
+      );
+      const rotatePoint = (point: GlobalPoint) =>
+        pointRotateRads(
+          pointFrom<Point>(point[0], point[1]),
+          center,
+          element.angle,
+        );
+      const rotateCurve = (curvePoints: [GlobalPoint, GlobalPoint, GlobalPoint, GlobalPoint]) =>
+        curve<Point>(
+          rotatePoint(curvePoints[0]),
+          rotatePoint(curvePoints[1]),
+          rotatePoint(curvePoints[2]),
+          rotatePoint(curvePoints[3]),
+        );
+
+      const data = [
+        lineSegmentToCurve(
+          rotatePoint(sides[0][0]),
+          rotatePoint(sides[0][1]),
+        ),
+        rotateCurve(corners[1]),
+        lineSegmentToCurve(
+          rotatePoint(sides[1][0]),
+          rotatePoint(sides[1][1]),
+        ),
+        rotateCurve(corners[2]),
+        lineSegmentToCurve(
+          rotatePoint(sides[2][0]),
+          rotatePoint(sides[2][1]),
+        ),
+        rotateCurve(corners[3]),
+        lineSegmentToCurve(
+          rotatePoint(sides[3][0]),
+          rotatePoint(sides[3][1]),
+        ),
+        rotateCurve(corners[0]),
+      ];
+
+      return {
+        type: "polycurve",
+        data,
+      };
+    }
     case "arrow":
     case "line": {
       const roughShape = ShapeCache.generateElementShape(element, null)[0];

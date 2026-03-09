@@ -212,8 +212,11 @@ export function deconstructRectanguloidElement(
     return cachedShape;
   }
 
+  const renderableBounds =
+    element.type === "capsule" ? getCapsuleRenderableBounds(element) : element;
+
   let radius = getCornerRadius(
-    Math.min(element.width, element.height),
+    Math.min(renderableBounds.width, renderableBounds.height),
     element,
   );
 
@@ -222,8 +225,11 @@ export function deconstructRectanguloidElement(
   }
 
   const r = rectangle(
-    pointFrom(element.x, element.y),
-    pointFrom(element.x + element.width, element.y + element.height),
+    pointFrom(renderableBounds.x, renderableBounds.y),
+    pointFrom(
+      renderableBounds.x + renderableBounds.width,
+      renderableBounds.y + renderableBounds.height,
+    ),
   );
 
   const top = lineSegment<GlobalPoint>(
@@ -553,6 +559,29 @@ export const getCornerRadius = (x: number, element: ExcalidrawElement) => {
   }
 
   return 0;
+};
+
+export const CAPSULE_VERTICAL_INSET = 20;
+
+export const getCapsuleRenderableHeight = (height: number) => {
+  const inset = Math.min(CAPSULE_VERTICAL_INSET, Math.max(height, 0) / 2);
+  return Math.max(height - inset * 2, 0);
+};
+
+export const getCapsuleRenderableBounds = <
+  T extends { x: number; y: number; width: number; height: number },
+>(
+  element: T,
+) => {
+  const renderableHeight = getCapsuleRenderableHeight(element.height);
+  const inset = (element.height - renderableHeight) / 2;
+
+  return {
+    x: element.x,
+    y: element.y + inset,
+    width: element.width,
+    height: renderableHeight,
+  };
 };
 
 const getDiagonalsForBindableElement = (

@@ -46,6 +46,8 @@ const GridDotColor = {
   [THEME.DARK]: "rgba(184, 184, 184, 0.28)",
 } as const;
 
+const GRID_RENDER_SIZE = 20;
+
 const strokeGrid = (
   context: CanvasRenderingContext2D,
   /** grid cell pixel size */
@@ -65,7 +67,7 @@ const strokeGrid = (
   const offsetX = (scrollX % gridSize) - gridSize;
   const offsetY = (scrollY % gridSize) - gridSize;
 
-  const dotSize = (zoom.value <= 1 ? 1 : 2) / zoom.value;
+  const dotSize = (zoom.value < 1 ? 1 : 2) / zoom.value;
 
   context.save();
 
@@ -219,7 +221,7 @@ const _renderStaticScene = ({
   if (renderGrid) {
     strokeGrid(
       context,
-      appState.gridSize,
+      GRID_RENDER_SIZE,
       appState.gridStep,
       appState.scrollX,
       appState.scrollY,

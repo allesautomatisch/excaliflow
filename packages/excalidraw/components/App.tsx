@@ -320,6 +320,7 @@ import {
   actionSendToBack,
   actionToggleGridMode,
   actionToggleGridSize,
+  actionToggleSelectionMetrics,
   actionToggleStats,
   actionToggleFlowMode,
   actionToggleZenMode,
@@ -530,10 +531,12 @@ const BPD_STANDARD_SHAPE_SIZE = {
 
 const BPD_CAPSULE_STANDARD_SHAPE_SIZE = {
   width: 120,
-  height: 80,
+  height: 120,
 } as const;
 
-const getBpdStandardShapeSize = (elementType: ExcalidrawGenericElement["type"]) =>
+export const getBpdStandardShapeSize = (
+  elementType: ExcalidrawGenericElement["type"],
+) =>
   elementType === "capsule"
     ? BPD_CAPSULE_STANDARD_SHAPE_SIZE
     : BPD_STANDARD_SHAPE_SIZE;
@@ -541,6 +544,7 @@ const getBpdStandardShapeSize = (elementType: ExcalidrawGenericElement["type"]) 
 const BPD_FLOWCHART_ADD_NEXT_SPACING_MULTIPLIER = 1;
 const BPD_DEFAULT_NODE_FONT_FAMILY = FONT_FAMILY["Comic Shanns"];
 const BPD_DEFAULT_END_ARROWHEAD = "triangle" as const;
+const ARROW_GRID_SIZE = 20 as NullableGridSize;
 const NODE_MOVEMENT_GRID_SIZE = 20 as NullableGridSize;
 const NODE_RESIZE_GRID_SIZE = 20 as NullableGridSize;
 
@@ -1333,6 +1337,10 @@ class App extends React.Component<AppProps, AppState> {
 
   private getMovementGridSize = () => {
     return this.state.gridSize as NullableGridSize;
+  };
+
+  public getArrowGridSize = () => {
+    return ARROW_GRID_SIZE;
   };
 
   private getHTMLIFrameElement(
@@ -5927,11 +5935,21 @@ class App extends React.Component<AppProps, AppState> {
           (el) => !arrowIdsToRemove.has(el.id),
         );
 
+        const isArrowOnlySelection =
+          selectedElements.some(isArrowElement) &&
+          selectedElements.every(
+            (element) => isArrowElement(element) || isTextElement(element),
+          );
+
         const step =
-          (this.getEffectiveGridSize() &&
+          ((isArrowOnlySelection
+            ? this.getArrowGridSize()
+            : this.getEffectiveGridSize()) &&
             (event.shiftKey
               ? ELEMENT_TRANSLATE_AMOUNT
-              : this.getEffectiveGridSize())) ||
+              : isArrowOnlySelection
+                ? this.getArrowGridSize()
+                : this.getEffectiveGridSize())) ||
           (event.shiftKey
             ? ELEMENT_SHIFT_TRANSLATE_AMOUNT
             : ELEMENT_TRANSLATE_AMOUNT);
@@ -9778,7 +9796,11 @@ class App extends React.Component<AppProps, AppState> {
       const [gridX, gridY] = getGridPoint(
         pointerDownState.origin.x,
         pointerDownState.origin.y,
-        event[KEYS.CTRL_OR_CMD] ? null : this.getEffectiveGridSize(),
+        event[KEYS.CTRL_OR_CMD]
+          ? null
+          : elementType === "arrow"
+            ? this.getArrowGridSize()
+            : this.getEffectiveGridSize(),
       );
 
       const topLayerFrame = this.getTopLayerFrameAtSceneCoords({
@@ -10232,7 +10254,7 @@ class App extends React.Component<AppProps, AppState> {
         const [gridX, gridY] = getGridPoint(
           pointerCoords.x,
           pointerCoords.y,
-          event[KEYS.CTRL_OR_CMD] ? null : this.getEffectiveGridSize(),
+          event[KEYS.CTRL_OR_CMD] ? null : this.getArrowGridSize(),
         );
 
         let index =
@@ -10340,7 +10362,7 @@ class App extends React.Component<AppProps, AppState> {
             pointerCoords,
             this.scene,
             this.state,
-            this.getEffectiveGridSize(),
+            this.getArrowGridSize(),
             event.altKey,
           );
           this.setState({
@@ -10693,9 +10715,17 @@ class App extends React.Component<AppProps, AppState> {
           // when we're editing the name of a frame, we want the user to be
           // able to select and interact with the text input
           if (!this.state.editingFrame) {
+            const isArrowOnlySelection =
+              selectedElements.some(isArrowElement) &&
+              selectedElements.every(
+                (element) =>
+                  isArrowElement(element) || isTextElement(element),
+              );
             const dragGridSize = event[KEYS.CTRL_OR_CMD]
               ? null
-              : this.getMovementGridSize();
+              : isArrowOnlySelection
+                ? this.getArrowGridSize()
+                : this.getMovementGridSize();
 
             dragSelectedElements(
               pointerDownState,
@@ -12911,7 +12941,9 @@ class App extends React.Component<AppProps, AppState> {
 
     const dragGridSize = event[KEYS.CTRL_OR_CMD]
       ? null
-      : this.getMovementGridSize();
+      : isArrowElement(newElement)
+        ? this.getArrowGridSize()
+        : this.getMovementGridSize();
     const [originGridX, originGridY] = getGridPoint(
       pointerDownState.origin.x,
       pointerDownState.origin.y,
@@ -13248,6 +13280,7 @@ class App extends React.Component<AppProps, AppState> {
           actionToggleZenMode,
           actionToggleViewMode,
           actionToggleStats,
+          actionToggleSelectionMetrics,
         ];
       }
 
@@ -13268,6 +13301,7 @@ class App extends React.Component<AppProps, AppState> {
         actionToggleZenMode,
         actionToggleViewMode,
         actionToggleStats,
+        actionToggleSelectionMetrics,
       ];
     }
 

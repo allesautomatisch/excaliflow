@@ -42,6 +42,7 @@ import {
   useExcalidrawElements,
   useAppProps,
   useApp,
+  getBpdStandardShapeSize,
 } from "../App";
 import { openConfirmModal } from "../OverwriteConfirm/OverwriteConfirmState";
 import Trans from "../Trans";
@@ -123,13 +124,14 @@ export const NewDrawing = () => {
 
   const createDefaultNewDrawingElements = () => {
     const defaultStrokeWidth = STROKE_WIDTH.bold;
+    const startNodeSize = getBpdStandardShapeSize("capsule");
 
     const newStartNode = newElement({
       type: "capsule",
       x: 60,
       y: 40,
-      width: 120,
-      height: 80,
+      width: startNodeSize.width,
+      height: startNodeSize.height,
       strokeColor: appState.currentItemStrokeColor,
       backgroundColor:
         COLOR_PALETTE.green[DEFAULT_ELEMENT_BACKGROUND_COLOR_INDEX],
@@ -142,8 +144,8 @@ export const NewDrawing = () => {
     });
 
     const newStartNodeLabel = newTextElement({
-      x: 120,
-      y: 80,
+      x: newStartNode.x + startNodeSize.width / 2,
+      y: newStartNode.y + startNodeSize.height / 2,
       text: "Start",
       strokeColor: appState.currentItemStrokeColor,
       backgroundColor: appState.currentItemBackgroundColor,

@@ -98,6 +98,7 @@
     "toggleGrid": "Raster umschalten",
     "gridSize20": "Raster Größe: 20",
     "gridSize120": "Raster Größe: 120",
+    "toggleSelectionMetrics": "Auwahl-Eigenschaften anzeigen",
     "addToLibrary": "Zur Bibliothek hinzufügen",
     "removeFromLibrary": "Aus Bibliothek entfernen",
     "libraryLoadingMessage": "Lade Bibliothek…",

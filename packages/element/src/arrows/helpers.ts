@@ -21,7 +21,7 @@ export const maybeHandleArrowPointlikeDrag = ({
         app.lastPointerMoveCoords,
         app.scene,
         appState,
-        app.getEffectiveGridSize(),
+        app.getArrowGridSize(),
         event.altKey,
       );
       return true;

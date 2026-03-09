@@ -29,6 +29,7 @@ import {
   isArrowElement,
   isTextElement,
 } from "./typeChecks";
+import { getCapsuleRenderableHeight } from "./utils";
 
 import type { Scene } from "./Scene";
 
@@ -366,6 +367,9 @@ export const getContainerCoords = (container: NonDeletedExcalidrawElement) => {
     offsetX = BOUND_TEXT_PADDING * 2;
     offsetY = BOUND_TEXT_PADDING * 2;
   }
+  if (container.type === "capsule") {
+    offsetY += (container.height - getCapsuleRenderableHeight(container.height)) / 2;
+  }
   return {
     x: container.x + offsetX,
     y: container.y + offsetY,
@@ -461,6 +465,9 @@ export const computeContainerDimensionForBoundText = (
   if (containerType === "diamond") {
     return dimension + BOUND_TEXT_PADDING * 4;
   }
+  if (containerType === "capsule") {
+    return dimension + padding + BOUND_TEXT_PADDING * 4;
+  }
   return dimension + padding;
 };
 
@@ -492,7 +499,10 @@ export const getBoundTextMaxHeight = (
   container: ExcalidrawElement,
   boundTextElement: ExcalidrawTextElementWithContainer,
 ) => {
-  const { height } = container;
+  const height =
+    container.type === "capsule"
+      ? getCapsuleRenderableHeight(container.height)
+      : container.height;
   if (isArrowElement(container)) {
     const containerHeight = height - BOUND_TEXT_PADDING * 8 * 2;
     if (containerHeight <= 0) {

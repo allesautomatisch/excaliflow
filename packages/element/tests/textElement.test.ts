@@ -50,6 +50,17 @@ describe("Test measureText", () => {
         y: 50,
       });
     });
+
+    it("should compute coords correctly when capsule", () => {
+      const element = API.createElement({
+        type: "capsule",
+        ...params,
+      });
+      expect(getContainerCoords(element)).toEqual({
+        x: 20,
+        y: 50,
+      });
+    });
   });
 
   describe("Test computeContainerDimensionForBoundText", () => {
@@ -85,6 +96,16 @@ describe("Test measureText", () => {
       });
       expect(computeContainerDimensionForBoundText(150, element.type)).toEqual(
         320,
+      );
+    });
+
+    it("should compute container height correctly for capsule", () => {
+      const element = API.createElement({
+        type: "capsule",
+        ...params,
+      });
+      expect(computeContainerDimensionForBoundText(150, element.type)).toEqual(
+        210,
       );
     });
   });
@@ -146,6 +167,11 @@ describe("Test measureText", () => {
     it("should return max height when container is diamond", () => {
       const container = API.createElement({ type: "diamond", ...params });
       expect(getBoundTextMaxHeight(container, boundTextElement)).toBe(87);
+    });
+
+    it("should return max height when container is capsule", () => {
+      const container = API.createElement({ type: "capsule", ...params });
+      expect(getBoundTextMaxHeight(container, boundTextElement)).toBe(134);
     });
 
     it("should return max height when container is arrow", () => {

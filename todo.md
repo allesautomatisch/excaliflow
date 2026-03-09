@@ -11,7 +11,10 @@ Always update `PLAN.md` first, then reflect changes here. This file is for quick
 - [x] Enforce Comic Shanns for new nodes regardless of last-used font
 - [x] Force Triangle arrowhead for newly created arrows (toolbar + `+` flow creation), regardless of last-used arrowhead
 - [x] Force sharp corners for newly created nodes (tool-created and `+`-created), regardless of previously selected roundness
-- [x] Snap dragged shapes to 20px grid in BPD mode; hold Ctrl/Cmd to temporarily disable snap for free positioning
+- [x] Snap dragged shapes to the selected grid size in BPD mode (default `120px`); hold Ctrl/Cmd to temporarily disable snap for free positioning
+- [x] Keep arrows on a fixed `20px` snap grid regardless of the selected node grid size
+- [x] Keep visible grid dots rendered at a fixed `20px` spacing regardless of the selected snap grid size
+- [x] Make the grid visible by default
 - [x] Apply default node size for sub-50x50 accidental drags
 - [x] Use half-default-size threshold for drag fallback, and only fallback when dragged width and height are both below threshold
 - [x] Double default node size
@@ -28,7 +31,7 @@ Always update `PLAN.md` first, then reflect changes here. This file is for quick
 - [x] Auto-focus text editing when creating a node via `+`, so typing can start immediately
 - [x] Add adjacent shape-switch popup button with toolbar-like shape buttons and popup-priority shortcuts
 - [x] Delete associated arrows automatically when deleting a shape
-- [x] Set BPD default node size to shape-aware defaults (`120x120`, capsule `120x80`)
+- [x] Set BPD default node size to `120x120` for all BPD node shapes, including capsule
 - [x] Set `+` / `Cmd/Ctrl + Arrow` flowchart spacing to square-grid gaps (`120x120`)
 - [x] Force `+` / `Cmd/Ctrl + Arrow` created nodes to default size (`120x120`) regardless of source node size
 - [x] Align `Cmd/Ctrl + Arrow` preview placement constants with `+` node creation
@@ -52,3 +55,6 @@ Always update `PLAN.md` first, then reflect changes here. This file is for quick
 - [x] Add a feature flag (`VITE_APP_ENABLE_LOCAL_STORAGE`) to allow enabling/disabling scene localStorage persistence, and default persistence off.
 - [ ] Keep Vite + Basic-auth proxy running; auto-restart if killed
 - [x] Keep TypeScript checker at 0 errors
+
+## QoL
+- [x] Add a context-menu toggle for selection box metrics and keep it hidden by default

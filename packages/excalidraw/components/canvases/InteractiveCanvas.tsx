@@ -253,6 +253,7 @@ const getRelevantAppStateProps = (
   activeEmbeddable: appState.activeEmbeddable,
   snapLines: appState.snapLines,
   zenModeEnabled: appState.zenModeEnabled,
+  selectionMetricsEnabled: appState.selectionMetricsEnabled,
   flowModeEnabled: appState.flowModeEnabled,
   editingTextElement: appState.editingTextElement,
   isCropping: appState.isCropping,

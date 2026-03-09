@@ -1648,12 +1648,17 @@ const _renderInteractiveScene = ({
         renderSelectionBorder(context, appState, selection),
       );
 
-      renderSelectionInfo(
-        context,
-        appState,
-        selectionBounds,
-        selectionColor,
-      );
+      if (
+        appState.selectionMetricsEnabled &&
+        !appState.zenModeEnabled
+      ) {
+        renderSelectionInfo(
+          context,
+          appState,
+          selectionBounds,
+          selectionColor,
+        );
+      }
     }
     // Paint resize transformHandles
     context.save();
