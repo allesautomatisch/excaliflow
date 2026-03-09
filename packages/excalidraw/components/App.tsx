@@ -121,6 +121,7 @@ import {
   fixBindingsAfterDeletion,
   getHoveredElementForBinding,
   isBindingEnabled,
+  isSwimlaneElement,
   shouldEnableBindingForPointerEvent,
   updateBoundElements,
   LinearElementEditor,
@@ -130,6 +131,8 @@ import {
   newFreeDrawElement,
   newEmbeddableElement,
   newMagicFrameElement,
+  newSwimlaneElement,
+  syncSwimlaneLabels,
   newIframeElement,
   newArrowElement,
   newElement,
@@ -145,6 +148,8 @@ import {
   isBindingElementType,
   isBoundToContainer,
   isFrameLikeElement,
+  isNonRotatableFrameLikeElement,
+  isNamedFrameLikeElement,
   isImageElement,
   isEmbeddableElement,
   isInitializedImageElement,
@@ -767,8 +772,7 @@ class App extends React.Component<AppProps, AppState> {
 
   public flowChartCreator: FlowChartCreator = new FlowChartCreator();
   private flowChartNavigator: FlowChartNavigator = new FlowChartNavigator();
-  private flowchartAddNextDirection: "up" | "right" | "down" | "left" =
-    "right";
+  private flowchartAddNextDirection: "up" | "right" | "down" | "left" = "right";
   private flowchartShapePickerOpen = false;
 
   bindModeHandler: ReturnType<typeof setTimeout> | null = null;
@@ -1833,7 +1837,9 @@ class App extends React.Component<AppProps, AppState> {
     _cache: new Map(),
   };
 
-  private resetEditingFrame = (frame: ExcalidrawFrameLikeElement | null) => {
+  private resetEditingFrame = (
+    frame: Extract<ExcalidrawFrameLikeElement, { name: string | null }> | null,
+  ) => {
     if (frame) {
       this.scene.mutateElement(frame, { name: frame.name?.trim() || null });
     }
@@ -1854,14 +1860,14 @@ class App extends React.Component<AppProps, AppState> {
     const focusedSearchMatch =
       nonDeletedFramesLikes.length > 0
         ? this.state.searchMatches?.focusedId &&
-          isFrameLikeElement(
+          isNamedFrameLikeElement(
             this.scene.getElement(this.state.searchMatches.focusedId),
           )
           ? this.state.searchMatches.matches.find((sm) => sm.focus)
           : null
         : null;
 
-    return nonDeletedFramesLikes.map((f) => {
+    return nonDeletedFramesLikes.filter(isNamedFrameLikeElement).map((f) => {
       if (
         !isElementInViewport(
           f,
@@ -2054,20 +2060,19 @@ class App extends React.Component<AppProps, AppState> {
       selectedFlowchartNode = firstSelectedElement;
     }
 
-    const selectedFlowchartArrow = selectedElements.length === 1 &&
-      isArrowElement(firstSelectedElement)
-      ? this.getFlowchartNodesFromArrow(firstSelectedElement)
-      : null;
+    const selectedFlowchartArrow =
+      selectedElements.length === 1 && isArrowElement(firstSelectedElement)
+        ? this.getFlowchartNodesFromArrow(firstSelectedElement)
+        : null;
 
     const flowchartAddNextDirection =
-      selectedFlowchartNode &&
-      this.lastPointerMoveCoords
+      selectedFlowchartNode && this.lastPointerMoveCoords
         ? this.getFlowchartAddNextDirection(selectedFlowchartNode)
         : selectedFlowchartArrow
-          ? this.getFlowchartAddNextDirectionForNodes(
-              selectedFlowchartArrow.sourceNode,
-              selectedFlowchartArrow.targetNode,
-            )
+        ? this.getFlowchartAddNextDirectionForNodes(
+            selectedFlowchartArrow.sourceNode,
+            selectedFlowchartArrow.targetNode,
+          )
         : this.flowchartAddNextDirection;
 
     const flowchartAddNextButtonPosition: ElementCanvasButtonsPosition =
@@ -2083,9 +2088,7 @@ class App extends React.Component<AppProps, AppState> {
         ? getFlowchartNodeIconKey(selectedFlowchartNode)
         : "none";
     const selectedFlowchartShapeType: BpdFlowchartShapeType =
-      selectedFlowchartNode
-        ? selectedFlowchartNode.type
-        : "rectangle";
+      selectedFlowchartNode ? selectedFlowchartNode.type : "rectangle";
 
     const showShapeSwitchPanel =
       editorJotaiStore.get(convertElementTypePopupAtom)?.type === "panel";
@@ -2125,46 +2128,46 @@ class App extends React.Component<AppProps, AppState> {
                     <ExcalidrawElementsContext.Provider
                       value={this.scene.getNonDeletedElements()}
                     >
-                        <ExcalidrawActionManagerContext.Provider
-                          value={this.actionManager}
+                      <ExcalidrawActionManagerContext.Provider
+                        value={this.actionManager}
+                      >
+                        <LayerUI
+                          canvas={this.canvas}
+                          appState={this.state}
+                          files={this.files}
+                          setAppState={this.setAppState}
+                          actionManager={this.actionManager}
+                          elements={this.scene.getNonDeletedElements()}
+                          onLockToggle={this.toggleLock}
+                          onPenModeToggle={this.togglePenMode}
+                          onHandToolToggle={this.onHandToolToggle}
+                          langCode={getLanguage().code}
+                          renderTopLeftUI={renderTopLeftUI}
+                          renderTopRightUI={renderTopRightUI}
+                          renderCustomStats={renderCustomStats}
+                          UIOptions={this.props.UIOptions}
+                          onExportImage={this.onExportImage}
+                          renderWelcomeScreen={
+                            !this.state.isLoading &&
+                            this.state.showWelcomeScreen &&
+                            this.state.activeTool.type ===
+                              this.state.preferredSelectionTool.type &&
+                            !this.state.zenModeEnabled &&
+                            !this.scene.getElementsIncludingDeleted().length
+                          }
+                          app={this}
+                          isCollaborating={this.props.isCollaborating}
+                          generateLinkForSelection={
+                            this.props.generateLinkForSelection
+                          }
+                          getLoadDialogDrawings={
+                            this.props.getLoadDialogDrawings
+                          }
+                          onLoadDrawing={this.props.onLoadDrawing}
+                          isDrawingChanged={this.props.isDrawingChanged}
                         >
-                          <LayerUI
-                            canvas={this.canvas}
-                            appState={this.state}
-                            files={this.files}
-                            setAppState={this.setAppState}
-                            actionManager={this.actionManager}
-                            elements={this.scene.getNonDeletedElements()}
-                            onLockToggle={this.toggleLock}
-                            onPenModeToggle={this.togglePenMode}
-                            onHandToolToggle={this.onHandToolToggle}
-                            langCode={getLanguage().code}
-                            renderTopLeftUI={renderTopLeftUI}
-                            renderTopRightUI={renderTopRightUI}
-                            renderCustomStats={renderCustomStats}
-                            UIOptions={this.props.UIOptions}
-                            onExportImage={this.onExportImage}
-                            renderWelcomeScreen={
-                              !this.state.isLoading &&
-                              this.state.showWelcomeScreen &&
-                              this.state.activeTool.type ===
-                                this.state.preferredSelectionTool.type &&
-                              !this.state.zenModeEnabled &&
-                              !this.scene.getElementsIncludingDeleted().length
-                            }
-                            app={this}
-                            isCollaborating={this.props.isCollaborating}
-                            generateLinkForSelection={
-                              this.props.generateLinkForSelection
-                            }
-                            getLoadDialogDrawings={
-                              this.props.getLoadDialogDrawings
-                            }
-                            onLoadDrawing={this.props.onLoadDrawing}
-                            isDrawingChanged={this.props.isDrawingChanged}
-                          >
-                            {this.props.children}
-                          </LayerUI>
+                          {this.props.children}
+                        </LayerUI>
 
                         <div className="excalidraw-textEditorContainer" />
                         <div className="excalidraw-contextMenuContainer" />
@@ -2249,71 +2252,71 @@ class App extends React.Component<AppProps, AppState> {
                                 )}
                                 {selectedFlowchartNode &&
                                   this.flowchartShapePickerOpen && (
-                                  <div className="excalidraw-flowchart-shape-picker">
-                                    <div className="excalidraw-flowchart-shape-picker-row">
-                                      {FLOWCHART_SHAPE_PICKER_OPTIONS.map(
-                                        ({
-                                          type,
-                                          icon,
-                                          key,
-                                          labelKey,
-                                        }) => {
-                                          const shortcutLabel = key.toUpperCase();
-                                          return (
-                                            <ToolButton
-                                              className="Shape"
-                                              key={`flowchart-shape-${type}`}
-                                              type="radio"
-                                              icon={icon}
-                                              checked={
-                                                selectedFlowchartShapeType === type
-                                              }
-                                              name="flowchart-shape-picker"
-                                              size="small"
-                                              title={`${t(labelKey)} — ${shortcutLabel}`}
-                                              keyBindingLabel={shortcutLabel}
-                                              aria-label={t(labelKey)}
-                                              aria-keyshortcuts={key}
-                                              onChange={() =>
-                                                this.onFlowchartShapePickerSelect(
-                                                  type,
-                                                  "button",
-                                                )
-                                              }
-                                            />
-                                          );
-                                        },
-                                      )}
+                                    <div className="excalidraw-flowchart-shape-picker">
+                                      <div className="excalidraw-flowchart-shape-picker-row">
+                                        {FLOWCHART_SHAPE_PICKER_OPTIONS.map(
+                                          ({ type, icon, key, labelKey }) => {
+                                            const shortcutLabel =
+                                              key.toUpperCase();
+                                            return (
+                                              <ToolButton
+                                                className="Shape"
+                                                key={`flowchart-shape-${type}`}
+                                                type="radio"
+                                                icon={icon}
+                                                checked={
+                                                  selectedFlowchartShapeType ===
+                                                  type
+                                                }
+                                                name="flowchart-shape-picker"
+                                                size="small"
+                                                title={`${t(
+                                                  labelKey,
+                                                )} — ${shortcutLabel}`}
+                                                keyBindingLabel={shortcutLabel}
+                                                aria-label={t(labelKey)}
+                                                aria-keyshortcuts={key}
+                                                onChange={() =>
+                                                  this.onFlowchartShapePickerSelect(
+                                                    type,
+                                                    "button",
+                                                  )
+                                                }
+                                              />
+                                            );
+                                          },
+                                        )}
+                                      </div>
+                                      <div className="excalidraw-flowchart-shape-picker-row">
+                                        {FLOWCHART_NODE_ICON_PICKER_OPTIONS.map(
+                                          ({ key, icon }) => {
+                                            return (
+                                              <ToolButton
+                                                className="Shape"
+                                                key={`flowchart-node-icon-${key}`}
+                                                type="radio"
+                                                icon={icon}
+                                                checked={
+                                                  selectedFlowchartNodeIconKey ===
+                                                  key
+                                                }
+                                                name="flowchart-node-icon-picker"
+                                                size="small"
+                                                title={key}
+                                                aria-label={key}
+                                                onChange={() =>
+                                                  this.onFlowchartNodeIconPickerSelect(
+                                                    key,
+                                                    "button",
+                                                  )
+                                                }
+                                              />
+                                            );
+                                          },
+                                        )}
+                                      </div>
                                     </div>
-                                    <div className="excalidraw-flowchart-shape-picker-row">
-                                      {FLOWCHART_NODE_ICON_PICKER_OPTIONS.map(
-                                        ({ key, icon }) => {
-                                          return (
-                                            <ToolButton
-                                              className="Shape"
-                                              key={`flowchart-node-icon-${key}`}
-                                              type="radio"
-                                              icon={icon}
-                                              checked={
-                                                selectedFlowchartNodeIconKey === key
-                                              }
-                                              name="flowchart-node-icon-picker"
-                                              size="small"
-                                              title={key}
-                                              aria-label={key}
-                                              onChange={() =>
-                                                this.onFlowchartNodeIconPickerSelect(
-                                                  key,
-                                                  "button",
-                                                )
-                                              }
-                                            />
-                                          );
-                                        },
-                                      )}
-                                    </div>
-                                  </div>
-                                )}
+                                  )}
                               </div>
                             </ElementCanvasButtons>
                           )}
@@ -2965,9 +2968,9 @@ class App extends React.Component<AppProps, AppState> {
       endBinding: updatedEndBinding,
     });
 
-    const newTargetNode = this.scene.getNonDeletedElementsMap().get(
-      newNodeWithPosition.id,
-    );
+    const newTargetNode = this.scene
+      .getNonDeletedElementsMap()
+      .get(newNodeWithPosition.id);
     if (
       newTargetNode &&
       isBindableElement(newTargetNode) &&
@@ -3450,9 +3453,9 @@ class App extends React.Component<AppProps, AppState> {
       });
     }
 
-    const convertedNode = this.scene.getNonDeletedElementsMap().get(
-      selectedNode.id,
-    );
+    const convertedNode = this.scene
+      .getNonDeletedElementsMap()
+      .get(selectedNode.id);
 
     if (convertedNode && isFlowchartNodeElement(convertedNode)) {
       this.applyBpdDefaultFlowchartShapeStyle(convertedNode, type);
@@ -4752,8 +4755,7 @@ class App extends React.Component<AppProps, AppState> {
         : opts.position === "cursor"
         ? this.lastViewportPosition.x
         : opts.position === "topLeft"
-        ? this.state.offsetLeft +
-          this.state.scrollX * this.state.zoom.value
+        ? this.state.offsetLeft + this.state.scrollX * this.state.zoom.value
         : this.state.width / 2 + this.state.offsetLeft;
     const clientY =
       typeof opts.position === "object"
@@ -4761,8 +4763,7 @@ class App extends React.Component<AppProps, AppState> {
         : opts.position === "cursor"
         ? this.lastViewportPosition.y
         : opts.position === "topLeft"
-        ? this.state.offsetTop +
-          this.state.scrollY * this.state.zoom.value
+        ? this.state.offsetTop + this.state.scrollY * this.state.zoom.value
         : this.state.height / 2 + this.state.offsetTop;
 
     const { x, y } = viewportCoordsToSceneCoords(
@@ -5948,8 +5949,8 @@ class App extends React.Component<AppProps, AppState> {
             (event.shiftKey
               ? ELEMENT_TRANSLATE_AMOUNT
               : isArrowOnlySelection
-                ? this.getArrowGridSize()
-                : this.getEffectiveGridSize())) ||
+              ? this.getArrowGridSize()
+              : this.getEffectiveGridSize())) ||
           (event.shiftKey
             ? ELEMENT_SHIFT_TRANSLATE_AMOUNT
             : ELEMENT_TRANSLATE_AMOUNT);
@@ -6024,7 +6025,7 @@ class App extends React.Component<AppProps, AppState> {
             });
             event.preventDefault();
             return;
-          } else if (isFrameLikeElement(selectedElement)) {
+          } else if (isNamedFrameLikeElement(selectedElement)) {
             this.setState({
               editingFrame: selectedElement.id,
             });
@@ -6747,7 +6748,7 @@ class App extends React.Component<AppProps, AppState> {
         // this also avoids the need to update past tests
         threshold: this.getElementHitThreshold(elementWithHighestZIndex) / 2,
         elementsMap: this.scene.getNonDeletedElementsMap(),
-        frameNameBound: isFrameLikeElement(elementWithHighestZIndex)
+        frameNameBound: isNamedFrameLikeElement(elementWithHighestZIndex)
           ? this.frameNameBoundsCache.get(elementWithHighestZIndex)
           : null,
       })
@@ -6863,7 +6864,7 @@ class App extends React.Component<AppProps, AppState> {
       element,
       threshold: this.getElementHitThreshold(element),
       elementsMap: this.scene.getNonDeletedElementsMap(),
-      frameNameBound: isFrameLikeElement(element)
+      frameNameBound: isNamedFrameLikeElement(element)
         ? this.frameNameBoundsCache.get(element)
         : null,
     });
@@ -8547,6 +8548,8 @@ class App extends React.Component<AppProps, AppState> {
         pointerDownState,
         this.state.activeTool.type,
       );
+    } else if (this.state.activeTool.type === TOOL_TYPE.swimlane) {
+      this.createSwimlaneElementOnPointerDown(pointerDownState);
     } else if (this.state.activeTool.type === "laser") {
       this.laserTrails.startPath(
         pointerDownState.lastCoords.x,
@@ -9799,8 +9802,8 @@ class App extends React.Component<AppProps, AppState> {
         event[KEYS.CTRL_OR_CMD]
           ? null
           : elementType === "arrow"
-            ? this.getArrowGridSize()
-            : this.getEffectiveGridSize(),
+          ? this.getArrowGridSize()
+          : this.getEffectiveGridSize(),
       );
 
       const topLayerFrame = this.getTopLayerFrameAtSceneCoords({
@@ -9998,8 +10001,8 @@ class App extends React.Component<AppProps, AppState> {
       this.lastPointerDownEvent?.[KEYS.CTRL_OR_CMD]
         ? null
         : bpdDefaultBackgroundColor
-          ? this.getMovementGridSize()
-          : this.getEffectiveGridSize(),
+        ? this.getMovementGridSize()
+        : this.getEffectiveGridSize(),
     );
 
     const topLayerFrame = this.getTopLayerFrameAtSceneCoords({
@@ -10087,6 +10090,38 @@ class App extends React.Component<AppProps, AppState> {
     this.setState({
       multiElement: null,
       newElement: frame,
+    });
+  };
+
+  private createSwimlaneElementOnPointerDown = (
+    pointerDownState: PointerDownState,
+  ): void => {
+    const [gridX, gridY] = getGridPoint(
+      pointerDownState.origin.x,
+      pointerDownState.origin.y,
+      this.lastPointerDownEvent?.[KEYS.CTRL_OR_CMD]
+        ? null
+        : this.getEffectiveGridSize(),
+    );
+
+    const swimlane = newSwimlaneElement({
+      x: gridX,
+      y: gridY,
+      opacity: this.state.currentItemOpacity,
+      locked: false,
+      strokeColor: this.state.currentItemStrokeColor,
+      backgroundColor: "transparent",
+      fillStyle: this.state.currentItemFillStyle,
+      strokeWidth: this.state.currentItemStrokeWidth,
+      strokeStyle: this.state.currentItemStrokeStyle,
+      roughness: this.state.currentItemRoughness,
+    });
+
+    this.scene.insertElement(swimlane);
+
+    this.setState({
+      multiElement: null,
+      newElement: swimlane,
     });
   };
 
@@ -10718,14 +10753,13 @@ class App extends React.Component<AppProps, AppState> {
             const isArrowOnlySelection =
               selectedElements.some(isArrowElement) &&
               selectedElements.every(
-                (element) =>
-                  isArrowElement(element) || isTextElement(element),
+                (element) => isArrowElement(element) || isTextElement(element),
               );
             const dragGridSize = event[KEYS.CTRL_OR_CMD]
               ? null
               : isArrowOnlySelection
-                ? this.getArrowGridSize()
-                : this.getMovementGridSize();
+              ? this.getArrowGridSize()
+              : this.getMovementGridSize();
 
             dragSelectedElements(
               pointerDownState,
@@ -11538,10 +11572,7 @@ class App extends React.Component<AppProps, AppState> {
         });
       }
 
-      if (
-        activeTool.type !== "selection" &&
-        newElement
-      ) {
+      if (activeTool.type !== "selection" && newElement) {
         const didApplyBpdDefaultSize = this.maybeApplyBpdClickToCreateDefaults(
           newElement,
           pointerDownState,
@@ -11590,6 +11621,9 @@ class App extends React.Component<AppProps, AppState> {
             isDragging: false,
           },
         );
+        if (isSwimlaneElement(newElement)) {
+          syncSwimlaneLabels(this.scene, newElement);
+        }
         // the above does not guarantee the scene to be rendered again, hence the trigger below
         this.scene.triggerUpdate();
         this.maybeAutoEditBpdNewShape(newElement);
@@ -12023,7 +12057,7 @@ class App extends React.Component<AppProps, AppState> {
               element: hitElement,
               elementsMap,
               threshold: this.getElementHitThreshold(hitElement),
-              frameNameBound: isFrameLikeElement(hitElement)
+              frameNameBound: isNamedFrameLikeElement(hitElement)
                 ? this.frameNameBoundsCache.get(hitElement)
                 : null,
             },
@@ -12942,8 +12976,8 @@ class App extends React.Component<AppProps, AppState> {
     const dragGridSize = event[KEYS.CTRL_OR_CMD]
       ? null
       : isArrowElement(newElement)
-        ? this.getArrowGridSize()
-        : this.getMovementGridSize();
+      ? this.getArrowGridSize()
+      : this.getMovementGridSize();
     const [originGridX, originGridY] = getGridPoint(
       pointerDownState.origin.x,
       pointerDownState.origin.y,
@@ -12968,12 +13002,8 @@ class App extends React.Component<AppProps, AppState> {
       this,
       event,
       {
-        x:
-          originGridX +
-          (this.state.originSnapOffset?.x ?? 0),
-        y:
-          originGridY +
-          (this.state.originSnapOffset?.y ?? 0),
+        x: originGridX + (this.state.originSnapOffset?.x ?? 0),
+        y: originGridY + (this.state.originSnapOffset?.y ?? 0),
       },
       {
         x: gridX - originGridX,
@@ -13018,7 +13048,8 @@ class App extends React.Component<AppProps, AppState> {
     // highlight elements that are to be added to frames on frames creation
     if (
       this.state.activeTool.type === TOOL_TYPE.frame ||
-      this.state.activeTool.type === TOOL_TYPE.magicframe
+      this.state.activeTool.type === TOOL_TYPE.magicframe ||
+      this.state.activeTool.type === TOOL_TYPE.swimlane
     ) {
       this.setState({
         elementsToHighlight: getElementsInResizingFrame(
@@ -13132,12 +13163,16 @@ class App extends React.Component<AppProps, AppState> {
       (element): element is ExcalidrawFrameLikeElement =>
         isFrameLikeElement(element),
     );
+    const selectedNonRotatableFrames = selectedElements.filter((element) =>
+      isNonRotatableFrameLikeElement(element),
+    );
 
     const transformHandleType = pointerDownState.resize.handleType;
 
     if (
-      // Frames cannot be rotated.
-      (selectedFrames.length > 0 && transformHandleType === "rotation") ||
+      // Actual frames cannot be rotated, but swimlanes can.
+      (selectedNonRotatableFrames.length > 0 &&
+        transformHandleType === "rotation") ||
       // Elbow arrows cannot be transformed (resized or rotated).
       (selectedElements.length === 1 && isElbowArrow(selectedElements[0])) ||
       // Do not resize when in crop mode
@@ -13155,12 +13190,16 @@ class App extends React.Component<AppProps, AppState> {
       activeEmbeddable: null,
     });
     const pointerCoords = pointerDownState.lastCoords;
+    const isRotationTransform = transformHandleType === "rotation";
+    const shouldSnapRotationToDiscreteAngles =
+      isRotationTransform && selectedElements.every(isSwimlaneElement);
     const shouldResizeNode = selectedElements.every(isFlowchartNodeElement);
-    const resizeGridSize = event[KEYS.CTRL_OR_CMD]
+    const resizeGridSize =
+      isRotationTransform || event[KEYS.CTRL_OR_CMD]
       ? null
       : shouldResizeNode
-        ? NODE_RESIZE_GRID_SIZE
-        : this.getEffectiveGridSize();
+      ? NODE_RESIZE_GRID_SIZE
+      : this.getEffectiveGridSize();
     let [resizeX, resizeY] = getGridPoint(
       pointerCoords.x - pointerDownState.resize.offset.x,
       pointerCoords.y - pointerDownState.resize.offset.y,
@@ -13230,7 +13269,8 @@ class App extends React.Component<AppProps, AppState> {
         transformHandleType,
         selectedElements,
         this.scene,
-        shouldRotateWithDiscreteAngle(event),
+        shouldRotateWithDiscreteAngle(event) ||
+          shouldSnapRotationToDiscreteAngles,
         shouldResizeFromCenter(event),
         selectedElements.some((element) => isImageElement(element))
           ? !shouldMaintainAspectRatio(event)

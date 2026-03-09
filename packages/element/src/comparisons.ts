@@ -7,6 +7,7 @@ export const hasBackground = (type: ElementOrToolType) =>
   type === "embeddable" ||
   type === "ellipse" ||
   type === "capsule" ||
+  type === "swimlane" ||
   type === "diamond" ||
   type === "line" ||
   type === "freedraw";
@@ -16,6 +17,7 @@ export const hasStrokeColor = (type: ElementOrToolType) =>
   type === "parallelogram" ||
   type === "ellipse" ||
   type === "capsule" ||
+  type === "swimlane" ||
   type === "diamond" ||
   type === "freedraw" ||
   type === "arrow" ||
@@ -30,6 +32,7 @@ export const hasStrokeWidth = (type: ElementOrToolType) =>
   type === "embeddable" ||
   type === "ellipse" ||
   type === "capsule" ||
+  type === "swimlane" ||
   type === "diamond" ||
   type === "freedraw" ||
   type === "arrow" ||
@@ -42,6 +45,7 @@ export const hasStrokeStyle = (type: ElementOrToolType) =>
   type === "embeddable" ||
   type === "ellipse" ||
   type === "capsule" ||
+  type === "swimlane" ||
   type === "diamond" ||
   type === "arrow" ||
   type === "line";

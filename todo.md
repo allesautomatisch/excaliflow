@@ -1,9 +1,9 @@
 # Excaliflow / BPD TODO
 
-Source of truth: `PLAN.md`.
-Always update `PLAN.md` first, then reflect changes here. This file is for quick reference and task tracking.
+Source of truth: `PLAN.md`. Always update `PLAN.md` first, then reflect changes here. This file is for quick reference and task tracking.
 
 ## Milestone 1 (stabilize defaults + create flow)
+
 - [x] Learn plan and read source code to understand where to implement changes.
 - [x] Check which features might already be implemented or partially implemented
 - [x] Set default font size to small
@@ -20,10 +20,12 @@ Always update `PLAN.md` first, then reflect changes here. This file is for quick
 - [x] Double default node size
 
 ## Milestone 2 (new shapes/tools)
+
 - [x] Add Parallelogram tool (toolbar + element type + rendering + icons)
 - [x] Add Capsule/Pill tool (toolbar + element type + rendering + icons)
 
 ## Milestone 3 ("Add next step" handle)
+
 - [x] Add handle/button to create next step + elbow-arrow binding
 - [x] QoL: keyboard/flow optimizations for BPD
 - [x] Make `+` button directional (top/right/bottom/left) and create next node in clicked side direction
@@ -46,15 +48,27 @@ Always update `PLAN.md` first, then reflect changes here. This file is for quick
 - [x] Add flowchart node icon rendering in canvas and SVG export output (top-right corner)
 
 ## Milestone 4 (Flow visualization prototype)
+
 - [x] Add flow mode toggle in context menu (Zen-style integration).
 - [x] Add flow simulation rendering pipeline for particles in the interactive renderer.
 - [x] Add flow node topology extraction from flowchart nodes + arrows.
 - [x] Add particle spawn/advance logic and sink-node termination for particles.
 
+## Milestone 5 (Swim lanes container)
+
+- [x] Add Swim Lanes tool to the extra tools menu (desktop + mobile)
+- [x] Add `swimlane` element model, rendering, export support, and equal divider spacing
+- [x] Reuse frame-style parenting/membership behavior for swim lanes
+- [x] Add Stats-panel authoring for swimlane line count
+- [x] Auto-create and keep one headline text label per swimlane lane in sync with resize/line-count changes
+- [x] Add focused swimlane element tests and keep TypeScript clean
+
 ## Ops
+
 - [x] Add a feature flag (`VITE_APP_ENABLE_LOCAL_STORAGE`) to allow enabling/disabling scene localStorage persistence, and default persistence off.
 - [ ] Keep Vite + Basic-auth proxy running; auto-restart if killed
 - [x] Keep TypeScript checker at 0 errors
 
 ## QoL
+
 - [x] Add a context-menu toggle for selection box metrics and keep it hidden by default

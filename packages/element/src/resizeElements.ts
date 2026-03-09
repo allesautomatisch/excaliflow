@@ -57,6 +57,8 @@ import {
   isFreeDrawElement,
   isImageElement,
   isLinearElement,
+  isNonRotatableFrameLikeElement,
+  isSwimlaneElement,
   isTextElement,
 } from "./typeChecks";
 
@@ -82,6 +84,7 @@ import type {
   ExcalidrawArrowElement,
 } from "./types";
 import type { ElementUpdate } from "./mutateElement";
+import { syncSwimlaneLabels } from "./swimlaneLabels";
 
 // Returns true when transform (resizing/rotation) happened
 export const transformElements = (
@@ -214,7 +217,7 @@ const rotateSingleElement = (
   const cx = (x1 + x2) / 2;
   const cy = (y1 + y2) / 2;
   let angle: Radians;
-  if (isFrameLikeElement(element)) {
+  if (isNonRotatableFrameLikeElement(element)) {
     angle = 0 as Radians;
   } else {
     angle = ((5 * Math.PI) / 2 +
@@ -245,6 +248,10 @@ const rotateSingleElement = (
   }
 
   scene.mutateElement(element, update);
+
+  if (isSwimlaneElement(element)) {
+    syncSwimlaneLabels(scene, element);
+  }
 
   if (boundTextElementId) {
     const textElement =
@@ -425,7 +432,7 @@ const rotateMultipleElements = (
   >(elements.map((element) => [element.id, element]));
 
   for (const element of elements) {
-    if (!isFrameLikeElement(element)) {
+    if (!isNonRotatableFrameLikeElement(element)) {
       const [x1, y1, x2, y2] = getElementAbsoluteCoords(element, elementsMap);
       const cx = (x1 + x2) / 2;
       const cy = (y1 + y2) / 2;
@@ -449,6 +456,10 @@ const rotateMultipleElements = (
           };
 
       scene.mutateElement(element, updates);
+
+      if (isSwimlaneElement(element)) {
+        syncSwimlaneLabels(scene, element);
+      }
 
       updateBoundElements(element, scene, {
         simultaneouslyUpdated: elements,
@@ -908,6 +919,10 @@ export const resizeSingleElement = (
       informMutation: shouldInformMutation,
       isDragging: false,
     });
+
+    if (isSwimlaneElement(latestElement)) {
+      syncSwimlaneLabels(scene, latestElement);
+    }
 
     if (boundTextElement && boundTextFont != null) {
       scene.mutateElement(boundTextElement, {
@@ -1467,6 +1482,10 @@ export const resizeMultipleElements = (
       const { angle } = update;
 
       scene.mutateElement(element, update);
+
+      if (isSwimlaneElement(element)) {
+        syncSwimlaneLabels(scene, element);
+      }
 
       updateBoundElements(element, scene, {
         simultaneouslyUpdated: elementsToUpdate,

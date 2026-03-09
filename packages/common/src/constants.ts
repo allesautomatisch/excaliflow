@@ -453,6 +453,7 @@ export const TOOL_TYPE = {
   diamond: "diamond",
   ellipse: "ellipse",
   capsule: "capsule",
+  swimlane: "swimlane",
   arrow: "arrow",
   line: "line",
   freedraw: "freedraw",

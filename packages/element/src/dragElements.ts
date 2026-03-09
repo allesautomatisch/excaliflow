@@ -17,6 +17,7 @@ import type { NonDeletedExcalidrawElement } from "@excalidraw/element/types";
 
 import { unbindBindingElement, updateBoundElements } from "./binding";
 import { getCommonBounds } from "./bounds";
+import { isGridSnapDisabled } from "./grid";
 import { getPerfectElementSize } from "./sizeHelpers";
 import { getBoundTextElement } from "./textElement";
 import { getMinTextElementWidth } from "./textMeasurements";
@@ -100,7 +101,7 @@ export const dragSelectedElements = (
     getCommonBounds(origElements),
     offset,
     snapOffset,
-    gridSize,
+    selectedElements.some(isGridSnapDisabled) ? null : gridSize,
   );
 
   const elementsToUpdateIds = new Set(

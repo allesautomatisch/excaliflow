@@ -3,6 +3,7 @@ import { pointFrom, pointRotateRads } from "@excalidraw/math";
 import {
   getBoundTextElement,
   isBindingElement,
+  isNonRotatableFrameLikeElement,
   unbindBindingElement,
 } from "@excalidraw/element";
 import { isFrameLikeElement } from "@excalidraw/element";
@@ -37,6 +38,7 @@ export type StatsInputProperty =
   | "height"
   | "angle"
   | "fontSize"
+  | "lineCount"
   | "gridStep";
 
 export const SMALLEST_DELTA = 0.01;
@@ -46,7 +48,7 @@ export const isPropertyEditable = (
   element: ExcalidrawElement,
   property: keyof ExcalidrawElement,
 ) => {
-  if (property === "angle" && isFrameLikeElement(element)) {
+  if (property === "angle" && isNonRotatableFrameLikeElement(element)) {
     return false;
   }
   return true;

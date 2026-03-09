@@ -908,12 +908,16 @@ export const shouldApplyFrameClip = (
 const DEFAULT_FRAME_NAME = "Frame";
 const DEFAULT_AI_FRAME_NAME = "AI Frame";
 
-export const getDefaultFrameName = (element: ExcalidrawFrameLikeElement) => {
+export const getDefaultFrameName = (
+  element: Extract<ExcalidrawFrameLikeElement, { name: string | null }>,
+) => {
   // TODO name frames "AI" only if specific to AI frames
   return isFrameElement(element) ? DEFAULT_FRAME_NAME : DEFAULT_AI_FRAME_NAME;
 };
 
-export const getFrameLikeTitle = (element: ExcalidrawFrameLikeElement) => {
+export const getFrameLikeTitle = (
+  element: Extract<ExcalidrawFrameLikeElement, { name: string | null }>,
+) => {
   return element.name === null ? getDefaultFrameName(element) : element.name;
 };
 

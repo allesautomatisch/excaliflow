@@ -318,6 +318,7 @@
     "diamond": "Diamond",
     "ellipse": "Ellipse",
     "capsule": "Capsule",
+    "swimlane": "Swim lanes",
     "arrow": "Arrow",
     "line": "Line",
     "freedraw": "Draw",
@@ -350,6 +351,7 @@
     "group": "Group",
     "frame": "Frame",
     "magicframe": "Wireframe to code",
+    "swimlane": "Swim lanes",
     "embeddable": "Web Embed",
     "selection": "Selection",
     "iframe": "IFrame"

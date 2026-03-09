@@ -442,6 +442,7 @@ export const intersectElementWithLineSegment = (
     case "iframe":
     case "embeddable":
     case "frame":
+    case "swimlane":
     case "selection":
     case "magicframe":
       return intersectRectanguloidWithLineSegment(

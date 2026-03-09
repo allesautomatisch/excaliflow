@@ -14,6 +14,7 @@ import {
   isBoundToContainer,
   isElbowArrow,
   isFrameLikeElement,
+  isSwimlaneLabelElement,
 } from "@excalidraw/element";
 import { getFrameChildren } from "@excalidraw/element";
 
@@ -89,6 +90,11 @@ const deleteSelectedElements = (
         continue;
       }
 
+      if (isSwimlaneLabelElement(el, frameId)) {
+        processedElements.add(el.id);
+        continue;
+      }
+
       if (isBoundToContainer(el)) {
         const containerElement = getContainerElement(el, elementsMap);
         if (containerElement) {
@@ -143,6 +149,9 @@ const deleteSelectedElements = (
     // if deleting a frame, remove the children from it and select them
     if (el.frameId && framesToBeDeleted.has(el.frameId)) {
       shouldSelectEditingGroup = false;
+      if (isSwimlaneLabelElement(el, el.frameId)) {
+        return newElementWith(el, { isDeleted: true });
+      }
       if (!isBoundToContainer(el)) {
         selectedElementIds[el.id] = true;
       }

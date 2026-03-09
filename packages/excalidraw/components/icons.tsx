@@ -348,17 +348,20 @@ export const FlowchartNodeIconNoneIcon = createIcon(
 
 const automaticFlowchartNodeIcon = getFlowchartNodeIcon("automatic");
 
-export const FlowchartNodeIconAutomaticIcon = automaticFlowchartNodeIcon?.svg ? (
-  <span
-    aria-hidden="true"
-    className="excalidraw-flowchart-node-icon-picker-icon"
-    dangerouslySetInnerHTML={{
-      __html: automaticFlowchartNodeIcon.svg,
-    }}
-  />
-) : null;
+export const FlowchartNodeIconAutomaticIcon =
+  automaticFlowchartNodeIcon?.svg ? (
+    <span
+      aria-hidden="true"
+      className="excalidraw-flowchart-node-icon-picker-icon"
+      dangerouslySetInnerHTML={{
+        __html: automaticFlowchartNodeIcon.svg,
+      }}
+    />
+  ) : null;
 
-const getFlowchartNodeIconSVG = (key: Exclude<FlowchartNodeIconKey, "none">) => {
+const getFlowchartNodeIconSVG = (
+  key: Exclude<FlowchartNodeIconKey, "none">,
+) => {
   const icon = getFlowchartNodeIcon(key);
 
   return icon?.svg ? (
@@ -1929,6 +1932,19 @@ export const frameToolIcon = createIcon(
     <path d="M4 17l16 0"></path>
     <path d="M7 4l0 16"></path>
     <path d="M17 4l0 16"></path>
+  </g>,
+  tablerIconProps,
+);
+
+export const swimlaneToolIcon = createIcon(
+  <g strokeWidth={1.5}>
+    <path stroke="none" d="M0 0h24v24H0z" fill="none"></path>
+    <path d="M4 4l16 0"></path>
+    <path d="M4 20l16 0"></path>
+    <path d="M4 4l0 16"></path>
+    <path d="M9.33 4l0 16"></path>
+    <path d="M14.66 4l0 16"></path>
+    <path d="M20 4l0 16"></path>
   </g>,
   tablerIconProps,
 );

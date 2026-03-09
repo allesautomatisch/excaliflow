@@ -43,6 +43,7 @@ import {
   isLineElement,
   isTextElement,
   isUsingAdaptiveRadius,
+  normalizeSwimlaneLineCount,
 } from "@excalidraw/element";
 
 import { syncInvalidIndices } from "@excalidraw/element";
@@ -102,6 +103,7 @@ export const AllowedExcalidrawActiveTools: Record<
   diamond: true,
   ellipse: true,
   capsule: true,
+  swimlane: true,
   line: true,
   image: true,
   arrow: true,
@@ -492,9 +494,14 @@ export const restoreElement = (
     case "diamond":
     case "parallelogram":
     case "capsule":
+    case "swimlane":
     case "iframe":
     case "embeddable":
-      return restoreElementWithProperties(element, {});
+      return restoreElementWithProperties(element, {
+        ...(element.type === "swimlane"
+          ? { lineCount: normalizeSwimlaneLineCount(element.lineCount) }
+          : {}),
+      });
     case "magicframe":
     case "frame":
       return restoreElementWithProperties(element, {

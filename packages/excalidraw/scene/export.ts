@@ -24,7 +24,10 @@ import {
 
 import { newElementWith } from "@excalidraw/element";
 
-import { isFrameLikeElement } from "@excalidraw/element";
+import {
+  isFrameLikeElement,
+  isNamedFrameLikeElement,
+} from "@excalidraw/element";
 
 import {
   getElementsOverlappingFrame,
@@ -105,7 +108,7 @@ const addFrameLabelsAsTextElements = (
 ) => {
   const nextElements: NonDeletedExcalidrawElement[] = [];
   for (const element of elements) {
-    if (isFrameLikeElement(element)) {
+    if (isNamedFrameLikeElement(element)) {
       let textElement: Mutable<ExcalidrawTextElement> = newTextElement({
         x: element.x,
         y: element.y - FRAME_STYLE.nameOffsetY,

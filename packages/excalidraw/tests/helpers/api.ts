@@ -16,6 +16,7 @@ import {
   newImageElement,
   newLinearElement,
   newMagicFrameElement,
+  newSwimlaneElement,
   newTextElement,
 } from "@excalidraw/element";
 
@@ -369,6 +370,9 @@ export class API {
         break;
       case "magicframe":
         element = newMagicFrameElement({ ...base, width, height });
+        break;
+      case "swimlane":
+        element = newSwimlaneElement({ ...base, width, height });
         break;
       default:
         assertNever(

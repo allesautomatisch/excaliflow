@@ -26,6 +26,7 @@ import {
   newImageElement,
   newLinearElement,
   newMagicFrameElement,
+  newSwimlaneElement,
   newTextElement,
   type ElementConstructorOpts,
 } from "./newElement";
@@ -54,6 +55,7 @@ import type {
   ExcalidrawLinearElement,
   ExcalidrawMagicFrameElement,
   ExcalidrawSelectionElement,
+  ExcalidrawSwimlaneElement,
   ExcalidrawTextElement,
   FileId,
   FontFamilyValues,
@@ -206,7 +208,12 @@ export type ExcalidrawElementSkeleton =
       type: "magicframe";
       children: readonly ExcalidrawElement["id"][];
       name?: string;
-    } & Partial<ExcalidrawMagicFrameElement>);
+    } & Partial<ExcalidrawMagicFrameElement>)
+  | ({
+      type: "swimlane";
+      children: readonly ExcalidrawElement["id"][];
+      lineCount?: number;
+    } & Partial<ExcalidrawSwimlaneElement>);
 
 const DEFAULT_LINEAR_ELEMENT_PROPS = {
   width: 100,
@@ -628,6 +635,14 @@ export const convertToExcalidrawElements = (
         });
         break;
       }
+      case "swimlane": {
+        excalidrawElement = newSwimlaneElement({
+          x: 0,
+          y: 0,
+          ...element,
+        });
+        break;
+      }
       case "freedraw":
       case "iframe":
       case "embeddable": {
@@ -747,7 +762,11 @@ export const convertToExcalidrawElements = (
   // need to calculate coordinates and dimensions of frame which is possible after all
   // frame children are processed.
   for (const [id, element] of elementsWithIds) {
-    if (element.type !== "frame" && element.type !== "magicframe") {
+    if (
+      element.type !== "frame" &&
+      element.type !== "magicframe" &&
+      element.type !== "swimlane"
+    ) {
       continue;
     }
     const frame = elementStore.getElement(id);

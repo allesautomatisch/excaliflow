@@ -16,9 +16,9 @@ import type { Bounds } from "@excalidraw/common";
 import { getElementAbsoluteCoords } from "./bounds";
 import {
   isElbowArrow,
-  isFrameLikeElement,
   isImageElement,
   isLinearElement,
+  isNonRotatableFrameLikeElement,
 } from "./typeChecks";
 
 import type {
@@ -303,7 +303,7 @@ export const getTransformHandles = (
         omitSides = OMIT_SIDES_FOR_LINE_BACKSLASH;
       }
     }
-  } else if (isFrameLikeElement(element)) {
+  } else if (isNonRotatableFrameLikeElement(element)) {
     omitSides = {
       ...omitSides,
       rotation: true,

@@ -1,7 +1,11 @@
 import { degreesToRadians, radiansToDegrees } from "@excalidraw/math";
 
-import { getBoundTextElement } from "@excalidraw/element";
-import { isArrowElement } from "@excalidraw/element";
+import {
+  getBoundTextElement,
+  isArrowElement,
+  isSwimlaneElement,
+  syncSwimlaneLabels,
+} from "@excalidraw/element";
 
 import { isInGroup } from "@excalidraw/element";
 
@@ -57,6 +61,10 @@ const handleDegreeChange: DragInputCallbackType<
         angle: nextAngle,
       });
 
+      if (isSwimlaneElement(element)) {
+        syncSwimlaneLabels(scene, element);
+      }
+
       const boundTextElement = getBoundTextElement(element, elementsMap);
       if (boundTextElement && !isArrowElement(element)) {
         scene.mutateElement(boundTextElement, { angle: nextAngle });
@@ -90,6 +98,10 @@ const handleDegreeChange: DragInputCallbackType<
     scene.mutateElement(latestElement, {
       angle: nextAngle,
     });
+
+    if (isSwimlaneElement(latestElement)) {
+      syncSwimlaneLabels(scene, latestElement);
+    }
 
     const boundTextElement = getBoundTextElement(latestElement, elementsMap);
     if (boundTextElement && !isArrowElement(latestElement)) {

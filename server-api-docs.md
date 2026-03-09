@@ -1,8 +1,6 @@
 # Laravel Drawing API (Excalidraw-compatible) Documentation
 
-This document describes the API implemented in `/Users/oliver/Herd/automatisch` and how it is used by this Excalidraw project.
-When adding functionality, you are allowed to update the project in `/Users/oliver/Herd/automatisch`
-and the API contract described here, but breaking changes to the API should be avoided to prevent frontend integration issues.
+This document describes the API implemented in `/Users/oliver/Herd/automatisch` and how it is used by this Excalidraw project. When adding functionality, you are allowed to update the project in `/Users/oliver/Herd/automatisch` and the API contract described here, but breaking changes to the API should be avoided to prevent frontend integration issues.
 
 ## 1) What is implemented
 

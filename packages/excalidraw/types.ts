@@ -148,6 +148,7 @@ export type ToolType =
   | "diamond"
   | "ellipse"
   | "capsule"
+  | "swimlane"
   | "arrow"
   | "line"
   | "freedraw"
@@ -627,9 +628,7 @@ export interface ExcalidrawProps {
       nativeEvent: MouseEvent | React.PointerEvent<HTMLCanvasElement>;
     }>,
   ) => void;
-  onLoadDrawing?: (
-    drawing: LoadDialogDrawing,
-  ) => void | Promise<void>;
+  onLoadDrawing?: (drawing: LoadDialogDrawing) => void | Promise<void>;
   isDrawingChanged?: boolean;
   onPointerDown?: (
     activeTool: AppState["activeTool"],

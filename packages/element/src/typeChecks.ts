@@ -29,6 +29,7 @@ import type {
   ExcalidrawLineElement,
   ExcalidrawFlowchartNodeElement,
   ExcalidrawLinearElementSubType,
+  ExcalidrawSwimlaneElement,
 } from "./types";
 
 export const isInitializedImageElement = (
@@ -81,12 +82,35 @@ export const isMagicFrameElement = (
   return element != null && element.type === "magicframe";
 };
 
+export const isSwimlaneElement = (
+  element: ExcalidrawElement | null,
+): element is ExcalidrawSwimlaneElement => {
+  return element != null && element.type === "swimlane";
+};
+
+export const isNamedFrameLikeElement = (
+  element: ExcalidrawElement | null,
+): element is ExcalidrawFrameElement | ExcalidrawMagicFrameElement => {
+  return (
+    element != null &&
+    (element.type === "frame" || element.type === "magicframe")
+  );
+};
+
+export const isNonRotatableFrameLikeElement = (
+  element: ExcalidrawElement | null,
+): element is ExcalidrawFrameElement | ExcalidrawMagicFrameElement => {
+  return isNamedFrameLikeElement(element);
+};
+
 export const isFrameLikeElement = (
   element: ExcalidrawElement | null,
 ): element is ExcalidrawFrameLikeElement => {
   return (
     element != null &&
-    (element.type === "frame" || element.type === "magicframe")
+    (element.type === "frame" ||
+      element.type === "magicframe" ||
+      element.type === "swimlane")
   );
 };
 
@@ -186,6 +210,7 @@ export const isBindableElement = (
       element.type === "diamond" ||
       element.type === "ellipse" ||
       element.type === "capsule" ||
+      element.type === "swimlane" ||
       element.type === "image" ||
       element.type === "iframe" ||
       element.type === "embeddable" ||
@@ -203,6 +228,7 @@ export const isRectanguloidElement = (
     (element.type === "rectangle" ||
       element.type === "diamond" ||
       element.type === "capsule" ||
+      element.type === "swimlane" ||
       element.type === "image" ||
       element.type === "iframe" ||
       element.type === "embeddable" ||
@@ -221,6 +247,7 @@ export const isRectangularElement = (
     element != null &&
     (element.type === "rectangle" ||
       element.type === "capsule" ||
+      element.type === "swimlane" ||
       element.type === "image" ||
       element.type === "text" ||
       element.type === "iframe" ||
@@ -263,6 +290,7 @@ export const isExcalidrawElement = (
     case "embeddable":
     case "ellipse":
     case "capsule":
+    case "swimlane":
     case "arrow":
     case "freedraw":
     case "line":

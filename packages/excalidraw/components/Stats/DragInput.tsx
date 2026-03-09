@@ -64,6 +64,7 @@ interface StatsDragInputProps<
   /** how many px you need to drag to get 1 unit change */
   sensitivity?: number;
   dragFinishedCallback?: DragFinishedCallbackType;
+  updateOnChange?: boolean;
 }
 
 const StatsDragInput = <
@@ -82,6 +83,7 @@ const StatsDragInput = <
   appState,
   sensitivity = 1,
   dragFinishedCallback,
+  updateOnChange = false,
 }: StatsDragInputProps<T, E>) => {
   const app = useApp();
   const setAppState = useExcalidrawSetAppState();
@@ -358,6 +360,13 @@ const StatsDragInput = <
         onChange={(event) => {
           stateRef.current.updatePending = true;
           setInputValue(event.target.value);
+          if (updateOnChange) {
+            handleInputValue(
+              event.target.value,
+              stateRef.current.originalElements,
+              stateRef.current.originalAppState,
+            );
+          }
         }}
         onFocus={(event) => {
           event.target.select();

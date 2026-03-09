@@ -70,6 +70,7 @@ import {
   EmbedIcon,
   extraToolsIcon,
   frameToolIcon,
+  swimlaneToolIcon,
   mermaidLogoIcon,
   laserPointerToolIcon,
   MagicIcon,
@@ -1068,6 +1069,7 @@ export const ShapesSwitcher = ({
   ] as const;
 
   const frameToolSelected = activeTool.type === "frame";
+  const swimlaneToolSelected = activeTool.type === "swimlane";
   const laserToolSelected = activeTool.type === "laser";
   const lassoToolSelected =
     isFullStylesPanel &&
@@ -1183,6 +1185,7 @@ export const ShapesSwitcher = ({
           className={clsx("App-toolbar__extra-tools-trigger", {
             "App-toolbar__extra-tools-trigger--selected":
               frameToolSelected ||
+              swimlaneToolSelected ||
               embeddableToolSelected ||
               lassoToolSelected ||
               // in collab we're already highlighting the laser button
@@ -1198,6 +1201,8 @@ export const ShapesSwitcher = ({
         >
           {frameToolSelected
             ? frameToolIcon
+            : swimlaneToolSelected
+            ? swimlaneToolIcon
             : embeddableToolSelected
             ? EmbedIcon
             : laserToolSelected && !app.props.isCollaborating
@@ -1219,6 +1224,14 @@ export const ShapesSwitcher = ({
             selected={frameToolSelected}
           >
             {t("toolBar.frame")}
+          </DropdownMenu.Item>
+          <DropdownMenu.Item
+            onSelect={() => app.setActiveTool({ type: "swimlane" })}
+            icon={swimlaneToolIcon}
+            data-testid="toolbar-swimlane"
+            selected={swimlaneToolSelected}
+          >
+            {t("toolBar.swimlane")}
           </DropdownMenu.Item>
           <DropdownMenu.Item
             onSelect={() => app.setActiveTool({ type: "embeddable" })}

@@ -7,6 +7,7 @@ import { STATS_PANELS } from "@excalidraw/common";
 import { getCommonBounds } from "@excalidraw/element";
 import { getUncroppedWidthAndHeight } from "@excalidraw/element";
 import { isImageElement } from "@excalidraw/element";
+import { isSwimlaneElement } from "@excalidraw/element";
 
 import { frameAndChildrenSelectedTogether } from "@excalidraw/element";
 
@@ -30,6 +31,7 @@ import MultiDimension from "./MultiDimension";
 import MultiFontSize from "./MultiFontSize";
 import MultiPosition from "./MultiPosition";
 import Position from "./Position";
+import SwimlaneLineCount from "./SwimlaneLineCount";
 import { getAtomicUnits } from "./utils";
 
 import "./Stats.scss";
@@ -349,6 +351,15 @@ export const StatsInner = memo(
                           appState={appState}
                         />
                       </StatsRow>
+                      {isSwimlaneElement(singleElement) && (
+                        <StatsRow>
+                          <SwimlaneLineCount
+                            element={singleElement}
+                            scene={scene}
+                            appState={appState}
+                          />
+                        </StatsRow>
+                      )}
                     </>
                   )}
 

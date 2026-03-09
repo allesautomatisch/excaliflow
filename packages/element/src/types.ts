@@ -106,6 +106,11 @@ export type ExcalidrawCapsuleElement = _ExcalidrawElementBase & {
   type: "capsule";
 };
 
+export type ExcalidrawSwimlaneElement = _ExcalidrawElementBase & {
+  type: "swimlane";
+  lineCount: number;
+};
+
 export type ExcalidrawEmbeddableElement = _ExcalidrawElementBase &
   Readonly<{
     type: "embeddable";
@@ -181,7 +186,8 @@ export type ExcalidrawMagicFrameElement = _ExcalidrawElementBase & {
 
 export type ExcalidrawFrameLikeElement =
   | ExcalidrawFrameElement
-  | ExcalidrawMagicFrameElement;
+  | ExcalidrawMagicFrameElement
+  | ExcalidrawSwimlaneElement;
 
 /**
  * These are elements that don't have any additional properties.
@@ -209,6 +215,7 @@ export type ExcalidrawRectanguloidElement =
   | ExcalidrawFreeDrawElement
   | ExcalidrawIframeLikeElement
   | ExcalidrawFrameLikeElement
+  | ExcalidrawSwimlaneElement
   | ExcalidrawEmbeddableElement
   | ExcalidrawSelectionElement;
 
@@ -226,6 +233,7 @@ export type ExcalidrawElement =
   | ExcalidrawImageElement
   | ExcalidrawFrameElement
   | ExcalidrawMagicFrameElement
+  | ExcalidrawSwimlaneElement
   | ExcalidrawIframeElement
   | ExcalidrawEmbeddableElement;
 
@@ -276,6 +284,7 @@ export type ExcalidrawBindableElement =
   | ExcalidrawDiamondElement
   | ExcalidrawEllipseElement
   | ExcalidrawCapsuleElement
+  | ExcalidrawSwimlaneElement
   | ExcalidrawTextElement
   | ExcalidrawImageElement
   | ExcalidrawIframeElement

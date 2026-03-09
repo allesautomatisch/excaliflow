@@ -42,6 +42,7 @@ export const distanceToElement = (
     case "iframe":
     case "embeddable":
     case "frame":
+    case "swimlane":
     case "magicframe":
       return distanceToRectanguloidElement(element, elementsMap, p);
     case "diamond":

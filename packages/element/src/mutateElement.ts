@@ -12,7 +12,7 @@ import { ShapeCache } from "./shape";
 
 import { updateElbowArrowPoints } from "./elbowArrow";
 
-import { isElbowArrow } from "./typeChecks";
+import { isElbowArrow, isSwimlaneElement } from "./typeChecks";
 
 import type {
   ElementsMap,
@@ -129,7 +129,8 @@ export const mutateElement = <TElement extends Mutable<ExcalidrawElement>>(
     typeof updates.height !== "undefined" ||
     typeof updates.width !== "undefined" ||
     typeof fileId != "undefined" ||
-    typeof points !== "undefined"
+    typeof points !== "undefined" ||
+    (isSwimlaneElement(element) && typeof (updates as any).lineCount !== "undefined")
   ) {
     ShapeCache.delete(element);
   }

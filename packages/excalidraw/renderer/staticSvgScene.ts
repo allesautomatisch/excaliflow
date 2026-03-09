@@ -115,7 +115,9 @@ const renderFlowchartNodeIcon = (
     element.width - FLOWCHART_NODE_ICON_SIZE - FLOWCHART_NODE_ICON_MARGIN;
   const iconY = FLOWCHART_NODE_ICON_MARGIN;
   const concealedColor = "#d3d3d3";
-  const iconBaseColor = element.concealed ? concealedColor : element.strokeColor;
+  const iconBaseColor = element.concealed
+    ? concealedColor
+    : element.strokeColor;
   const iconColor =
     renderConfig.theme === THEME.DARK
       ? applyDarkModeFilter(iconBaseColor)
@@ -176,7 +178,9 @@ const renderFlowchartNodeIcon = (
 
   icon.setAttribute(
     "transform",
-    `translate(${offsetX || 0} ${offsetY || 0}) rotate(${degree} ${cx} ${cy}) translate(${iconX} ${iconY}) scale(${iconScale})`,
+    `translate(${offsetX || 0} ${
+      offsetY || 0
+    }) rotate(${degree} ${cx} ${cy}) translate(${iconX} ${iconY}) scale(${iconScale})`,
   );
 
   return icon;
@@ -246,25 +250,29 @@ const renderElementToSvg = (
     case "rectangle":
     case "parallelogram":
     case "capsule":
+    case "swimlane":
     case "diamond":
     case "ellipse": {
       const shape = ShapeCache.generateElementShape(element, renderConfig);
-      const node = roughSVGDrawWithPrecision(
-        rsvg,
-        shape,
-        MAX_DECIMALS_FOR_SVG_EXPORT,
-      );
-      if (opacity !== 1) {
-        node.setAttribute("stroke-opacity", `${opacity}`);
-        node.setAttribute("fill-opacity", `${opacity}`);
-      }
-      node.setAttribute("stroke-linecap", "round");
-      node.setAttribute(
-        "transform",
-        `translate(${offsetX || 0} ${
-          offsetY || 0
-        }) rotate(${degree} ${cx} ${cy})`,
-      );
+      const nodes = (Array.isArray(shape) ? shape : [shape]).map((drawable) => {
+        const node = roughSVGDrawWithPrecision(
+          rsvg,
+          drawable,
+          MAX_DECIMALS_FOR_SVG_EXPORT,
+        );
+        if (opacity !== 1) {
+          node.setAttribute("stroke-opacity", `${opacity}`);
+          node.setAttribute("fill-opacity", `${opacity}`);
+        }
+        node.setAttribute("stroke-linecap", "round");
+        node.setAttribute(
+          "transform",
+          `translate(${offsetX || 0} ${
+            offsetY || 0
+          }) rotate(${degree} ${cx} ${cy})`,
+        );
+        return node;
+      });
 
       const icon = isFlowchartNodeElement(element)
         ? renderFlowchartNodeIcon(
@@ -280,12 +288,12 @@ const renderElementToSvg = (
           )
         : null;
 
-      const nodes = [node, ...(icon ? [icon] : [])];
+      const nodesWithIcon = [...nodes, ...(icon ? [icon] : [])];
 
       const g = maybeWrapNodesInFrameClipPath(
         element,
         root,
-        nodes,
+        nodesWithIcon,
         renderConfig.frameRendering,
         elementsMap,
       );
@@ -293,7 +301,7 @@ const renderElementToSvg = (
       if (g) {
         addToRoot(g, element);
       } else {
-        nodes.forEach((svgNode) => addToRoot(svgNode, element));
+        nodesWithIcon.forEach((svgNode) => addToRoot(svgNode, element));
       }
       break;
     }

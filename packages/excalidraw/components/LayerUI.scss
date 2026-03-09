@@ -190,7 +190,9 @@
     height: var(--default-button-size);
   }
 
-  .excalidraw-ui-top-left .main-menu-trigger + .excalidraw-top-left-project-info {
+  .excalidraw-ui-top-left
+    .main-menu-trigger
+    + .excalidraw-top-left-project-info {
     margin-left: 0.5rem;
   }
 

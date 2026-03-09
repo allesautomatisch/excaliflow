@@ -44,11 +44,13 @@ import type {
   ExcalidrawEmbeddableElement,
   ExcalidrawMagicFrameElement,
   ExcalidrawIframeElement,
+  ExcalidrawSwimlaneElement,
   ElementsMap,
   ExcalidrawArrowElement,
   ExcalidrawElbowArrowElement,
   ExcalidrawLineElement,
 } from "./types";
+import { DEFAULT_SWIMLANE_LINE_COUNT } from "./swimlane";
 
 export type ElementConstructorOpts = MarkOptional<
   Omit<ExcalidrawGenericElement, "id" | "type" | "isDeleted" | "updated">,
@@ -212,6 +214,21 @@ export const newMagicFrameElement = (
   );
 
   return frameElement;
+};
+
+export const newSwimlaneElement = (
+  opts: {
+    lineCount?: number;
+  } & ElementConstructorOpts,
+): NonDeleted<ExcalidrawSwimlaneElement> => {
+  return newElementWith(
+    {
+      ..._newElementBase<ExcalidrawSwimlaneElement>("swimlane", opts),
+      type: "swimlane",
+      lineCount: opts.lineCount ?? DEFAULT_SWIMLANE_LINE_COUNT,
+    },
+    {},
+  );
 };
 
 /** computes element x/y offset based on textAlign/verticalAlign */

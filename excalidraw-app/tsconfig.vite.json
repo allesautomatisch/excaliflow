@@ -4,19 +4,6 @@
     "noEmit": true,
     "baseUrl": ".."
   },
-  "include": [
-    "./**/*",
-    "../packages/*/src/**/*",
-    "../packages/excalidraw/**/*",
-    "../scripts/**/*"
-  ],
-  "exclude": [
-    "../**/*.test.*",
-    "../**/__tests__/**",
-    "../packages/**/dist/**",
-    "../node_modules/**",
-    "../packages/excalidraw/tests/**",
-    "../packages/excalidraw/wysiwyg/**/*.test.*",
-    "../packages/element/tests/**"
-  ]
+  "include": ["./**/*", "../packages/*/src/**/*", "../packages/excalidraw/**/*", "../scripts/**/*"],
+  "exclude": ["../**/*.test.*", "../**/__tests__/**", "../packages/**/dist/**", "../node_modules/**", "../packages/excalidraw/tests/**", "../packages/excalidraw/wysiwyg/**/*.test.*", "../packages/element/tests/**"]
 }

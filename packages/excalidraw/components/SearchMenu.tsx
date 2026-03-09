@@ -23,7 +23,11 @@ import {
 } from "@excalidraw/common";
 
 import { newTextElement } from "@excalidraw/element";
-import { isTextElement, isFrameLikeElement } from "@excalidraw/element";
+import {
+  isTextElement,
+  isFrameLikeElement,
+  isNamedFrameLikeElement,
+} from "@excalidraw/element";
 
 import { getDefaultFrameName } from "@excalidraw/element/frame";
 
@@ -57,8 +61,13 @@ export const searchItemInFocusAtom = atom<number | null>(null);
 
 const SEARCH_DEBOUNCE = 350;
 
+type SearchableFrame = Extract<
+  ExcalidrawFrameLikeElement,
+  { name: string | null }
+>;
+
 type SearchMatchItem = {
-  element: ExcalidrawTextElement | ExcalidrawFrameLikeElement;
+  element: ExcalidrawTextElement | SearchableFrame;
   searchQuery: SearchQuery;
   index: number;
   preview: {
@@ -487,7 +496,9 @@ interface MatchListProps {
 const MatchListBase = (props: MatchListProps) => {
   const frameNameMatches = useMemo(
     () =>
-      props.matches.items.filter((match) => isFrameLikeElement(match.element)),
+      props.matches.items.filter((match) =>
+        isNamedFrameLikeElement(match.element),
+      ),
     [props.matches],
   );
 
@@ -740,7 +751,7 @@ const getMatchedLines = (
 };
 
 const getMatchInFrame = (
-  frame: ExcalidrawFrameLikeElement,
+  frame: SearchableFrame,
   searchQuery: SearchQuery,
   index: number,
   zoomValue: number,
@@ -800,9 +811,7 @@ const handleSearch = debounce(
       isTextElement(el),
     ) as ExcalidrawTextElement[];
 
-    const frames = elements.filter((el) =>
-      isFrameLikeElement(el),
-    ) as ExcalidrawFrameLikeElement[];
+    const frames = elements.filter((el) => isNamedFrameLikeElement(el));
 
     texts.sort((a, b) => a.y - b.y);
     frames.sort((a, b) => a.y - b.y);

@@ -61,6 +61,7 @@ import {
   isPathALoop,
 } from "./utils";
 import { headingForPointIsHorizontal } from "./heading";
+import { getSwimlaneInternalLineXOffsets } from "./swimlane";
 
 import { canChangeRoundness } from "./comparisons";
 import {
@@ -222,8 +223,8 @@ export const generateRoughOptions = (
   const strokeColor = shouldHideDarkModeStroke
     ? "transparent"
     : isDarkMode
-      ? applyDarkModeFilter(color)
-      : color;
+    ? applyDarkModeFilter(color)
+    : color;
 
   const options: Options = {
     seed: element.seed,
@@ -257,6 +258,7 @@ export const generateRoughOptions = (
     case "rectangle":
     case "capsule":
     case "parallelogram":
+    case "swimlane":
     case "iframe":
     case "embeddable":
     case "diamond":
@@ -736,19 +738,21 @@ const _generateElementShape = (
       );
 
       return generator.path(
-        `M ${bounds.x + radius} ${bounds.y} L ${bounds.x + bounds.width - radius} ${
-          bounds.y
-        } Q ${bounds.x + bounds.width} ${bounds.y}, ${bounds.x + bounds.width} ${
-          bounds.y + radius
-        } L ${bounds.x + bounds.width} ${bounds.y + capsuleHeight - radius} Q ${
+        `M ${bounds.x + radius} ${bounds.y} L ${
+          bounds.x + bounds.width - radius
+        } ${bounds.y} Q ${bounds.x + bounds.width} ${bounds.y}, ${
           bounds.x + bounds.width
-        } ${bounds.y + capsuleHeight}, ${bounds.x + bounds.width - radius} ${
+        } ${bounds.y + radius} L ${bounds.x + bounds.width} ${
+          bounds.y + capsuleHeight - radius
+        } Q ${bounds.x + bounds.width} ${bounds.y + capsuleHeight}, ${
+          bounds.x + bounds.width - radius
+        } ${bounds.y + capsuleHeight} L ${bounds.x + radius} ${
           bounds.y + capsuleHeight
-        } L ${bounds.x + radius} ${bounds.y + capsuleHeight} Q ${bounds.x} ${
-          bounds.y + capsuleHeight
-        }, ${bounds.x} ${bounds.y + capsuleHeight - radius} L ${bounds.x} ${
-          bounds.y + radius
-        } Q ${bounds.x} ${bounds.y}, ${bounds.x + radius} ${bounds.y}`,
+        } Q ${bounds.x} ${bounds.y + capsuleHeight}, ${bounds.x} ${
+          bounds.y + capsuleHeight - radius
+        } L ${bounds.x} ${bounds.y + radius} Q ${bounds.x} ${bounds.y}, ${
+          bounds.x + radius
+        } ${bounds.y}`,
         generateRoughOptions(
           modifyIframeLikeForRoughOptions(
             element,
@@ -759,6 +763,34 @@ const _generateElementShape = (
           isDarkMode,
         ),
       );
+    }
+    case "swimlane": {
+      const rect = generator.rectangle(
+        0,
+        0,
+        element.width,
+        element.height,
+        generateRoughOptions(element, false, isDarkMode),
+      );
+
+      const lines = getSwimlaneInternalLineXOffsets(element).map((x) =>
+        generator.line(
+          x,
+          0,
+          x,
+          element.height,
+          generateRoughOptions(
+            {
+              ...element,
+              backgroundColor: "transparent",
+            },
+            false,
+            isDarkMode,
+          ),
+        ),
+      );
+
+      return [rect, ...lines];
     }
     case "parallelogram": {
       const [
@@ -1042,10 +1074,7 @@ export const getElementShape = <Point extends GlobalPoint | LocalPoint>(
   element: ExcalidrawElement,
   elementsMap: ElementsMap,
 ): GeometricShape<Point> => {
-  const lineSegmentToCurve = (
-    start: Point,
-    end: Point,
-  ) =>
+  const lineSegmentToCurve = (start: Point, end: Point) =>
     curve<Point>(
       start,
       pointFrom<Point>(
@@ -1063,6 +1092,7 @@ export const getElementShape = <Point extends GlobalPoint | LocalPoint>(
     case "rectangle":
     case "diamond":
     case "parallelogram":
+    case "swimlane":
     case "frame":
     case "magicframe":
     case "embeddable":
@@ -1107,7 +1137,10 @@ export const getElementShape = <Point extends GlobalPoint | LocalPoint>(
               element.angle,
             ),
             pointRotateRads(
-              pointFrom<Point>(element.x + bottomLeftX, element.y + bottomLeftY),
+              pointFrom<Point>(
+                element.x + bottomLeftX,
+                element.y + bottomLeftY,
+              ),
               center,
               element.angle,
             ),
@@ -1127,7 +1160,9 @@ export const getElementShape = <Point extends GlobalPoint | LocalPoint>(
           center,
           element.angle,
         );
-      const rotateCurve = (curvePoints: [GlobalPoint, GlobalPoint, GlobalPoint, GlobalPoint]) =>
+      const rotateCurve = (
+        curvePoints: [GlobalPoint, GlobalPoint, GlobalPoint, GlobalPoint],
+      ) =>
         curve<Point>(
           rotatePoint(curvePoints[0]),
           rotatePoint(curvePoints[1]),
@@ -1136,25 +1171,13 @@ export const getElementShape = <Point extends GlobalPoint | LocalPoint>(
         );
 
       const data = [
-        lineSegmentToCurve(
-          rotatePoint(sides[0][0]),
-          rotatePoint(sides[0][1]),
-        ),
+        lineSegmentToCurve(rotatePoint(sides[0][0]), rotatePoint(sides[0][1])),
         rotateCurve(corners[1]),
-        lineSegmentToCurve(
-          rotatePoint(sides[1][0]),
-          rotatePoint(sides[1][1]),
-        ),
+        lineSegmentToCurve(rotatePoint(sides[1][0]), rotatePoint(sides[1][1])),
         rotateCurve(corners[2]),
-        lineSegmentToCurve(
-          rotatePoint(sides[2][0]),
-          rotatePoint(sides[2][1]),
-        ),
+        lineSegmentToCurve(rotatePoint(sides[2][0]), rotatePoint(sides[2][1])),
         rotateCurve(corners[3]),
-        lineSegmentToCurve(
-          rotatePoint(sides[3][0]),
-          rotatePoint(sides[3][1]),
-        ),
+        lineSegmentToCurve(rotatePoint(sides[3][0]), rotatePoint(sides[3][1])),
         rotateCurve(corners[0]),
       ];
 

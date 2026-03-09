@@ -1,7 +1,12 @@
 import { degreesToRadians, radiansToDegrees } from "@excalidraw/math";
 
-import { getBoundTextElement } from "@excalidraw/element";
-import { isArrowElement, isElbowArrow } from "@excalidraw/element";
+import {
+  getBoundTextElement,
+  isArrowElement,
+  isElbowArrow,
+  isSwimlaneElement,
+  syncSwimlaneLabels,
+} from "@excalidraw/element";
 
 import { updateBindings } from "@excalidraw/element";
 
@@ -51,6 +56,10 @@ const handleDegreeChange: DragInputCallbackType<AngleProps["property"]> = ({
       });
       updateBindings(latestElement, scene, app.state);
 
+      if (isSwimlaneElement(latestElement)) {
+        syncSwimlaneLabels(scene, latestElement);
+      }
+
       const boundTextElement = getBoundTextElement(latestElement, elementsMap);
       if (boundTextElement && !isArrowElement(latestElement)) {
         scene.mutateElement(boundTextElement, { angle: nextAngle });
@@ -76,6 +85,10 @@ const handleDegreeChange: DragInputCallbackType<AngleProps["property"]> = ({
       angle: nextAngle,
     });
     updateBindings(latestElement, scene, app.state);
+
+    if (isSwimlaneElement(latestElement)) {
+      syncSwimlaneLabels(scene, latestElement);
+    }
 
     const boundTextElement = getBoundTextElement(latestElement, elementsMap);
     if (boundTextElement && !isArrowElement(latestElement)) {

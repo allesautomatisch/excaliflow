@@ -31,6 +31,7 @@ import {
   TextIcon,
   ImageIcon,
   frameToolIcon,
+  swimlaneToolIcon,
   EmbedIcon,
   laserPointerToolIcon,
   LassoIcon,
@@ -134,6 +135,7 @@ export const MobileToolBar = ({
   }, [activeTool.type]);
 
   const frameToolSelected = activeTool.type === "frame";
+  const swimlaneToolSelected = activeTool.type === "swimlane";
   const laserToolSelected = activeTool.type === "laser";
   const embeddableToolSelected = activeTool.type === "embeddable";
 
@@ -172,6 +174,7 @@ export const MobileToolBar = ({
   const extraTools = [
     "text",
     "frame",
+    "swimlane",
     "embeddable",
     "laser",
     "magicframe",
@@ -195,6 +198,8 @@ export const MobileToolBar = ({
       ? ImageIcon
       : activeTool.type === "frame"
       ? frameToolIcon
+      : activeTool.type === "swimlane"
+      ? swimlaneToolIcon
       : activeTool.type === "embeddable"
       ? EmbedIcon
       : activeTool.type === "laser"
@@ -457,6 +462,14 @@ export const MobileToolBar = ({
               {t("toolBar.frame")}
             </DropdownMenu.Item>
           )}
+          <DropdownMenu.Item
+            onSelect={() => app.setActiveTool({ type: "swimlane" })}
+            icon={swimlaneToolIcon}
+            data-testid="toolbar-swimlane"
+            selected={swimlaneToolSelected}
+          >
+            {t("toolBar.swimlane")}
+          </DropdownMenu.Item>
           <DropdownMenu.Item
             onSelect={() => app.setActiveTool({ type: "embeddable" })}
             icon={EmbedIcon}

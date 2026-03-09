@@ -187,6 +187,7 @@ export type ElementShapes = {
   rectangle: Drawable;
   parallelogram: Drawable;
   capsule: Drawable;
+  swimlane: Drawable[];
   ellipse: Drawable;
   diamond: Drawable;
   iframe: Drawable;

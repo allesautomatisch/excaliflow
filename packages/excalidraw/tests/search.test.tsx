@@ -8,7 +8,7 @@ import {
 } from "@excalidraw/common";
 
 import type {
-  ExcalidrawFrameLikeElement,
+  ExcalidrawFrameElement,
   ExcalidrawTextElement,
 } from "@excalidraw/element/types";
 
@@ -171,7 +171,7 @@ describe("search", () => {
       }),
     ]);
 
-    API.updateElement(h.elements[0] as ExcalidrawFrameLikeElement, {
+    API.updateElement(h.elements[0] as ExcalidrawFrameElement, {
       name: "Frame: name test for frame, yes, frame!",
     });
 

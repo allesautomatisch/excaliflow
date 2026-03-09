@@ -127,7 +127,9 @@ const drawFlowchartNodeIcon = (
   }
 
   const concealedColor = "#d3d3d3";
-  const iconBaseColor = element.concealed ? concealedColor : element.strokeColor;
+  const iconBaseColor = element.concealed
+    ? concealedColor
+    : element.strokeColor;
   const iconColor =
     renderConfig.theme === THEME.DARK
       ? applyDarkModeFilter(iconBaseColor)
@@ -484,6 +486,7 @@ const drawElementOnCanvas = (
     case "rectangle":
     case "parallelogram":
     case "capsule":
+    case "swimlane":
     case "iframe":
     case "embeddable":
     case "diamond":
@@ -491,7 +494,12 @@ const drawElementOnCanvas = (
       context.lineJoin = "round";
       context.lineCap = "round";
 
-      rc.draw(ShapeCache.generateElementShape(element, renderConfig));
+      const shape = ShapeCache.generateElementShape(element, renderConfig);
+      if (Array.isArray(shape)) {
+        shape.forEach((drawable) => rc.draw(drawable));
+      } else {
+        rc.draw(shape);
+      }
       break;
     }
     case "arrow":
@@ -988,6 +996,7 @@ export const renderElement = (
     case "rectangle":
     case "parallelogram":
     case "capsule":
+    case "swimlane":
     case "diamond":
     case "ellipse":
     case "line":
