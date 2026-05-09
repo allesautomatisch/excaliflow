@@ -167,10 +167,7 @@ export const NewDrawing = () => {
       boundElements: [{ type: "text", id: newStartNodeLabel.id }],
     });
 
-    return [
-      newStartNodeWithLabel,
-      newStartNodeLabel,
-    ];
+    return [newStartNodeWithLabel, newStartNodeLabel];
   };
 
   const resetDrawing = (nextDrawingName: string) => {
@@ -198,10 +195,12 @@ export const NewDrawing = () => {
         name: nextDrawingName,
         gridModeEnabled: true,
       });
+      appProps.onNewDrawing?.();
       return;
     }
 
     setAppState({ name: nextDrawingName });
+    appProps.onNewDrawing?.();
   };
 
   const handleSelect = async () => {

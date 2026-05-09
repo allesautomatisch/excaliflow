@@ -126,9 +126,11 @@ import {
   isCollaborationLink,
   getDrawingBySlug,
   listDrawingsFromBackend,
+  listProjectsFromBackend,
   toDrawingSlug,
   saveToBackend,
 } from "./data";
+import type { BackendDrawingListItem, BackendProjectListItem } from "./data";
 
 import { updateStaleImageStatuses } from "./data/FileManager";
 import {
@@ -172,6 +174,18 @@ const BPD_APP_DEFAULTS: Partial<AppState> = {
   currentItemStartArrowhead: null,
   currentItemFontSize: FONT_SIZES.sm,
   currentItemFontFamily: FONT_FAMILY["Comic Shanns"],
+};
+
+const NO_BACKEND_PROJECT_VALUE = "__none__";
+
+const getBackendProjectId = (projectId?: string | number | null) => {
+  if (projectId === null || projectId === undefined) {
+    return null;
+  }
+
+  const normalizedProjectId = String(projectId).trim();
+
+  return normalizedProjectId || null;
 };
 
 if (BPD_FEATURES_ENABLED) {
@@ -282,7 +296,10 @@ const initializeScene = async (opts: {
   collabAPI: CollabAPI | null;
   excalidrawAPI: ExcalidrawImperativeAPI;
 }): Promise<
-  { scene: ExcalidrawInitialDataState | null } & (
+  {
+    scene: ExcalidrawInitialDataState | null;
+    backendDrawing?: BackendDrawingListItem | null;
+  } & (
     | { isExternalScene: true; id: string; key: string }
     | { isExternalScene: false; id?: null; key?: null }
   )
@@ -304,11 +321,12 @@ const initializeScene = async (opts: {
       pathnameDrawingSlug,
   );
   const localDataState = hasUrlDrawingSource ? null : importFromLocalStorage();
-  const drawingFromSlug = !roomLinkData && pathnameDrawingSlug
-    ? !jsonBackendMatch
-      ? await getDrawingBySlug(pathnameDrawingSlug)
-      : null
-    : null;
+  const drawingFromSlug =
+    !roomLinkData && pathnameDrawingSlug
+      ? !jsonBackendMatch
+        ? await getDrawingBySlug(pathnameDrawingSlug)
+        : null
+      : null;
 
   let scene: Omit<
     RestoredDataState,
@@ -344,14 +362,8 @@ const initializeScene = async (opts: {
       // otherwise, prompt whether user wants to override current scene
       (isShareLinkLoad && (await openConfirmModal(shareableLinkConfirmDialog)))
     ) {
-      let importedAppState:
-        | ImportedDataState["appState"]
-        | null
-        | undefined;
-      let importedElements:
-        | ImportedDataState["elements"]
-        | null
-        | undefined;
+      let importedAppState: ImportedDataState["appState"] | null | undefined;
+      let importedElements: ImportedDataState["elements"] | null | undefined;
 
       if (jsonBackendMatch) {
         const imported = await importFromBackend(
@@ -491,7 +503,7 @@ const initializeScene = async (opts: {
           id: jsonBackendMatch[1],
           key: jsonBackendMatch[2],
         }
-      : { scene, isExternalScene: false };
+      : { scene, isExternalScene: false, backendDrawing: drawingFromSlug };
   }
   return { scene: null, isExternalScene: false };
 };
@@ -530,7 +542,9 @@ const ExcalidrawWrapper = () => {
   const [excalidrawAPI, excalidrawRefCallback] =
     useCallbackRefState<ExcalidrawImperativeAPI>();
 
-  const isDrawingPersistedRef = useRef<boolean>(Boolean(getPathnameDrawingSlug()));
+  const isDrawingPersistedRef = useRef<boolean>(
+    Boolean(getPathnameDrawingSlug()),
+  );
 
   const updateWindowTitle = (name?: string | null) => {
     const drawingName = (name ?? "").trim();
@@ -548,6 +562,90 @@ const ExcalidrawWrapper = () => {
   const [isCollaborating] = useAtomWithInitialValue(isCollaboratingAtom, () => {
     return isCollaborationLink(window.location.href);
   });
+
+  const [backendProjects, setBackendProjects] = useState<
+    BackendProjectListItem[]
+  >([]);
+  const [backendProjectsErrorMessage, setBackendProjectsErrorMessage] =
+    useState("");
+  const [currentBackendProjectId, setCurrentBackendProjectId] = useState<
+    string | null
+  >(null);
+  const [currentBackendProjectName, setCurrentBackendProjectName] = useState<
+    string | null
+  >(null);
+  const [backendSaveProjectId, setBackendSaveProjectId] = useState<
+    string | null
+  >(null);
+
+  const resolveBackendProjectName = useCallback(
+    (projectId: string | null) => {
+      if (!projectId) {
+        return null;
+      }
+
+      return (
+        backendProjects.find((project) => project.id === projectId)?.name ??
+        null
+      );
+    },
+    [backendProjects],
+  );
+
+  const currentProjectName =
+    currentBackendProjectId === null
+      ? null
+      : resolveBackendProjectName(currentBackendProjectId) ??
+        currentBackendProjectName ??
+        `Projekt ${currentBackendProjectId}`;
+
+  const setCurrentProjectFromDrawing = useCallback(
+    (drawing: Pick<BackendDrawingListItem, "project_id" | "project_name">) => {
+      const projectId = getBackendProjectId(drawing.project_id);
+      const projectName = projectId
+        ? drawing.project_name?.trim() || null
+        : null;
+
+      setCurrentBackendProjectId(projectId);
+      setCurrentBackendProjectName(projectName);
+      setBackendSaveProjectId(projectId);
+    },
+    [],
+  );
+
+  const clearCurrentBackendProject = useCallback(() => {
+    setCurrentBackendProjectId(null);
+    setCurrentBackendProjectName(null);
+    setBackendSaveProjectId(null);
+  }, []);
+
+  useEffect(() => {
+    let isCancelled = false;
+
+    const fetchProjects = async () => {
+      try {
+        const projects = await listProjectsFromBackend();
+        if (!isCancelled) {
+          setBackendProjects(projects);
+          setBackendProjectsErrorMessage("");
+        }
+      } catch (error: any) {
+        console.error("Failed to load backend projects", error);
+        if (!isCancelled) {
+          setBackendProjects([]);
+          setBackendProjectsErrorMessage(
+            error?.message || t("alerts.importBackendFailed"),
+          );
+        }
+      }
+    };
+
+    fetchProjects();
+
+    return () => {
+      isCancelled = true;
+    };
+  }, []);
 
   useHandleLibrary({
     excalidrawAPI,
@@ -653,6 +751,11 @@ const ExcalidrawWrapper = () => {
     };
 
     initializeScene({ collabAPI, excalidrawAPI }).then(async (data) => {
+      if (data.backendDrawing) {
+        setCurrentProjectFromDrawing(data.backendDrawing);
+      } else if (data.isExternalScene) {
+        clearCurrentBackendProject();
+      }
       isDrawingPersistedRef.current =
         isDrawingPersistedRef.current ||
         data.isExternalScene ||
@@ -674,6 +777,11 @@ const ExcalidrawWrapper = () => {
         excalidrawAPI.updateScene({ appState: { isLoading: true } });
 
         initializeScene({ collabAPI, excalidrawAPI }).then((data) => {
+          if (data.backendDrawing) {
+            setCurrentProjectFromDrawing(data.backendDrawing);
+          } else if (data.isExternalScene) {
+            clearCurrentBackendProject();
+          }
           isDrawingPersistedRef.current =
             isDrawingPersistedRef.current || data.isExternalScene;
           loadImages(data);
@@ -694,20 +802,22 @@ const ExcalidrawWrapper = () => {
       if (isTestEnv()) {
         return;
       }
-    if (
-      !document.hidden &&
-      ((collabAPI && !collabAPI.isCollaborating()) || isCollabDisabled)
-    ) {
-      const hasUrlDrawingSource = Boolean(
-        new URLSearchParams(window.location.search).get("id") ||
-          window.location.hash.match(/^#json=([a-zA-Z0-9_-]+),([a-zA-Z0-9_-]+)$/) ||
-          window.location.hash.match(/^#url=(.*)$/) ||
-          getPathnameDrawingSlug() ||
-          getCollaborationLinkData(window.location.href),
-      );
-      if (hasUrlDrawingSource) {
-        return;
-      }
+      if (
+        !document.hidden &&
+        ((collabAPI && !collabAPI.isCollaborating()) || isCollabDisabled)
+      ) {
+        const hasUrlDrawingSource = Boolean(
+          new URLSearchParams(window.location.search).get("id") ||
+            window.location.hash.match(
+              /^#json=([a-zA-Z0-9_-]+),([a-zA-Z0-9_-]+)$/,
+            ) ||
+            window.location.hash.match(/^#url=(.*)$/) ||
+            getPathnameDrawingSlug() ||
+            getCollaborationLinkData(window.location.href),
+        );
+        if (hasUrlDrawingSource) {
+          return;
+        }
         // don't sync if local state is newer or identical to browser state
         if (isBrowserStorageStateNewer(STORAGE_KEYS.VERSION_DATA_STATE)) {
           const localDataState = importFromLocalStorage();
@@ -791,7 +901,14 @@ const ExcalidrawWrapper = () => {
         false,
       );
     };
-  }, [isCollabDisabled, collabAPI, excalidrawAPI, setLangCode]);
+  }, [
+    isCollabDisabled,
+    collabAPI,
+    clearCurrentBackendProject,
+    excalidrawAPI,
+    setCurrentProjectFromDrawing,
+    setLangCode,
+  ]);
 
   useEffect(() => {
     const unloadHandler = (event: BeforeUnloadEvent) => {
@@ -823,10 +940,7 @@ const ExcalidrawWrapper = () => {
     appState: AppState,
     files: BinaryFiles,
   ) => {
-    if (
-      !elements.length &&
-      isDefaultUntitledDrawingName(appState.name || "")
-    ) {
+    if (!elements.length && isDefaultUntitledDrawingName(appState.name || "")) {
       isDrawingPersistedRef.current = false;
     }
 
@@ -896,6 +1010,10 @@ const ExcalidrawWrapper = () => {
   const [isDrawingChanged, setIsDrawingChanged] = useState(false);
   const savedDrawingHashRef = useRef<number | null>(null);
 
+  useEffect(() => {
+    setBackendSaveProjectId(currentBackendProjectId);
+  }, [currentBackendProjectId]);
+
   const setDrawingAsSaved = useCallback(
     (elements: readonly ExcalidrawElement[]) => {
       savedDrawingHashRef.current = hashElementsVersion(elements);
@@ -949,6 +1067,7 @@ const ExcalidrawWrapper = () => {
     appState: Partial<AppState>,
     files: BinaryFiles,
     drawingNameOverride?: string | null,
+    projectIdOverride?: string | null,
   ) => {
     if (exportedElements.length === 0) {
       throw new Error(t("alerts.cannotExportEmptyCanvas"));
@@ -968,6 +1087,7 @@ const ExcalidrawWrapper = () => {
         files,
         {
           drawingName,
+          projectId: projectIdOverride,
           persistEncryptionKey: true,
         },
       );
@@ -979,6 +1099,13 @@ const ExcalidrawWrapper = () => {
       if (id) {
         setDrawingAsSaved(exportedElements);
         isDrawingPersistedRef.current = true;
+        setCurrentBackendProjectId(projectIdOverride ?? null);
+        setCurrentBackendProjectName(
+          resolveBackendProjectName(projectIdOverride ?? null) ??
+            (projectIdOverride === currentBackendProjectId
+              ? currentBackendProjectName
+              : null),
+        );
         setBackendDrawingName(null);
         excalidrawAPI?.setToast({
           message: drawingName
@@ -1014,11 +1141,34 @@ const ExcalidrawWrapper = () => {
     });
   };
 
-  const getLoadDialogDrawings = useCallback(async () => {
-    return listDrawingsFromBackend({
-      includeEncryptionKey: true,
-    });
+  const onBackendSaveProjectChange = (nextProjectId: string | null) => {
+    setBackendSaveProjectId(nextProjectId);
+  };
+
+  const getLoadDialogDrawings = useCallback(
+    async (projectId?: string | null) => {
+      return listDrawingsFromBackend({
+        includeEncryptionKey: true,
+        projectId,
+      });
+    },
+    [],
+  );
+
+  const getLoadDialogProjects = useCallback(async () => {
+    const projects = await listProjectsFromBackend();
+    setBackendProjects(projects);
+    setBackendProjectsErrorMessage("");
+
+    return projects;
   }, []);
+
+  const onNewDrawing = useCallback(() => {
+    isDrawingPersistedRef.current = false;
+    clearCurrentBackendProject();
+    setBackendDrawingName(null);
+    updateBrowserRoute(null);
+  }, [clearCurrentBackendProject]);
 
   const onLoadDrawing = useCallback(
     async (drawing: LoadDialogDrawing) => {
@@ -1033,10 +1183,8 @@ const ExcalidrawWrapper = () => {
       }
 
       try {
-        const { elements, appState: importedAppState } = await importFromBackend(
-          drawing.id,
-          encryptionKey,
-        );
+        const { elements, appState: importedAppState } =
+          await importFromBackend(drawing.id, encryptionKey);
         const restoredElements = restoreElements(elements, null, {
           repairBindings: true,
           deleteInvisibleElements: true,
@@ -1056,6 +1204,7 @@ const ExcalidrawWrapper = () => {
         }
         updateWindowTitle(restoredAppState.name);
         isDrawingPersistedRef.current = true;
+        setCurrentProjectFromDrawing(drawing);
         setDrawingAsSaved(restoredElements);
 
         excalidrawAPI.updateScene({
@@ -1079,7 +1228,12 @@ const ExcalidrawWrapper = () => {
         setErrorMessage(error.message || t("alerts.importBackendFailed"));
       }
     },
-    [editorTheme, excalidrawAPI, setDrawingAsSaved],
+    [
+      editorTheme,
+      excalidrawAPI,
+      setCurrentProjectFromDrawing,
+      setDrawingAsSaved,
+    ],
   );
 
   const renderCustomStats = (
@@ -1208,6 +1362,58 @@ const ExcalidrawWrapper = () => {
                     }}
                     data-testid="backend-save-name-input"
                   />
+                  <label
+                    htmlFor="backend-save-project-select"
+                    style={{ fontSize: "0.75rem", fontWeight: 500 }}
+                  >
+                    Projekt
+                  </label>
+                  <select
+                    id="backend-save-project-select"
+                    className="TextInput"
+                    value={backendSaveProjectId ?? NO_BACKEND_PROJECT_VALUE}
+                    onChange={(event) =>
+                      onBackendSaveProjectChange(
+                        event.target.value === NO_BACKEND_PROJECT_VALUE
+                          ? null
+                          : event.target.value,
+                      )
+                    }
+                    style={{
+                      width: "100%",
+                      marginBottom: "0.5rem",
+                    }}
+                    data-testid="backend-save-project-select"
+                  >
+                    <option value={NO_BACKEND_PROJECT_VALUE}>
+                      Kein Projekt
+                    </option>
+                    {backendSaveProjectId &&
+                      !backendProjects.some(
+                        (project) => project.id === backendSaveProjectId,
+                      ) && (
+                        <option value={backendSaveProjectId}>
+                          {currentBackendProjectName ||
+                            `Projekt ${backendSaveProjectId}`}
+                        </option>
+                      )}
+                    {backendProjects.map((project) => (
+                      <option key={project.id} value={project.id}>
+                        {project.name}
+                      </option>
+                    ))}
+                  </select>
+                  {backendProjectsErrorMessage && (
+                    <div
+                      style={{
+                        color: "var(--color-error)",
+                        fontSize: "0.75rem",
+                        marginBottom: "0.5rem",
+                      }}
+                    >
+                      {backendProjectsErrorMessage}
+                    </div>
+                  )}
                   <ToolButton
                     className="Card-button"
                     type="button"
@@ -1222,6 +1428,7 @@ const ExcalidrawWrapper = () => {
                           exportedAppState,
                           exportedFiles,
                           backendDrawingName,
+                          backendSaveProjectId,
                         );
                       } catch (error: any) {
                         setErrorMessage(error.message);
@@ -1254,8 +1461,12 @@ const ExcalidrawWrapper = () => {
           }
         }}
         getLoadDialogDrawings={getLoadDialogDrawings}
+        getLoadDialogProjects={getLoadDialogProjects}
+        defaultLoadDialogProjectId={currentBackendProjectId}
+        backendProjectName={currentProjectName}
         isDrawingChanged={isDrawingChanged}
         onLoadDrawing={onLoadDrawing}
+        onNewDrawing={onNewDrawing}
       >
         <DefaultSidebar.Trigger style={{ display: "none" }} />
         <AppMainMenu

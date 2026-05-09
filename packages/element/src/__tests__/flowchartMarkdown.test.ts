@@ -267,7 +267,7 @@ man auch hinzufügen
 
 - Flow2
 - Wirklich?
-  - weiter: weiter mit "Flow2"
+  - weiter: zurück zu "Flow2"
   - sonst: weiter mit "Ja"
 - Ja
 

@@ -77,6 +77,7 @@ import type {
   BinaryFiles,
   UIAppState,
   LoadDialogDrawing,
+  LoadDialogProject,
   AppClassProperties,
 } from "../types";
 
@@ -101,8 +102,13 @@ interface LayerUIProps {
   app: AppClassProperties;
   isCollaborating: boolean;
   isDrawingChanged?: boolean;
+  backendProjectName?: string | null;
   generateLinkForSelection?: AppProps["generateLinkForSelection"];
-  getLoadDialogDrawings?: () => Promise<LoadDialogDrawing[]>;
+  getLoadDialogDrawings?: (
+    projectId?: string | null,
+  ) => Promise<LoadDialogDrawing[]>;
+  getLoadDialogProjects?: () => Promise<LoadDialogProject[]>;
+  defaultLoadDialogProjectId?: string | null;
   onLoadDrawing?: ExcalidrawProps["onLoadDrawing"];
 }
 
@@ -146,15 +152,19 @@ const DefaultOverwriteConfirmDialog = () => {
 
 const TopLeftProjectInfo = ({
   drawingName,
+  backendProjectName,
   isDrawingChanged = false,
 }: {
   drawingName: string;
+  backendProjectName?: string | null;
   isDrawingChanged?: boolean;
 }) => {
+  const projectName = backendProjectName?.trim() || "Kein Projekt";
+
   return (
     <div className="excalidraw-top-left-project-info">
       <div className="excalidraw-top-left-project-info__project">
-        Alles Automatisch
+        {projectName}
       </div>
       <div className="excalidraw-top-left-project-info__drawing">
         {drawingName}
@@ -185,7 +195,10 @@ const LayerUI = ({
   isCollaborating,
   generateLinkForSelection,
   getLoadDialogDrawings,
+  getLoadDialogProjects,
+  defaultLoadDialogProjectId,
   isDrawingChanged = false,
+  backendProjectName,
   onLoadDrawing,
 }: LayerUIProps) => {
   const editorInterface = useEditorInterface();
@@ -263,6 +276,8 @@ const LayerUI = ({
       <LoadDialog
         onCloseRequest={() => setAppState({ openDialog: null })}
         getLoadDialogDrawings={getLoadDialogDrawings}
+        getLoadDialogProjects={getLoadDialogProjects}
+        defaultProjectId={defaultLoadDialogProjectId}
         onLoadDrawing={onLoadDrawing}
       />
     );
@@ -276,6 +291,7 @@ const LayerUI = ({
         <tunnels.MainMenuTunnel.Out />
         <TopLeftProjectInfo
           drawingName={appState.name || "Untitled Drawing"}
+          backendProjectName={backendProjectName}
           isDrawingChanged={isDrawingChanged}
         />
       </div>
@@ -642,6 +658,7 @@ const LayerUI = ({
           renderWelcomeScreen={renderWelcomeScreen}
           UIOptions={UIOptions}
           isDrawingChanged={isDrawingChanged}
+          backendProjectName={backendProjectName}
         />
       )}
       {editorInterface.formFactor !== "phone" && (

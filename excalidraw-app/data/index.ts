@@ -26,10 +26,7 @@ import type {
 } from "@excalidraw/excalidraw/types";
 import type { MakeBrand } from "@excalidraw/common/utility-types";
 
-import {
-  DELETED_ELEMENT_TIMEOUT,
-  ROOM_ID_BYTES,
-} from "../app_constants";
+import { DELETED_ELEMENT_TIMEOUT, ROOM_ID_BYTES } from "../app_constants";
 
 import type { WS_SUBTYPES } from "../app_constants";
 
@@ -59,6 +56,19 @@ const BACKEND_V2_GET = import.meta.env.VITE_APP_BACKEND_V2_GET_URL;
 const BACKEND_V2_POST = import.meta.env.VITE_APP_BACKEND_V2_POST_URL;
 const BACKEND_V2_ENCRYPTION_KEY =
   import.meta.env.VITE_APP_BACKEND_V2_ENCRYPTION_KEY?.trim() || "";
+
+const getBackendV2Url = (path = "") => {
+  const endpoint = new URL(BACKEND_V2_GET, window.location.href);
+
+  if (path) {
+    endpoint.pathname = `${endpoint.pathname.replace(
+      /\/+$/,
+      "",
+    )}/${path.replace(/^\/+/, "")}`;
+  }
+
+  return endpoint;
+};
 
 const generateRoomId = async () => {
   const buffer = new Uint8Array(ROOM_ID_BYTES);
@@ -247,9 +257,17 @@ export type BackendDrawingListItem = {
   id: string;
   name: string | null;
   size_bytes: number;
+  project_id?: string | number | null;
+  project_name?: string | null;
   created_at: string;
   updated_at: string;
   encryption_key?: string;
+};
+
+export type BackendProjectListItem = {
+  id: string;
+  name: string;
+  company_name?: string | null;
 };
 
 export const toDrawingSlug = (name: string) => {
@@ -266,7 +284,7 @@ export const toDrawingSlug = (name: string) => {
 type ListDrawingsParams = {
   q?: string;
   ownerId?: string;
-  projectId?: string;
+  projectId?: string | null;
   cursor?: string;
   page?: string;
   perPage?: number;
@@ -287,7 +305,7 @@ type ListDrawingsResponse = {
 const listDrawingsPageFromBackend = async (
   params: ListDrawingsParams = {},
 ): Promise<ListDrawingsResponse> => {
-  const endpoint = new URL(BACKEND_V2_GET, window.location.href);
+  const endpoint = getBackendV2Url();
 
   if (params.q) {
     endpoint.searchParams.set("q", params.q);
@@ -297,8 +315,8 @@ const listDrawingsPageFromBackend = async (
     endpoint.searchParams.set("owner_id", params.ownerId);
   }
 
-  if (params.projectId) {
-    endpoint.searchParams.set("project_id", params.projectId);
+  if (params.projectId !== undefined) {
+    endpoint.searchParams.set("project_id", params.projectId ?? "");
   }
 
   if (params.cursor) {
@@ -330,7 +348,9 @@ const listDrawingsPageFromBackend = async (
       : "";
 
     throw new Error(
-      `${t("alerts.importBackendFailed")} (HTTP ${response.status}) - ${snippet}`,
+      `${t("alerts.importBackendFailed")} (HTTP ${
+        response.status
+      }) - ${snippet}`,
     );
   }
 
@@ -364,6 +384,77 @@ const listDrawingsPageFromBackend = async (
   }
 
   return parsedBody as ListDrawingsResponse;
+};
+
+type ListProjectsResponse = {
+  items?: Array<{
+    id?: string | number | null;
+    name?: string | null;
+    company_name?: string | null;
+  }>;
+};
+
+export const listProjectsFromBackend = async (): Promise<
+  BackendProjectListItem[]
+> => {
+  const response = await fetch(getBackendV2Url("projects").toString(), {
+    headers: {
+      Accept: "application/json",
+    },
+  });
+  const rawBody = await response.text();
+
+  if (!response.ok) {
+    const snippet = rawBody
+      ? rawBody.slice(0, 180).replace(/\s+/g, " ").trim()
+      : "";
+
+    throw new Error(
+      `${t("alerts.importBackendFailed")} (HTTP ${
+        response.status
+      }) - ${snippet}`,
+    );
+  }
+
+  let body: unknown;
+
+  try {
+    body = rawBody ? JSON.parse(rawBody) : null;
+  } catch (error) {
+    const snippet = rawBody
+      ? rawBody.slice(0, 180).replace(/\s+/g, " ").trim()
+      : "";
+
+    throw new Error(
+      `${t("alerts.importBackendFailed")} (Invalid JSON response) - ${snippet}`,
+    );
+  }
+
+  const parsedBody = body as ListProjectsResponse | null | undefined;
+
+  if (!Array.isArray(parsedBody?.items)) {
+    return [];
+  }
+
+  return parsedBody.items.flatMap((project) => {
+    const id =
+      typeof project.id === "number" || typeof project.id === "string"
+        ? String(project.id)
+        : "";
+    const name = project.name?.trim();
+
+    if (!id || !name) {
+      return [];
+    }
+
+    return [
+      {
+        id,
+        name,
+        company_name: project.company_name ?? null,
+      },
+    ];
+  });
 };
 
 export const listDrawingsFromBackend = async ({
@@ -442,11 +533,13 @@ const persistDrawingToBackend = async ({
   payload,
   encryptionKey,
   drawingName,
+  projectId,
   persistEncryptionKey,
 }: {
   payload: Uint8Array;
   encryptionKey: string;
   drawingName?: string | null;
+  projectId?: string | null;
   persistEncryptionKey?: boolean;
 }) => {
   const endpoint = new URL(BACKEND_V2_POST, window.location.href);
@@ -454,6 +547,10 @@ const persistDrawingToBackend = async ({
   const trimmedName = drawingName?.trim();
   if (trimmedName) {
     endpoint.searchParams.set("name", trimmedName);
+  }
+
+  if (projectId) {
+    endpoint.searchParams.set("project_id", projectId);
   }
 
   const requestBody = new ArrayBuffer(payload.byteLength);
@@ -495,6 +592,7 @@ export const saveToBackend = async (
   files: BinaryFiles,
   opts?: {
     drawingName?: string | null;
+    projectId?: string | null;
     persistEncryptionKey?: boolean;
   },
 ): Promise<SaveToBackendResult> => {
@@ -528,11 +626,12 @@ export const saveToBackend = async (
 
     const { ok, status, id, errorClass, message } =
       await persistDrawingToBackend({
-      payload,
-      encryptionKey,
-      drawingName: opts?.drawingName,
-      persistEncryptionKey: opts?.persistEncryptionKey,
-    });
+        payload,
+        encryptionKey,
+        drawingName: opts?.drawingName,
+        projectId: opts?.projectId,
+        persistEncryptionKey: opts?.persistEncryptionKey,
+      });
 
     if (id) {
       /*
@@ -560,7 +659,9 @@ export const saveToBackend = async (
       return {
         id: null,
         encryptionKey: null,
-        errorMessage: message ?? `${t("alerts.couldNotCreateShareableLink")} (HTTP ${status})`,
+        errorMessage:
+          message ??
+          `${t("alerts.couldNotCreateShareableLink")} (HTTP ${status})`,
       };
     }
 

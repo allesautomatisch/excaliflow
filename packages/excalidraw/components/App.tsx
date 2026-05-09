@@ -2164,8 +2164,15 @@ class App extends React.Component<AppProps, AppState> {
                           getLoadDialogDrawings={
                             this.props.getLoadDialogDrawings
                           }
+                          getLoadDialogProjects={
+                            this.props.getLoadDialogProjects
+                          }
+                          defaultLoadDialogProjectId={
+                            this.props.defaultLoadDialogProjectId
+                          }
                           onLoadDrawing={this.props.onLoadDrawing}
                           isDrawingChanged={this.props.isDrawingChanged}
+                          backendProjectName={this.props.backendProjectName}
                         >
                           {this.props.children}
                         </LayerUI>

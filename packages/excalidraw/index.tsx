@@ -58,8 +58,12 @@ const ExcalidrawBase = (props: ExcalidrawProps) => {
     showDeprecatedFonts,
     renderScrollbars,
     getLoadDialogDrawings,
+    getLoadDialogProjects,
+    defaultLoadDialogProjectId,
     isDrawingChanged,
+    backendProjectName,
     onLoadDrawing,
+    onNewDrawing,
   } = props;
 
   const canvasActions = props.UIOptions?.canvasActions;
@@ -150,8 +154,12 @@ const ExcalidrawBase = (props: ExcalidrawProps) => {
           onScrollChange={onScrollChange}
           onDuplicate={onDuplicate}
           getLoadDialogDrawings={getLoadDialogDrawings}
+          getLoadDialogProjects={getLoadDialogProjects}
+          defaultLoadDialogProjectId={defaultLoadDialogProjectId}
           onLoadDrawing={onLoadDrawing}
           isDrawingChanged={isDrawingChanged}
+          backendProjectName={backendProjectName}
+          onNewDrawing={onNewDrawing}
           validateEmbeddable={validateEmbeddable}
           renderEmbeddable={renderEmbeddable}
           aiEnabled={aiEnabled !== false}

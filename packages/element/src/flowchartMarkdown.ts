@@ -476,6 +476,11 @@ const emitTextBlock = (lines: string[], textBlock: ProcessTextBlock) => {
   lines.push(...textBlock.text.split("\n"));
 };
 
+const getBranchDirectionText = (
+  edge: ProcessEdge,
+  emittedNodeIds: Set<string>,
+) => (emittedNodeIds.has(edge.to) ? "zurück zu" : "weiter mit");
+
 export const exportProcessDiagramToMarkdown = ({
   elements,
   processName,
@@ -531,6 +536,7 @@ export const exportProcessDiagramToMarkdown = ({
   const swimlaneLabelTitles = getSwimlaneLabelTitles(nonDeletedElements);
   const freeTextBlocks = getFreeTextBlocks(nonDeletedElements);
   const emittedSectionIds = new Set<string>();
+  const emittedNodeIds = new Set<string>();
   let nextTextBlockIndex = 0;
 
   const lines = [
@@ -571,12 +577,10 @@ export const exportProcessDiagramToMarkdown = ({
       nodeByElementId,
     );
 
-    if (outgoing.length === 0) {
-      lines.push(`- ${node.text}`);
-    } else if (outgoing.length === 1) {
-      lines.push(`- ${node.text}`);
-    } else {
-      lines.push(`- ${node.text}`);
+    lines.push(`- ${node.text}`);
+    emittedNodeIds.add(node.element.id);
+
+    if (outgoing.length > 1) {
       let lastUnlabeledDecisionEdgeIndex = -1;
 
       if (node.element.type === "diamond") {
@@ -596,7 +600,9 @@ export const exportProcessDiagramToMarkdown = ({
             edge,
             edgeIndex,
             lastUnlabeledDecisionEdgeIndex,
-          )}: weiter mit "${targetNode?.text ?? ""}"`,
+          )}: ${getBranchDirectionText(edge, emittedNodeIds)} "${
+            targetNode?.text ?? ""
+          }"`,
         );
       }
     }

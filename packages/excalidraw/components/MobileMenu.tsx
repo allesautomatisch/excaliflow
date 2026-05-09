@@ -47,6 +47,7 @@ type MobileMenuProps = {
   UIOptions: AppProps["UIOptions"];
   app: AppClassProperties;
   isDrawingChanged?: boolean;
+  backendProjectName?: string | null;
 };
 
 export const MobileMenu = ({
@@ -62,12 +63,15 @@ export const MobileMenu = ({
   UIOptions,
   app,
   isDrawingChanged = false,
+  backendProjectName,
   onPenModeToggle,
 }: MobileMenuProps) => {
+  const projectName = backendProjectName?.trim() || "Kein Projekt";
+
   const renderTopLeftProjectInfo = (drawingName: string) => (
     <div className="excalidraw-top-left-project-info">
       <div className="excalidraw-top-left-project-info__project">
-        Alles Automatisch
+        {projectName}
       </div>
       <div className="excalidraw-top-left-project-info__drawing">
         {drawingName}

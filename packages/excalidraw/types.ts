@@ -552,8 +552,15 @@ export type OnUserFollowedPayload = {
 export type LoadDialogDrawing = {
   id: string;
   name: string | null;
+  project_id?: string | number | null;
+  project_name?: string | null;
   updated_at: string;
   encryption_key?: string;
+};
+
+export type LoadDialogProject = {
+  id: string;
+  name: string;
 };
 
 export interface ExcalidrawProps {
@@ -630,6 +637,8 @@ export interface ExcalidrawProps {
   ) => void;
   onLoadDrawing?: (drawing: LoadDialogDrawing) => void | Promise<void>;
   isDrawingChanged?: boolean;
+  backendProjectName?: string | null;
+  onNewDrawing?: () => void;
   onPointerDown?: (
     activeTool: AppState["activeTool"],
     pointerDownState: PointerDownState,
@@ -654,7 +663,11 @@ export interface ExcalidrawProps {
   aiEnabled?: boolean;
   showDeprecatedFonts?: boolean;
   renderScrollbars?: boolean;
-  getLoadDialogDrawings?: () => Promise<LoadDialogDrawing[]>;
+  getLoadDialogDrawings?: (
+    projectId?: string | null,
+  ) => Promise<LoadDialogDrawing[]>;
+  getLoadDialogProjects?: () => Promise<LoadDialogProject[]>;
+  defaultLoadDialogProjectId?: string | null;
 }
 
 export type SceneData = {

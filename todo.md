@@ -68,6 +68,7 @@ Source of truth: `PLAN.md`. Always update `PLAN.md` first, then reflect changes 
 - [x] Add a feature flag (`VITE_APP_ENABLE_LOCAL_STORAGE`) to allow enabling/disabling scene localStorage persistence, and default persistence off.
 - [ ] Keep Vite + Basic-auth proxy running; auto-restart if killed
 - [x] Keep TypeScript checker at 0 errors
+- [x] Add project-aware Flow backend save/load support with nullable project filtering
 
 ## QoL
 
@@ -78,3 +79,4 @@ Source of truth: `PLAN.md`. Always update `PLAN.md` first, then reflect changes 
 - [x] Include free text blocks between flows in Markdown export
 - [x] Include target node text on Decision branch targets
 - [x] Simplify Markdown export to unordered list without node ids or arrow target ids
+- [x] Use `zurück zu` for Decision branches targeting already exported nodes
