@@ -77,3 +77,4 @@ Source of truth: `PLAN.md`. Always update `PLAN.md` first, then reflect changes 
 - [x] Separate disconnected flows and emit frame/swimlane lane headings in Markdown export
 - [x] Include free text blocks between flows in Markdown export
 - [x] Include target node text on Decision branch targets
+- [x] Simplify Markdown export to unordered list without node ids or arrow target ids

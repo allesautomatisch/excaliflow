@@ -24,7 +24,6 @@ import type {
 
 type ProcessNode = {
   element: ExcalidrawFlowchartNodeElement;
-  explicitId: string | null;
   text: string;
 };
 
@@ -53,15 +52,6 @@ type OrderedProcessNodes = {
 const DEFAULT_PROCESS_NAME = "Unbenannt";
 const DEFAULT_EDGE_LABEL = "weiter";
 const DEFAULT_LAST_DECISION_EDGE_LABEL = "sonst";
-const ARROW = "→";
-
-const CUSTOM_NODE_ID_KEYS = [
-  "processNodeId",
-  "processId",
-  "nodeId",
-  "flowchartNodeId",
-  "markdownId",
-];
 
 const normalizeInlineText = (text: string) => text.replace(/\s+/g, " ").trim();
 
@@ -77,9 +67,6 @@ const normalizeBlockText = (text: string) =>
 const compareStrings = (first: string, second: string) =>
   first < second ? -1 : first > second ? 1 : 0;
 
-const isShortStableId = (value: string) =>
-  /^([A-Za-z][A-Za-z0-9]{0,2}|\d{1,3})$/.test(value);
-
 const getExplicitNodeIdFromText = (text: string) => {
   const match = text.match(/^([A-Za-z][A-Za-z0-9]{0,2}|\d{1,3}):\s+(.+)$/);
 
@@ -93,18 +80,6 @@ const getExplicitNodeIdFromText = (text: string) => {
   };
 };
 
-const getCustomNodeId = (element: ExcalidrawFlowchartNodeElement) => {
-  for (const key of CUSTOM_NODE_ID_KEYS) {
-    const value = element.customData?.[key];
-
-    if (typeof value === "string" && isShortStableId(value)) {
-      return value;
-    }
-  }
-
-  return null;
-};
-
 const getElementText = (
   element: ExcalidrawElement,
   elementsMap: ElementsMap,
@@ -112,18 +87,6 @@ const getElementText = (
   const boundText = getBoundTextElement(element, elementsMap);
 
   return normalizeInlineText(boundText?.originalText || boundText?.text || "");
-};
-
-const toAlphaId = (index: number) => {
-  let id = "";
-  let value = index;
-
-  do {
-    id = String.fromCharCode(65 + (value % 26)) + id;
-    value = Math.floor(value / 26) - 1;
-  } while (value >= 0);
-
-  return id;
 };
 
 const compareElementsByPosition = (
@@ -328,48 +291,6 @@ const getOrderedNodes = (
   };
 };
 
-const getNodeIds = (orderedNodes: ProcessNode[]) => {
-  const explicitIdCounts = new Map<string, number>();
-
-  for (const node of orderedNodes) {
-    if (node.explicitId) {
-      explicitIdCounts.set(
-        node.explicitId,
-        (explicitIdCounts.get(node.explicitId) ?? 0) + 1,
-      );
-    }
-  }
-
-  const ids = new Map<string, string>();
-  const usedIds = new Set<string>();
-
-  for (const node of orderedNodes) {
-    if (node.explicitId && explicitIdCounts.get(node.explicitId) === 1) {
-      ids.set(node.element.id, node.explicitId);
-      usedIds.add(node.explicitId);
-    }
-  }
-
-  let generatedIdIndex = 0;
-
-  for (const node of orderedNodes) {
-    if (ids.has(node.element.id)) {
-      continue;
-    }
-
-    let nextId = toAlphaId(generatedIdIndex++);
-
-    while (usedIds.has(nextId)) {
-      nextId = toAlphaId(generatedIdIndex++);
-    }
-
-    ids.set(node.element.id, nextId);
-    usedIds.add(nextId);
-  }
-
-  return ids;
-};
-
 const getSortedOutgoingEdges = (
   edges: ProcessEdge[],
   nodeByElementId: Map<string, ProcessNode>,
@@ -405,23 +326,6 @@ const getEdgeLabel = (
   }
 
   return DEFAULT_EDGE_LABEL;
-};
-
-const getEdgeTargetReference = (
-  edge: ProcessEdge,
-  sourceNode: ProcessNode,
-  nodeIds: Map<string, string>,
-  nodeByElementId: Map<string, ProcessNode>,
-) => {
-  const targetId = nodeIds.get(edge.to)!;
-
-  if (sourceNode.element.type !== "diamond") {
-    return targetId;
-  }
-
-  const targetNode = nodeByElementId.get(edge.to);
-
-  return targetNode ? `${targetId}: ${targetNode.text}` : targetId;
 };
 
 const getFrameSection = (frame: ExcalidrawFrameElement): ProcessSection => ({
@@ -592,7 +496,6 @@ export const exportProcessDiagramToMarkdown = ({
 
       return {
         element: node,
-        explicitId: textNodeId?.id ?? getCustomNodeId(node),
         text: textNodeId?.text ?? originalText,
       };
     });
@@ -621,7 +524,6 @@ export const exportProcessDiagramToMarkdown = ({
   }, []);
 
   const { flowStartNodeIds, orderedNodes } = getOrderedNodes(nodes, edges);
-  const nodeIds = getNodeIds(orderedNodes);
   const nodeByElementId = new Map(
     orderedNodes.map((node) => [node.element.id, node]),
   );
@@ -639,7 +541,6 @@ export const exportProcessDiagramToMarkdown = ({
   ];
 
   for (const node of orderedNodes) {
-    const nodeId = nodeIds.get(node.element.id)!;
     const section = getNodeSection(node, elementsMap, swimlaneLabelTitles);
     const shouldEmitSection = section && !emittedSectionIds.has(section.id);
 
@@ -671,13 +572,11 @@ export const exportProcessDiagramToMarkdown = ({
     );
 
     if (outgoing.length === 0) {
-      lines.push(`${nodeId}: ${node.text}`);
+      lines.push(`- ${node.text}`);
     } else if (outgoing.length === 1) {
-      lines.push(
-        `${nodeId}: ${node.text} ${ARROW} ${nodeIds.get(outgoing[0].to)}`,
-      );
+      lines.push(`- ${node.text}`);
     } else {
-      lines.push(`${nodeId}: ${node.text}`);
+      lines.push(`- ${node.text}`);
       let lastUnlabeledDecisionEdgeIndex = -1;
 
       if (node.element.type === "diamond") {
@@ -690,17 +589,14 @@ export const exportProcessDiagramToMarkdown = ({
       }
 
       for (const [edgeIndex, edge] of outgoing.entries()) {
+        const targetNode = nodeByElementId.get(edge.to);
+
         lines.push(
           `  - ${getEdgeLabel(
             edge,
             edgeIndex,
             lastUnlabeledDecisionEdgeIndex,
-          )} ${ARROW} ${getEdgeTargetReference(
-            edge,
-            node,
-            nodeIds,
-            nodeByElementId,
-          )}`,
+          )}: weiter mit "${targetNode?.text ?? ""}"`,
         );
       }
     }

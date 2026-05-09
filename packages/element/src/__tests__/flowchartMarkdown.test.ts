@@ -117,7 +117,7 @@ const arrow = (
 };
 
 describe("exportProcessDiagramToMarkdown", () => {
-  it("exports a process diagram with generated node ids and labeled branches", () => {
+  it("exports a process diagram as a simple markdown list with labeled branches", () => {
     const elements = [
       ...node("n1", "Anfrage empfangen", 0, 0),
       ...node("n2", "Anfrage prüfen", 160, 0),
@@ -140,17 +140,17 @@ describe("exportProcessDiagramToMarkdown", () => {
       }),
     ).toBe(`# Prozess: Angebot
 
-A: Anfrage empfangen → B
-B: Anfrage prüfen → C
-C: Informationen vollständig?
-  - Ja → E: Angebot erstellen
-  - Nein → D: Rückfragen stellen
-D: Rückfragen stellen → B
-E: Angebot erstellen → F
-F: Angebot versenden`);
+- Anfrage empfangen
+- Anfrage prüfen
+- Informationen vollständig?
+  - Ja: weiter mit "Angebot erstellen"
+  - Nein: weiter mit "Rückfragen stellen"
+- Rückfragen stellen
+- Angebot erstellen
+- Angebot versenden`);
   });
 
-  it("uses existing short ids from node text when present", () => {
+  it("removes existing short ids from node text when present", () => {
     const elements = [
       ...node("start", "S: Start", 0, 0),
       ...node("end", "Ende", 160, 0),
@@ -164,8 +164,8 @@ F: Angebot versenden`);
       }),
     ).toBe(`# Prozess: Explizite IDs
 
-S: Start → A
-A: Ende`);
+- Start
+- Ende`);
   });
 
   it("uses weiter for unlabeled multi-output connections", () => {
@@ -184,11 +184,11 @@ A: Ende`);
       }),
     ).toBe(`# Prozess: Unbenannt
 
-A: Start
-  - weiter → B
-  - weiter → C
-B: Links
-C: Rechts`);
+- Start
+  - weiter: weiter mit "Links"
+  - weiter: weiter mit "Rechts"
+- Links
+- Rechts`);
   });
 
   it("uses sonst for the last unlabeled decision connection", () => {
@@ -207,11 +207,11 @@ C: Rechts`);
       }),
     ).toBe(`# Prozess: Entscheidung
 
-A: Prüfen?
-  - weiter → B: Links
-  - sonst → C: Rechts
-B: Links
-C: Rechts`);
+- Prüfen?
+  - weiter: weiter mit "Links"
+  - sonst: weiter mit "Rechts"
+- Links
+- Rechts`);
   });
 
   it("keeps explicit decision labels and uses sonst for the unlabeled fallback", () => {
@@ -232,13 +232,13 @@ C: Rechts`);
       }),
     ).toBe(`# Prozess: Fallback
 
-A: Prüfen?
-  - Ja → B: Weiter
-  - Nein → C: Stop
-  - sonst → D: Fallback
-B: Weiter
-C: Stop
-D: Fallback`);
+- Prüfen?
+  - Ja: weiter mit "Weiter"
+  - Nein: weiter mit "Stop"
+  - sonst: weiter mit "Fallback"
+- Weiter
+- Stop
+- Fallback`);
   });
 
   it("exports separated flows, frame headings, and swimlane lane headings from the markdown fixture", () => {
@@ -261,37 +261,37 @@ köönte
 
 man auch hinzufügen
 
-A: Flow1 → B
-B: Yes → C
-C: Cool
+- Flow1
+- Yes
+- Cool
 
-D: Flow2 → E
-E: Wirklich?
-  - weiter → D: Flow2
-  - sonst → F: Ja
-F: Ja
+- Flow2
+- Wirklich?
+  - weiter: weiter mit "Flow2"
+  - sonst: weiter mit "Ja"
+- Ja
 
 Erläuterung 1: Blabla
 
 Erläuterung 2: Lorem Ipsum
 
 # Sektion 1
-G: Flow3 → H
-H: Schritt 2 → I
+- Flow3
+- Schritt 2
 
 # Sektion 2
-I: Hier gehts weiter → J
-J: Richtig gut
+- Hier gehts weiter
+- Richtig gut
 
 # Lane 1
-K: Lane Test → L
-L: Sweet → M
+- Lane Test
+- Sweet
 
 # Lane 2
-M: Weiter → N
-N: Step 2 → O
+- Weiter
+- Step 2
 
 # Lane 3
-O: Und in Lane 3`);
+- Und in Lane 3`);
   });
 });
