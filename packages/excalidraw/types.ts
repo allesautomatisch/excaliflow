@@ -764,6 +764,7 @@ export type AppClassProperties = {
   setOpenDialog: App["setOpenDialog"];
   insertEmbeddableElement: App["insertEmbeddableElement"];
   onMagicframeToolSelect: App["onMagicframeToolSelect"];
+  copyProcessMarkdownToClipboard: App["copyProcessMarkdownToClipboard"];
   getName: App["getName"];
   dismissLinearEditor: App["dismissLinearEditor"];
   flowChartCreator: App["flowChartCreator"];

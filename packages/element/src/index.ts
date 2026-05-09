@@ -71,6 +71,7 @@ export * from "./elementLink";
 export * from "./embeddable";
 export * from "./flowchartNodeIcons";
 export * from "./flowchart";
+export * from "./flowchartMarkdown";
 export * from "./arrows/focus";
 export * from "./fractionalIndex";
 export * from "./frame";

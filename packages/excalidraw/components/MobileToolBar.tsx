@@ -37,6 +37,7 @@ import {
   LassoIcon,
   mermaidLogoIcon,
   MagicIcon,
+  copyIcon,
 } from "./icons";
 
 import "./ToolIcon.scss";
@@ -510,6 +511,13 @@ export const MobileToolBar = ({
               </DropdownMenu.Item>
             </>
           )}
+          <DropdownMenu.Item
+            onSelect={() => app.copyProcessMarkdownToClipboard()}
+            icon={copyIcon}
+            data-testid="toolbar-copy-markdown"
+          >
+            Als Markdown kopieren
+          </DropdownMenu.Item>
         </DropdownMenu.Content>
       </DropdownMenu>
     </div>

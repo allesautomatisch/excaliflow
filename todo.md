@@ -72,3 +72,8 @@ Source of truth: `PLAN.md`. Always update `PLAN.md` first, then reflect changes 
 ## QoL
 
 - [x] Add a context-menu toggle for selection box metrics and keep it hidden by default
+- [x] Add Generate menu action to copy process diagrams as deterministic Markdown
+- [x] Use `sonst` as the fallback label for the last unlabeled decision branch
+- [x] Separate disconnected flows and emit frame/swimlane lane headings in Markdown export
+- [x] Include free text blocks between flows in Markdown export
+- [x] Include target node text on Decision branch targets

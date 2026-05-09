@@ -72,6 +72,7 @@
    - Test checkpoint: create chain of steps, undo/redo, move shapes and observe arrow bindings.
 
 4. **Flow Visualization Prototype**
+
    - Add a desktop-only right-click toggle for flow-mode overlay in Canvas and view-mode context menus.
    - Add a lightweight particle simulation to animate lead/client flow across flowchart nodes and arrows.
    - Spawn particles from source nodes at fixed intervals and remove them when they reach sink nodes.
@@ -125,6 +126,7 @@
 - Flowchart nodes support an icon setting with options `none` and `automatic`, stored as `customData.flowchartNodeIcon`; the icon is rendered in the node top-right in canvas and SVG export.
 - Swim-lanes are implemented as a dedicated `swimlane` container element with frame-style parenting, but they do not participate in frame naming/search UX.
 - Swim-lanes default to 4 total vertical boundary lines (3 lanes), expose an integer `lineCount` property editable from Stats, and auto-manage one text headline per lane.
+- Process diagrams can be exported from the Generate tool menu via "Als Markdown kopieren"; the exporter writes deterministic Markdown to the clipboard using node ids, bound node text, bound arrow connections/labels, free text blocks, and process grouping headings from frames/swimlane lanes. Unlabeled decision branches use "weiter", except the last unlabeled decision branch, which uses "sonst"; decision branch targets include both target id and target node text. Disconnected flows are separated by a blank line, frame/swimlane headings are emitted once before the first node in that section/lane, and free text blocks are placed between flows by canvas position instead of inside a flow.
 
 ## Extra Low-Risk QoL Ideas
 

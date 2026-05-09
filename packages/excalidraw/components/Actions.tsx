@@ -83,6 +83,7 @@ import {
   DotsHorizontalIcon,
   SelectionIcon,
   pencilIcon,
+  copyIcon,
 } from "./icons";
 
 import { Island } from "./Island";
@@ -1281,6 +1282,13 @@ export const ShapesSwitcher = ({
               {t("toolBar.magicframe")}
             </DropdownMenu.Item>
           )}
+          <DropdownMenu.Item
+            onSelect={() => app.copyProcessMarkdownToClipboard()}
+            icon={copyIcon}
+            data-testid="toolbar-copy-markdown"
+          >
+            Als Markdown kopieren
+          </DropdownMenu.Item>
         </DropdownMenu.Content>
       </DropdownMenu>
     </>

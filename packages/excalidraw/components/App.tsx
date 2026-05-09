@@ -270,6 +270,7 @@ import {
   handleFocusPointPointerUp,
   maybeHandleArrowPointlikeDrag,
   getUncroppedWidthAndHeight,
+  exportProcessDiagramToMarkdown,
 } from "@excalidraw/element";
 
 import type { GlobalPoint, LocalPoint, Radians } from "@excalidraw/math";
@@ -2720,6 +2721,27 @@ class App extends React.Component<AppProps, AppState> {
       });
     }
   }
+
+  public copyProcessMarkdownToClipboard = async () => {
+    try {
+      const markdown = exportProcessDiagramToMarkdown({
+        elements: this.scene.getNonDeletedElements(),
+        processName: this.state.name || this.props.name || t("labels.untitled"),
+      });
+
+      await copyTextToSystemClipboard(markdown);
+      this.setToast({
+        message: t("toast.copyToClipboard"),
+        closable: false,
+        duration: 1500,
+      });
+    } catch (error) {
+      console.error(error);
+      this.setState({
+        errorMessage: t("errors.copyToSystemClipboardFailed"),
+      });
+    }
+  };
 
   private createFlowchartPendingNodes = (
     startNode: NonDeleted<ExcalidrawFlowchartNodeElement>,
@@ -13196,10 +13218,10 @@ class App extends React.Component<AppProps, AppState> {
     const shouldResizeNode = selectedElements.every(isFlowchartNodeElement);
     const resizeGridSize =
       isRotationTransform || event[KEYS.CTRL_OR_CMD]
-      ? null
-      : shouldResizeNode
-      ? NODE_RESIZE_GRID_SIZE
-      : this.getEffectiveGridSize();
+        ? null
+        : shouldResizeNode
+        ? NODE_RESIZE_GRID_SIZE
+        : this.getEffectiveGridSize();
     let [resizeX, resizeY] = getGridPoint(
       pointerCoords.x - pointerDownState.resize.offset.x,
       pointerCoords.y - pointerDownState.resize.offset.y,
