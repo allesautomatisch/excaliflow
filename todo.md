@@ -69,6 +69,7 @@ Source of truth: `PLAN.md`. Always update `PLAN.md` first, then reflect changes 
 - [ ] Keep Vite + Basic-auth proxy running; auto-restart if killed
 - [x] Keep TypeScript checker at 0 errors
 - [x] Add project-aware Flow backend save/load support with nullable project filtering
+- [x] Persist encrypted clipboard/imported images with Flow backend drawings and restore them on load
 
 ## QoL
 

@@ -8,7 +8,10 @@ import {
   IV_LENGTH_BYTES,
 } from "@excalidraw/excalidraw/data/encryption";
 import { serializeAsJSON } from "@excalidraw/excalidraw/data/json";
-import { isInvisiblySmallElement } from "@excalidraw/element";
+import {
+  isInitializedImageElement,
+  isInvisiblySmallElement,
+} from "@excalidraw/element";
 import { t } from "@excalidraw/excalidraw/i18n";
 import { bytesToHexString } from "@excalidraw/common";
 
@@ -17,16 +20,28 @@ import type { ImportedDataState } from "@excalidraw/excalidraw/data/types";
 import type { SceneBounds } from "@excalidraw/element";
 import type {
   ExcalidrawElement,
+  FileId,
   OrderedExcalidrawElement,
 } from "@excalidraw/element/types";
 import type {
   AppState,
+  BinaryFileData,
   BinaryFiles,
   SocketId,
 } from "@excalidraw/excalidraw/types";
 import type { MakeBrand } from "@excalidraw/common/utility-types";
 
-import { DELETED_ELEMENT_TIMEOUT, ROOM_ID_BYTES } from "../app_constants";
+import {
+  DELETED_ELEMENT_TIMEOUT,
+  DRAWING_FILE_UPLOAD_MAX_BYTES,
+  ROOM_ID_BYTES,
+} from "../app_constants";
+
+import {
+  loadFilesFromBackend as loadFilesFromBackendStorage,
+  saveFilesToBackend,
+} from "./backendFiles";
+import { encodeFilesForUpload } from "./FileManager";
 
 import type { WS_SUBTYPES } from "../app_constants";
 
@@ -69,6 +84,18 @@ const getBackendV2Url = (path = "") => {
 
   return endpoint;
 };
+
+export const loadFilesFromBackend = async (
+  drawingId: string,
+  decryptionKey: string,
+  fileIds: readonly FileId[],
+) =>
+  loadFilesFromBackendStorage({
+    backendUrl: BACKEND_V2_GET,
+    drawingId,
+    decryptionKey,
+    fileIds,
+  });
 
 const generateRoomId = async () => {
   const buffer = new Uint8Array(ROOM_ID_BYTES);
@@ -606,23 +633,18 @@ export const saveToBackend = async (
   );
 
   try {
-    /*
-     * Temporarily disabled: uploading encrypted image binaries to Firebase.
-     * Keep this block for quick re-enable once storage config is ready again.
-     *
-     * const filesMap = new Map<FileId, BinaryFileData>();
-     * for (const element of elements) {
-     *   if (isInitializedImageElement(element) && files[element.fileId]) {
-     *     filesMap.set(element.fileId, files[element.fileId]);
-     *   }
-     * }
-     *
-     * const filesToUpload = await encodeFilesForUpload({
-     *   files: filesMap,
-     *   encryptionKey,
-     *   maxBytes: FILE_UPLOAD_MAX_BYTES,
-     * });
-     */
+    const filesMap = new Map<FileId, BinaryFileData>();
+    for (const element of elements) {
+      if (isInitializedImageElement(element) && files[element.fileId]) {
+        filesMap.set(element.fileId, files[element.fileId]);
+      }
+    }
+
+    const filesToUpload = await encodeFilesForUpload({
+      files: filesMap,
+      encryptionKey,
+      maxBytes: DRAWING_FILE_UPLOAD_MAX_BYTES,
+    });
 
     const { ok, status, id, errorClass, message } =
       await persistDrawingToBackend({
@@ -634,15 +656,13 @@ export const saveToBackend = async (
       });
 
     if (id) {
-      /*
-       * Temporarily disabled with file upload block above.
-       * if (filesToUpload.length > 0) {
-       *   await saveFilesToFirebase({
-       *     prefix: `/files/shareLinks/${id}`,
-       *     files: filesToUpload,
-       *   });
-       * }
-       */
+      if (filesToUpload.length > 0) {
+        await saveFilesToBackend({
+          backendUrl: BACKEND_V2_GET,
+          drawingId: id,
+          files: filesToUpload,
+        });
+      }
 
       return { id, encryptionKey, errorMessage: null };
     }

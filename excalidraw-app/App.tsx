@@ -127,10 +127,10 @@ import {
   getDrawingBySlug,
   listDrawingsFromBackend,
   listProjectsFromBackend,
+  loadFilesFromBackend,
   toDrawingSlug,
   saveToBackend,
 } from "./data";
-import type { BackendDrawingListItem, BackendProjectListItem } from "./data";
 
 import { updateStaleImageStatuses } from "./data/FileManager";
 import {
@@ -163,6 +163,7 @@ import "./index.scss";
 import { AppSidebar } from "./components/AppSidebar";
 
 import type { CollabAPI } from "./collab/Collab";
+import type { BackendDrawingListItem, BackendProjectListItem } from "./data";
 
 const BPD_FEATURES_ENABLED = true;
 
@@ -212,6 +213,54 @@ declare global {
 }
 
 let pwaEvent: BeforeInstallPromptEvent | null = null;
+
+const loadBackendFilesIntoScene = async ({
+  excalidrawAPI,
+  drawingId,
+  encryptionKey,
+  elements,
+  legacyFirebasePrefix,
+}: {
+  excalidrawAPI: ExcalidrawImperativeAPI;
+  drawingId: string;
+  encryptionKey: string;
+  elements: readonly ExcalidrawElement[];
+  legacyFirebasePrefix?: string;
+}) => {
+  const fileIds = elements.reduce((acc, element) => {
+    if (isInitializedImageElement(element)) {
+      acc.push(element.fileId);
+    }
+    return acc;
+  }, [] as FileId[]);
+
+  if (!fileIds.length) {
+    return;
+  }
+
+  const backendFiles = await loadFilesFromBackend(
+    drawingId,
+    encryptionKey,
+    fileIds,
+  );
+
+  if (legacyFirebasePrefix && backendFiles.erroredFiles.size) {
+    const legacyFiles = await loadFilesFromFirebase(
+      legacyFirebasePrefix,
+      encryptionKey,
+      [...backendFiles.erroredFiles.keys()],
+    );
+    backendFiles.loadedFiles.push(...legacyFiles.loadedFiles);
+    backendFiles.erroredFiles = legacyFiles.erroredFiles;
+  }
+
+  excalidrawAPI.addFiles(backendFiles.loadedFiles);
+  updateStaleImageStatuses({
+    excalidrawAPI,
+    erroredFiles: backendFiles.erroredFiles,
+    elements: excalidrawAPI.getSceneElementsIncludingDeleted(),
+  });
+};
 
 // Adding a listener outside of the component as it may (?) need to be
 // subscribed early to catch the event.
@@ -715,18 +764,22 @@ const ExcalidrawWrapper = () => {
             return acc;
           }, [] as FileId[]) || [];
 
-        if (data.isExternalScene) {
-          loadFilesFromFirebase(
-            `${FIREBASE_STORAGE_PREFIXES.shareLinkFiles}/${data.id}`,
-            data.key,
-            fileIds,
-          ).then(({ loadedFiles, erroredFiles }) => {
-            excalidrawAPI.addFiles(loadedFiles);
-            updateStaleImageStatuses({
-              excalidrawAPI,
-              erroredFiles,
-              elements: excalidrawAPI.getSceneElementsIncludingDeleted(),
-            });
+        const backendDrawingId = data.isExternalScene
+          ? data.id
+          : data.backendDrawing?.id;
+        const backendEncryptionKey = data.isExternalScene
+          ? data.key
+          : data.backendDrawing?.encryption_key;
+
+        if (backendDrawingId && backendEncryptionKey) {
+          loadBackendFilesIntoScene({
+            excalidrawAPI,
+            drawingId: backendDrawingId,
+            encryptionKey: backendEncryptionKey,
+            elements: data.scene.elements || [],
+            legacyFirebasePrefix: data.isExternalScene
+              ? `${FIREBASE_STORAGE_PREFIXES.shareLinkFiles}/${data.id}`
+              : undefined,
           });
         } else if (isInitialLoad) {
           if (fileIds.length) {
@@ -1215,6 +1268,13 @@ const ExcalidrawWrapper = () => {
             isLoading: false,
           },
           captureUpdate: CaptureUpdateAction.IMMEDIATELY,
+        });
+
+        await loadBackendFilesIntoScene({
+          excalidrawAPI,
+          drawingId: drawing.id,
+          encryptionKey,
+          elements: restoredElements,
         });
 
         if (focusTarget) {

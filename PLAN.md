@@ -24,6 +24,8 @@
 ## Flow Backend Project Persistence
 
 - Drawings saved to the Laravel Flow backend can be assigned to an existing project or to no project (`null`).
+- Clipboard and imported images referenced by a backend drawing are encrypted in the browser with the drawing key, stored as opaque binary files by the Laravel backend, and restored when the drawing is opened by slug, share link, or the load dialog.
+- Backend file storage defaults to Laravel's private local disk and can be moved to another configured filesystem (such as S3) through environment configuration without changing Excaliflow.
 - The backend exposes project IDs/names through `/api/v2/projects`.
 - Drawing list responses include `project_id` and `project_name`.
 - Loading supports three filters: all drawings, no project only, or one selected project.
@@ -137,6 +139,7 @@
 - Swim-lanes default to 4 total vertical boundary lines (3 lanes), expose an integer `lineCount` property editable from Stats, and auto-manage one text headline per lane.
 - Process diagrams can be exported from the Generate tool menu via "Als Markdown kopieren"; the exporter writes deterministic Markdown to the clipboard as a simple unordered list using bound node text, branch labels/target node text, free text blocks, and process grouping headings from frames/swimlane lanes. Node IDs and arrow target IDs are omitted. Unlabeled decision branches use "weiter", except the last unlabeled decision branch, which uses "sonst". Decision branches use "zurück zu" when their target node has already appeared in the exported flow, otherwise "weiter mit". Disconnected flows are separated by a blank line, frame/swimlane headings are emitted once before the first node in that section/lane, and free text blocks are placed between flows by canvas position instead of inside a flow.
 - Flow backend project persistence is implemented across the Laravel API and Excaliflow UI: project list dropdowns, nullable project filtering, current-project preselection, and project-name display in the top-left file info.
+- Flow backend image persistence is implemented end to end: referenced image files are encrypted client-side, uploaded after the drawing record is saved, and decrypted/restored on every backend drawing load path.
 
 ## Extra Low-Risk QoL Ideas
 
