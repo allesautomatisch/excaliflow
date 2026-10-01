@@ -1,0 +1,42 @@
+{
+  "ok": true,
+  "contractVersion": "7",
+  "drawingSession": "YkCGpujI3fipPUSCUNehJ:fF4Mk9bHAmvwuXnT9lV_u:0",
+  "revision": 2,
+  "destination": "server",
+  "uuid": "d0065f67-81ef-45a8-9055-325e1a0dec3d",
+  "exports": [
+    {
+      "format": "png",
+      "fileName": "2026-10-01-deployment-test-d0065f67-81ef-45a8-9055-325e1a0dec3d.png",
+      "url": "https://flow.allesautomatisch.com/exports/2026-10-01-deployment-test-d0065f67-81ef-45a8-9055-325e1a0dec3d.png",
+      "sizeBytes": 31286
+    },
+    {
+      "format": "svg",
+      "fileName": "2026-10-01-deployment-test-d0065f67-81ef-45a8-9055-325e1a0dec3d.svg",
+      "url": "https://flow.allesautomatisch.com/exports/2026-10-01-deployment-test-d0065f67-81ef-45a8-9055-325e1a0dec3d.svg",
+      "sizeBytes": 13553
+    },
+    {
+      "format": "excalidraw",
+      "fileName": "2026-10-01-deployment-test-d0065f67-81ef-45a8-9055-325e1a0dec3d.excalidraw",
+      "url": "https://flow.allesautomatisch.com/exports/2026-10-01-deployment-test-d0065f67-81ef-45a8-9055-325e1a0dec3d.excalidraw",
+      "sizeBytes": 8455
+    },
+    {
+      "format": "md",
+      "fileName": "2026-10-01-deployment-test-d0065f67-81ef-45a8-9055-325e1a0dec3d.md",
+      "url": "https://flow.allesautomatisch.com/exports/2026-10-01-deployment-test-d0065f67-81ef-45a8-9055-325e1a0dec3d.md",
+      "sizeBytes": 78
+    }
+  ],
+  "elementCount": 8,
+  "imageOptions": {
+    "background": false,
+    "darkMode": false,
+    "embedScene": true,
+    "scale": 2,
+    "selectedOnly": false
+  }
+}

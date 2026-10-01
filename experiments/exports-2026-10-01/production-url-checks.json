@@ -1,0 +1,38 @@
+[
+  {
+    "format": "png",
+    "url": "https://flow.allesautomatisch.com/exports/2026-10-01-deployment-test-d0065f67-81ef-45a8-9055-325e1a0dec3d.png",
+    "status": 200,
+    "contentType": "image/png",
+    "sizeBytes": 31286,
+    "expectedSizeBytes": 31286,
+    "sha256": "e9caec7cb7d41718c5eb5554934c47def5c0522c7dddd03fc56770addd41a1be"
+  },
+  {
+    "format": "svg",
+    "url": "https://flow.allesautomatisch.com/exports/2026-10-01-deployment-test-d0065f67-81ef-45a8-9055-325e1a0dec3d.svg",
+    "status": 200,
+    "contentType": "image/svg+xml",
+    "sizeBytes": 13553,
+    "expectedSizeBytes": 13553,
+    "sha256": "f62e09ed1c0c462a5afb994712f0742fa8036ebe887df74c2eb57c908ce67a1f"
+  },
+  {
+    "format": "excalidraw",
+    "url": "https://flow.allesautomatisch.com/exports/2026-10-01-deployment-test-d0065f67-81ef-45a8-9055-325e1a0dec3d.excalidraw",
+    "status": 200,
+    "contentType": "application/vnd.excalidraw+json",
+    "sizeBytes": 8455,
+    "expectedSizeBytes": 8455,
+    "sha256": "b3e9bb1513dc8fd734afae2621ed0c6d51f3b9fdb42fcde6df3c882320951e75"
+  },
+  {
+    "format": "md",
+    "url": "https://flow.allesautomatisch.com/exports/2026-10-01-deployment-test-d0065f67-81ef-45a8-9055-325e1a0dec3d.md",
+    "status": 200,
+    "contentType": "text/markdown; charset=UTF-8",
+    "sizeBytes": 78,
+    "expectedSizeBytes": 78,
+    "sha256": "075fff1661db93de7b48725069ade2487d8a6c6308f7b52fe21364f2d345867d"
+  }
+]

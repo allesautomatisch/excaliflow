@@ -127,7 +127,8 @@ Source of truth: `PLAN.md`. Always update `PLAN.md` first, then reflect changes 
 - [x] Document production Flow host routing and upload/storage configuration
 
 - [x] Wire `/api/v2/exports` and `/exports/` in repository Docker and Vercel hosting configurations
-- [ ] Deploy frontend/backend and apply export proxy configuration on the live Flow host
+- [x] Deploy frontend/backend and apply export proxy configuration on the live Flow host
+- [x] Verify all four public formats and exclude exports from Markdown URL rewriting and offline navigation
 
 ## Ops
 

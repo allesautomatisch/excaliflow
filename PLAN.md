@@ -211,7 +211,7 @@
 - `export_as` supports local save, clipboard and `server`; server batches accept `formats` and share one generated UUID/date/name stem.
 - Laravel `POST /api/v2/exports` stores validated PNG/SVG/Excalidraw/Markdown batches; public `GET /exports/{fileName}` retrieves the same bytes. Filesystem storage is persistent and configurable; no schema migration.
 - The image dialog exposes server publication, multiple format selection, editable export name and public links with copy support. Existing image renderers/metadata and Markdown/JSON serializers are reused.
-- Development proxies, Docker Nginx template and Vercel rewrites are wired. Production requires the backend/frontend release; other hosting setups need the Flow host routes documented in `server-api-docs.md`; no production deployment was performed.
+- Development proxies, Docker Nginx template and Vercel rewrites are wired. Frontend/backend and the Forge Flow host export routes were deployed on 2026-10-01; see the production acceptance below.
 
 
 ### Export acceptance, 01.10.2026
@@ -222,6 +222,14 @@
 - Follow-up: each published format link now has an accessible icon-only copy button using the existing clipboard helper. TypeScript, focused lint and app health passed; all four icons were confirmed in native Browser (`server-export-copy-icons.png`). A PNG icon click still yielded no clipboard readback in that browser, so native clipboard completion remains unconfirmed.
 - Native system Clipboard calls and copy-links readback did not complete in the Codex browser. Their real serializer/PNG metadata/SVG output transport paths are covered by focused tests; no successful native clipboard round-trip is claimed. Local-save transport uses existing fileSave and is covered with mocked IO, not a confirmed native file-dialog round-trip.
 - The additionally attempted legacy core export suite failed 7/8 tests (drop DOM setup and older font/scene snapshots); these tests call unchanged lower-level scene exporters rather than the new export transport. It was not declared green and its fixtures were not rewritten.
-- Production release and host routing remain pending; the documented URLs are not claimed live on flow.allesautomatisch.com.
+- Production release and host routing were subsequently completed; the acceptance below supersedes the earlier local-only deployment status.
 
 - Repository hosting is wired for Docker and Vercel; the rendered Nginx proxy template passed `nginx -t` locally. Docker image runtime/production deployment was not exercised.
+
+### Production acceptance, 01.10.2026
+
+- Committed and pushed the complete session's guided WebMCP/editor changes, exports, individual copy icons and experiment report/evidence. Raw chat messages/tool transcripts remain local. Backend was first fast-forwarded to the existing remote master; its export changes were restored without conflicts and committed separately.
+- Forge deployments finished for frontend `bd89310c` / `a7f045c7` and backend `f70bcae` / `a51679c`. The Flow host proxies uploads and retrieval to the existing backend with verified TLS, explicit server name and certificate-chain depth 3. Storage remains in Forge's existing shared `storage` directory across releases.
+- Fixed two live-only integration findings: the PWA navigation fallback intercepted public file links, and Spatie's global `.md` suffix rewrite prevented retrieving actual Markdown exports. The service worker now excludes `/exports/` and `/api/`; a wrapper retains the existing page rewrite everywhere except export files. Installing current locked dependencies reproduced the Markdown issue in the existing tests before the fix.
+- 64 focused frontend tests, 13 backend export tests (55 assertions), current TypeScript/build/lint checks and the local authenticated Playwright export-route smoke (2 tests) passed. One existing unused-variable lint warning remains. Public PNG/SVG/Excalidraw/Markdown URLs each returned HTTP 200 with the correct type and byte count; SVG rendered in native Browser after its service worker update. Native WebMCP and manual four-format publication both succeeded with shared UUIDs; all four individual copy icons are present.
+- Evidence: `experiments/exports-2026-10-01/production-export-result.json`, `production-url-checks.json`, `production-export-dialog.png`, `production-svg-preview.png`. Clipboard readback in the Codex browser remains unconfirmed. The local backend's `.env` broadcast driver was changed from unavailable `reverb` to `log` after dependency synchronization; the private previous environment is backed up in `/private/tmp/excaliflow-release-backup/` and no environment file was committed.

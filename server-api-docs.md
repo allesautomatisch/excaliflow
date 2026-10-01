@@ -180,12 +180,20 @@ location = /api/v2/exports {
     proxy_pass https://allesautomatisch.com;
     proxy_set_header Host allesautomatisch.com;
     proxy_ssl_server_name on;
+    proxy_ssl_name allesautomatisch.com;
+    proxy_ssl_verify on;
+    proxy_ssl_verify_depth 3;
+    proxy_ssl_trusted_certificate /etc/ssl/certs/ca-certificates.crt;
 }
 location ^~ /exports/ {
     proxy_pass https://allesautomatisch.com;
     proxy_set_header Host allesautomatisch.com;
     proxy_ssl_server_name on;
+    proxy_ssl_name allesautomatisch.com;
+    proxy_ssl_verify on;
+    proxy_ssl_verify_depth 3;
+    proxy_ssl_trusted_certificate /etc/ssl/certs/ca-certificates.crt;
 }
 ```
 
-Deploy the Laravel controller/routes/config and Excaliflow build together, then apply the Flow host routing. In production the returned addresses will be `https://flow.allesautomatisch.com/exports/YYYY-MM-DD-name-UUID.ext`. The repository hosting configuration is prepared; it has not been deployed to production from this local workspace.
+Deploy the Laravel controller/routes/config and Excaliflow build together, then apply the Flow host routing. This was completed on 2026-10-01 on the existing Forge sites. All four formats were published and retrieved at `https://flow.allesautomatisch.com/exports/YYYY-MM-DD-name-UUID.ext`. The PWA navigation fallback excludes `/exports/` and `/api/`, and the Laravel Markdown URL middleware preserves actual export filenames while retaining page `.md` variants.
