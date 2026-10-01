@@ -158,6 +158,8 @@ export default defineConfig(({ mode }) => {
         },
 
         workbox: {
+          // Public files and API responses must reach the server, not the SPA.
+          navigateFallbackDenylist: [/^\/exports\//, /^\/api\//],
           // don't precache fonts, locales and separate chunks
           globIgnores: [
             "fonts.css",

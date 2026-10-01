@@ -9,6 +9,7 @@ server {
         proxy_pass ${FLOW_EXPORT_BACKEND};
         proxy_set_header Host $proxy_host;
         proxy_ssl_server_name on;
+        proxy_ssl_verify_depth 3;
         proxy_ssl_verify on;
         proxy_ssl_trusted_certificate /etc/ssl/certs/ca-certificates.crt;
     }
@@ -17,6 +18,7 @@ server {
         proxy_pass ${FLOW_EXPORT_BACKEND};
         proxy_set_header Host $proxy_host;
         proxy_ssl_server_name on;
+        proxy_ssl_verify_depth 3;
         proxy_ssl_verify on;
         proxy_ssl_trusted_certificate /etc/ssl/certs/ca-certificates.crt;
     }
