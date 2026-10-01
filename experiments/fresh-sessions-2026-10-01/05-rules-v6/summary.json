@@ -1,0 +1,400 @@
+{
+  "contexts": [
+    {
+      "cwd": "/Users/oliver/Documents/Codex/2026-10-01/flow-experiment-05",
+      "model": "gpt-6.1-sol",
+      "effort": "high"
+    }
+  ],
+  "completed": {
+    "type": "task_complete",
+    "turn_id": "01a0f6f5-1b4a-7901-943d-96fe3e0bb48f",
+    "last_agent_message": "[Flow erstellt und gespeichert](http://localhost:3001/kundengewinnung-youtube-webinar-beratung?experiment=05): YouTube → Landingpage → Webinar → Beratungsgespräch, inklusive Nachfassaktionen und Rückführung der Gesprächserkenntnisse zu neuen Videos.\n\n![Screenshot des fertigen Flows](/Users/oliver/Documents/Codex/2026-10-01/flow-experiment-05/outputs/kundengewinnung-flow-experiment-05.jpg)",
+    "started_at": 1790849653,
+    "completed_at": 1790849775,
+    "duration_ms": 122320,
+    "time_to_first_token_ms": 4607
+  },
+  "empty_start_proven": true,
+  "contract_versions": [
+    "6"
+  ],
+  "successful_batches": 1,
+  "flow_errors": [],
+  "help_calls_returned": 3,
+  "labels": [
+    "Start",
+    "Video erstellen",
+    "YouTube bespielen",
+    "Landingpage zeigen",
+    "Anmeldung erfassen",
+    "Webinar durchführen",
+    "Gespräch anbieten",
+    "Buchung prüfen",
+    "Termin bestätigen",
+    "Gespräch vorbereiten",
+    "Gespräch führen",
+    "Ende",
+    "Replay senden",
+    "Impulse senden",
+    "Einladung erneuern",
+    "Erkenntnisse sammeln",
+    "Themen ableiten"
+  ],
+  "two_word_labels": 15,
+  "node_geometry_standard": true,
+  "nodes_from_committed_results": [
+    {
+      "id": "czHPrbVbUmeC1avH3_8Ca",
+      "kind": "node",
+      "shape": "capsule",
+      "text": "Start",
+      "x": 0,
+      "y": 0,
+      "width": 120,
+      "height": 120
+    },
+    {
+      "id": "tQ7wIMt_6nlOIcMcmwzSL",
+      "kind": "node",
+      "shape": "rectangle",
+      "text": "Video erstellen",
+      "x": 240,
+      "y": 0,
+      "width": 120,
+      "height": 120
+    },
+    {
+      "id": "lCtBEegENeymdxoxE0ZN7",
+      "kind": "node",
+      "shape": "rectangle",
+      "text": "YouTube bespielen",
+      "x": 480,
+      "y": 0,
+      "width": 120,
+      "height": 120
+    },
+    {
+      "id": "N00CbO-KWC-nDNbdYvFLi",
+      "kind": "node",
+      "shape": "rectangle",
+      "text": "Landingpage zeigen",
+      "x": 720,
+      "y": 0,
+      "width": 120,
+      "height": 120
+    },
+    {
+      "id": "lS-Hh6rLiBo3naDwyv0sY",
+      "kind": "node",
+      "shape": "parallelogram",
+      "text": "Anmeldung erfassen",
+      "x": 960,
+      "y": 0,
+      "width": 120,
+      "height": 120
+    },
+    {
+      "id": "NyiVhVre1VuZKFBrAjDZb",
+      "kind": "node",
+      "shape": "rectangle",
+      "text": "Webinar durchführen",
+      "x": 1200,
+      "y": 0,
+      "width": 120,
+      "height": 120
+    },
+    {
+      "id": "MAZEWrnGOPJcKLfkSQH5X",
+      "kind": "node",
+      "shape": "rectangle",
+      "text": "Gespräch anbieten",
+      "x": 1440,
+      "y": 0,
+      "width": 120,
+      "height": 120
+    },
+    {
+      "id": "8nl1eSz_cZizoy2l7nGHR",
+      "kind": "node",
+      "shape": "diamond",
+      "text": "Buchung prüfen",
+      "x": 1680,
+      "y": 0,
+      "width": 120,
+      "height": 120
+    },
+    {
+      "id": "Rl-39Yt9YxT8yOi46JO0v",
+      "kind": "node",
+      "shape": "rectangle",
+      "text": "Termin bestätigen",
+      "x": 1920,
+      "y": 0,
+      "width": 120,
+      "height": 120
+    },
+    {
+      "id": "O2k4KHOcdAHYnJ2cq0o-O",
+      "kind": "node",
+      "shape": "rectangle",
+      "text": "Gespräch vorbereiten",
+      "x": 2160,
+      "y": 0,
+      "width": 120,
+      "height": 120
+    },
+    {
+      "id": "3_WmFz6yxF7IRZ_CTZiik",
+      "kind": "node",
+      "shape": "rectangle",
+      "text": "Gespräch führen",
+      "x": 2400,
+      "y": 0,
+      "width": 120,
+      "height": 120
+    },
+    {
+      "id": "j_yJN9fSioVvgL1zPtzfY",
+      "kind": "node",
+      "shape": "capsule",
+      "text": "Ende",
+      "x": 2640,
+      "y": 0,
+      "width": 120,
+      "height": 120
+    },
+    {
+      "id": "HOSbexnk1KIwoxPq3gFVl",
+      "kind": "node",
+      "shape": "rectangle",
+      "text": "Replay senden",
+      "x": 1680,
+      "y": 240,
+      "width": 120,
+      "height": 120
+    },
+    {
+      "id": "nxqinTuvy_eFRMN-onXWJ",
+      "kind": "node",
+      "shape": "rectangle",
+      "text": "Impulse senden",
+      "x": 1920,
+      "y": 240,
+      "width": 120,
+      "height": 120
+    },
+    {
+      "id": "Got_V-I-sVC_m0HO-wBK7",
+      "kind": "node",
+      "shape": "rectangle",
+      "text": "Einladung erneuern",
+      "x": 2160,
+      "y": 240,
+      "width": 120,
+      "height": 120
+    },
+    {
+      "id": "XBT9mqwV28A5y8qU1g_L5",
+      "kind": "node",
+      "shape": "rectangle",
+      "text": "Erkenntnisse sammeln",
+      "x": 2400,
+      "y": 240,
+      "width": 120,
+      "height": 120
+    },
+    {
+      "id": "gW_feP43OccMe0Ef9Tmp9",
+      "kind": "node",
+      "shape": "rectangle",
+      "text": "Themen ableiten",
+      "x": 2640,
+      "y": 240,
+      "width": 120,
+      "height": 120
+    }
+  ],
+  "edges_from_committed_results": [
+    {
+      "id": "91hYNtuqGkUjIBYPjcvgb",
+      "kind": "edge",
+      "shape": "arrow",
+      "text": "",
+      "from": "czHPrbVbUmeC1avH3_8Ca",
+      "to": "tQ7wIMt_6nlOIcMcmwzSL"
+    },
+    {
+      "id": "IG5e0zyjviANho1JA8ctY",
+      "kind": "edge",
+      "shape": "arrow",
+      "text": "",
+      "from": "tQ7wIMt_6nlOIcMcmwzSL",
+      "to": "lCtBEegENeymdxoxE0ZN7"
+    },
+    {
+      "id": "f4nYcEGSy5NEdwdfNrrZY",
+      "kind": "edge",
+      "shape": "arrow",
+      "text": "",
+      "from": "lCtBEegENeymdxoxE0ZN7",
+      "to": "N00CbO-KWC-nDNbdYvFLi"
+    },
+    {
+      "id": "hquKRUkyHUn71aHlJtI-a",
+      "kind": "edge",
+      "shape": "arrow",
+      "text": "",
+      "from": "N00CbO-KWC-nDNbdYvFLi",
+      "to": "lS-Hh6rLiBo3naDwyv0sY"
+    },
+    {
+      "id": "LpGu93QdQ3aMHWQfA16Gz",
+      "kind": "edge",
+      "shape": "arrow",
+      "text": "",
+      "from": "lS-Hh6rLiBo3naDwyv0sY",
+      "to": "NyiVhVre1VuZKFBrAjDZb"
+    },
+    {
+      "id": "hk2Xx_k8OcmLEK_rxrjj_",
+      "kind": "edge",
+      "shape": "arrow",
+      "text": "",
+      "from": "NyiVhVre1VuZKFBrAjDZb",
+      "to": "MAZEWrnGOPJcKLfkSQH5X"
+    },
+    {
+      "id": "XlLzobALidBcQOL7RCgRj",
+      "kind": "edge",
+      "shape": "arrow",
+      "text": "",
+      "from": "MAZEWrnGOPJcKLfkSQH5X",
+      "to": "8nl1eSz_cZizoy2l7nGHR"
+    },
+    {
+      "id": "V4si3BbLnmXKb_WECs0X4",
+      "kind": "edge",
+      "shape": "arrow",
+      "text": "",
+      "from": "8nl1eSz_cZizoy2l7nGHR",
+      "to": "Rl-39Yt9YxT8yOi46JO0v"
+    },
+    {
+      "id": "cEPs78M1XSk_k89Q3-GqU",
+      "kind": "edge",
+      "shape": "arrow",
+      "text": "",
+      "from": "Rl-39Yt9YxT8yOi46JO0v",
+      "to": "O2k4KHOcdAHYnJ2cq0o-O"
+    },
+    {
+      "id": "1DzwWJTI4TxJZbfN44Lqh",
+      "kind": "edge",
+      "shape": "arrow",
+      "text": "",
+      "from": "O2k4KHOcdAHYnJ2cq0o-O",
+      "to": "3_WmFz6yxF7IRZ_CTZiik"
+    },
+    {
+      "id": "By1-BO0FbmA7QAO_1DUMH",
+      "kind": "edge",
+      "shape": "arrow",
+      "text": "",
+      "from": "3_WmFz6yxF7IRZ_CTZiik",
+      "to": "j_yJN9fSioVvgL1zPtzfY"
+    },
+    {
+      "id": "2YCEtuOY4O4YI2GbHAeqm",
+      "kind": "edge",
+      "shape": "arrow",
+      "text": "noch kein Termin",
+      "from": "8nl1eSz_cZizoy2l7nGHR",
+      "to": "HOSbexnk1KIwoxPq3gFVl"
+    },
+    {
+      "id": "qc43pD6rIU8qM1BYRvQsf",
+      "kind": "edge",
+      "shape": "arrow",
+      "text": "",
+      "from": "HOSbexnk1KIwoxPq3gFVl",
+      "to": "nxqinTuvy_eFRMN-onXWJ"
+    },
+    {
+      "id": "Nzc4BCIGD9nUDRbDNXuqP",
+      "kind": "edge",
+      "shape": "arrow",
+      "text": "",
+      "from": "nxqinTuvy_eFRMN-onXWJ",
+      "to": "Got_V-I-sVC_m0HO-wBK7"
+    },
+    {
+      "id": "G3yeCqW5WoLZkkqMR-dFZ",
+      "kind": "edge",
+      "shape": "arrow",
+      "text": "Erkenntnisse",
+      "from": "3_WmFz6yxF7IRZ_CTZiik",
+      "to": "XBT9mqwV28A5y8qU1g_L5"
+    },
+    {
+      "id": "bPPIUla1QarLjqvSFCUHH",
+      "kind": "edge",
+      "shape": "arrow",
+      "text": "",
+      "from": "XBT9mqwV28A5y8qU1g_L5",
+      "to": "gW_feP43OccMe0Ef9Tmp9"
+    },
+    {
+      "id": "owh824OAS7B6FvnZBNQn6",
+      "kind": "edge",
+      "shape": "arrow",
+      "text": "später erneut",
+      "from": "Got_V-I-sVC_m0HO-wBK7",
+      "to": "MAZEWrnGOPJcKLfkSQH5X"
+    },
+    {
+      "id": "aX5bm4OIESq_89jQnGj5O",
+      "kind": "edge",
+      "shape": "arrow",
+      "text": "neue Videos",
+      "from": "gW_feP43OccMe0Ef9Tmp9",
+      "to": "tQ7wIMt_6nlOIcMcmwzSL"
+    }
+  ],
+  "last_context": {
+    "ok": true,
+    "contractVersion": "6",
+    "flowRules": {
+      "labels": "Usually noun + infinitive verb, two short words. Prefer simple words over compound nouns. object/action each contain one word; combined max 32 characters. No prose or authored line breaks. Terminal defaults: Start/Ende.",
+      "authoring": "Use clear actions from a consistent perspective. Finish the success path at the requested outcome; branch off retries and feedback. Decisions name checks, with labeled alternatives.",
+      "edgeLabels": "Connector labels: max 24 characters and three words, e.g. ja/nein/später.",
+      "nodeSize": 120,
+      "gridSize": 120,
+      "gap": 120,
+      "pitch": 240,
+      "mainDirection": "right",
+      "branches": "At a decision, append the success path right; branch alternatives down. One branch row per anchor; two branch_steps at the same anchor collide. Subsequent steps go right.",
+      "loops": "Return to an earlier reachable step, bottom-to-bottom. A returning leaf can share the lowest occupied flow row; lower it only if above that row. Keep return lanes below nodes and distinct.",
+      "overlaps": "New or changed connectors must not cross node interiors. Keep other nodes in place; reject the batch if no clear route is available."
+    },
+    "drawingSession": "8B-U3917OBY8KqT7uID-r:5yyVsmXxulaDVoiWV2LI0:0",
+    "revision": 1,
+    "drawing": {
+      "backendId": null,
+      "name": "Untitled-2026-10-01-1214"
+    },
+    "editable": true,
+    "selectedIds": [],
+    "total": 0,
+    "nextOffset": null,
+    "elements": []
+  },
+  "full_final_geometry_available": false,
+  "call_count": 18,
+  "named_webmcp_calls_in_inputs": {
+    "flow_apply_operations": 1,
+    "flow_get_context": 1,
+    "flow_help": 3
+  },
+  "observer_note": "Committed results reconstruct labels/bindings/returned node positions; they do not guarantee complete final edge geometry."
+}

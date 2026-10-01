@@ -1,0 +1,9 @@
+{
+  "observerNote": "Schema/register are archived copies; flowOperations/loopRouting hashes were recorded before any experiment changes.",
+  "hashes": {
+    "schema.ts": "6e24cb669c7a8fd205d240e7137d91db25e0522ed76dd63adb5214af2d772cd7",
+    "register.ts": "bf280f3b47c9601680ca13ce0fde5772a5f3a01bf4f4ec99a9eb993a77b5f096",
+    "flowOperations.ts": "2c0616edd7d3c035755e29940c51a96836c5fbb6362d6287e0bd6bf29ebca91a",
+    "loopRouting.ts": "97c620d13a3a5db93c0a14d617fdf18a41ec78e20bffcde6b50a767c30071682"
+  }
+}

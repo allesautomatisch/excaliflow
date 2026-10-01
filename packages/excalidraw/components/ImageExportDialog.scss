@@ -63,6 +63,8 @@
       &__filename {
         & > input {
           margin-top: 1rem;
+          max-width: 100%;
+          box-sizing: border-box;
         }
       }
 
@@ -170,6 +172,59 @@
           justify-content: center;
         }
       }
+    }
+  }
+}
+
+.excalidraw .server-export {
+  margin-top: 1rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+  .server-export__formats {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.75rem;
+  }
+  .server-export__formats label {
+    display: flex;
+    align-items: center;
+    gap: 0.25rem;
+  }
+  .server-export__links {
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+    overflow-wrap: anywhere;
+  }
+  .server-export__link {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+  }
+  .server-export__copy {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    padding: 0.25rem;
+    border: 0;
+    border-radius: var(--border-radius-md);
+    background: transparent;
+    color: var(--color-primary);
+    cursor: pointer;
+
+    &:hover {
+      background: var(--button-hover-bg);
+    }
+
+    &:focus-visible {
+      outline: 2px solid var(--color-primary);
+      outline-offset: 2px;
+    }
+
+    svg {
+      width: 1rem;
+      height: 1rem;
     }
   }
 }

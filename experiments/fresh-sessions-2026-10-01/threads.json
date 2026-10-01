@@ -1,0 +1,56 @@
+[
+  {
+    "threadId": "01a0f6e4-bfee-78c3-946d-5cd0eaee0cfc",
+    "hostId": "local",
+    "url": "http://localhost:3001/?experiment=01",
+    "outputDirectory": "/Users/oliver/Documents/Codex/2026-10-01/flow-experiment-01/outputs",
+    "phase": "baseline",
+    "prompt": "Öffne http://localhost:3001/?experiment=01 im Browser und erstelle dort mit WebMCP einen beispielhaften Flow zur Kundengewinnung: Über YouTube kommen Interessenten auf eine Landingpage, melden sich zu einem Webinar an und werden danach zu einem Beratungsgespräch eingeladen. Nimm auch auf, was mit Interessenten passiert, die noch keinen Termin buchen, und wie Erkenntnisse aus den Gesprächen wieder zu neuen Videos führen. Speichere einen Screenshot des fertigen Flows.",
+    "number": 1
+  },
+  {
+    "threadId": "01a0f6e7-65a6-7632-83b0-c63673bc8db8",
+    "hostId": "local",
+    "url": "http://localhost:3001/?experiment=02",
+    "outputDirectory": "/Users/oliver/Documents/Codex/2026-10-01/flow-experiment-02/outputs",
+    "phase": "baseline",
+    "prompt": "Öffne http://localhost:3001/?experiment=02 im Browser und erstelle dort mit WebMCP einen beispielhaften Flow zur Kundengewinnung: Über YouTube kommen Interessenten auf eine Landingpage, melden sich zu einem Webinar an und werden danach zu einem Beratungsgespräch eingeladen. Nimm auch auf, was mit Interessenten passiert, die noch keinen Termin buchen, und wie Erkenntnisse aus den Gesprächen wieder zu neuen Videos führen. Speichere einen Screenshot des fertigen Flows.",
+    "number": 2
+  },
+  {
+    "number": 3,
+    "threadId": "01a0f6ec-1f51-7053-85ed-e5e8d6dbd3e9",
+    "hostId": "local",
+    "url": "http://localhost:3001/?experiment=03",
+    "outputDirectory": "/Users/oliver/Documents/Codex/2026-10-01/flow-experiment-03/outputs",
+    "phase": "baseline-browser",
+    "prompt": "Nutze [@Browser](plugin://browser@openai-bundled/) und öffne http://localhost:3001/?experiment=03. Erstelle dort mit WebMCP einen beispielhaften Flow zur Kundengewinnung: Über YouTube kommen Interessenten auf eine Landingpage, melden sich zu einem Webinar an und werden danach zu einem Beratungsgespräch eingeladen. Nimm auch auf, was mit Interessenten passiert, die noch keinen Termin buchen, und wie Erkenntnisse aus den Gesprächen wieder zu neuen Videos führen. Speichere einen Screenshot des fertigen Flows."
+  },
+  {
+    "number": 4,
+    "threadId": "01a0f6ef-f498-7e00-a052-d1b52369b4a7",
+    "projectlessOutputDirectory": "/Users/oliver/Documents/Codex/2026-10-01/flow-experiment-04/outputs",
+    "hostId": "local",
+    "url": "http://localhost:3001/?experiment=04",
+    "phase": "rules-v5",
+    "prompt": "Nutze [@Browser](plugin://browser@openai-bundled/) und öffne http://localhost:3001/?experiment=04. Erstelle dort mit WebMCP einen beispielhaften Flow zur Kundengewinnung: Über YouTube kommen Interessenten auf eine Landingpage, melden sich zu einem Webinar an und werden danach zu einem Beratungsgespräch eingeladen. Nimm auch auf, was mit Interessenten passiert, die noch keinen Termin buchen, und wie Erkenntnisse aus den Gesprächen wieder zu neuen Videos führen. Speichere einen Screenshot des fertigen Flows."
+  },
+  {
+    "number": 5,
+    "threadId": "01a0f6f5-16b9-7642-984d-a744b5cc24e5",
+    "projectlessOutputDirectory": "/Users/oliver/Documents/Codex/2026-10-01/flow-experiment-05/outputs",
+    "hostId": "local",
+    "url": "http://localhost:3001/?experiment=05",
+    "phase": "rules-v6",
+    "prompt": "Nutze [@Browser](plugin://browser@openai-bundled/) und öffne http://localhost:3001/?experiment=05. Erstelle dort mit WebMCP einen beispielhaften Flow zur Kundengewinnung: Über YouTube kommen Interessenten auf eine Landingpage, melden sich zu einem Webinar an und werden danach zu einem Beratungsgespräch eingeladen. Nimm auch auf, was mit Interessenten passiert, die noch keinen Termin buchen, und wie Erkenntnisse aus den Gesprächen wieder zu neuen Videos führen. Speichere einen Screenshot des fertigen Flows."
+  },
+  {
+    "number": 6,
+    "threadId": "01a0f6f7-f6ac-7283-8062-7bfa49078a82",
+    "projectlessOutputDirectory": "/Users/oliver/Documents/Codex/2026-10-01/flow-experiment-06/outputs",
+    "hostId": "local",
+    "url": "http://localhost:3001/?experiment=06",
+    "phase": "rules-v6",
+    "prompt": "Nutze [@Browser](plugin://browser@openai-bundled/) und öffne http://localhost:3001/?experiment=06. Erstelle dort mit WebMCP einen beispielhaften Flow zur Kundengewinnung: Über YouTube kommen Interessenten auf eine Landingpage, melden sich zu einem Webinar an und werden danach zu einem Beratungsgespräch eingeladen. Nimm auch auf, was mit Interessenten passiert, die noch keinen Termin buchen, und wie Erkenntnisse aus den Gesprächen wieder zu neuen Videos führen. Speichere einen Screenshot des fertigen Flows."
+  }
+]

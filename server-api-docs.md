@@ -163,3 +163,29 @@ If you do not persist `encryption_key` server-side, key retention is still local
   - only include via `include_encryption_key=true` for trusted clients
 - Configure rate limiting and CSRF/CORS policy according to your deployment topology.
 - Keep payload size and row retention policies reviewed, especially for large drawings.
+
+## Public exports (PNG, SVG, Excalidraw, Markdown)
+
+`POST /api/v2/exports` accepts multipart `name` (max 128 characters) and one to four `files[png]`, `files[svg]`, `files[excalidraw]`, `files[md]` uploads. It returns HTTP 201 with `{ uuid, exports: [{ format, fileName, url, sizeBytes }] }`. All files in one request share the server-generated `YYYY-MM-DD-name-slug-UUID` stem. `url` is `/exports/<fileName>`, relative to the Flow origin. A new request generates a new UUID; existing publications remain unchanged. No database migration is required.
+
+`GET /exports/{fileName}` is public and serves the stored bytes with the correct MIME type. The controller restricts filenames and formats, validates file content, bounds payloads, removes partially stored batches on storage failure, and returns CSP/nosniff headers for inline SVG rendering. The default disk is Laravel's local disk, under `exports`; this is public through the controller, not through the encrypted drawing-file API. Files have no automatic expiry.
+
+Configuration in the Laravel backend: `DRAWINGS_EXPORTS_DISK` (default `local`), `DRAWINGS_EXPORTS_PATH` (default `exports`), `DRAWINGS_EXPORTS_MAX_PAYLOAD_BYTES` (default 20 MiB/file), `DRAWINGS_EXPORTS_MAX_BATCH_BYTES` (default 40 MiB/request). PHP `upload_max_filesize` and `post_max_size` and the hosting proxy's request limit must permit the intended sizes; use at least 20M/file and 48M/request for the defaults. Preserve the configured storage disk across releases.
+
+Excaliflow sends uploads to its own origin and converts the relative response URLs to that origin. Vite proxies the upload and retrieval paths to the existing configured development backend. The repository Docker image includes `excalidraw-app/hosting/default.conf.template`, defaulting `FLOW_EXPORT_BACKEND` to `https://allesautomatisch.com` (an HTTPS origin without a trailing slash, with upstream certificate verification); Vercel rewrites cover the same routes. A production host using another serving setup must proxy both paths to the Laravel host before its SPA/static-file fallback. Example inside that host's Nginx server block (adapt upstream to the actual deployment):
+
+```nginx
+location = /api/v2/exports {
+    client_max_body_size 48m;
+    proxy_pass https://allesautomatisch.com;
+    proxy_set_header Host allesautomatisch.com;
+    proxy_ssl_server_name on;
+}
+location ^~ /exports/ {
+    proxy_pass https://allesautomatisch.com;
+    proxy_set_header Host allesautomatisch.com;
+    proxy_ssl_server_name on;
+}
+```
+
+Deploy the Laravel controller/routes/config and Excaliflow build together, then apply the Flow host routing. In production the returned addresses will be `https://flow.allesautomatisch.com/exports/YYYY-MM-DD-name-UUID.ext`. The repository hosting configuration is prepared; it has not been deployed to production from this local workspace.

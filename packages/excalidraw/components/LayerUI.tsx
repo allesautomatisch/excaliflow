@@ -95,6 +95,7 @@ interface LayerUIProps {
   renderTopLeftUI?: ExcalidrawProps["renderTopLeftUI"];
   renderTopRightUI?: ExcalidrawProps["renderTopRightUI"];
   renderCustomStats?: ExcalidrawProps["renderCustomStats"];
+  renderCustomImageExport?: ExcalidrawProps["renderCustomImageExport"];
   UIOptions: AppProps["UIOptions"];
   onExportImage: AppClassProperties["onExportImage"];
   renderWelcomeScreen: boolean;
@@ -187,6 +188,7 @@ const LayerUI = ({
   renderTopLeftUI,
   renderTopRightUI,
   renderCustomStats,
+  renderCustomImageExport,
   UIOptions,
   onExportImage,
   renderWelcomeScreen,
@@ -261,6 +263,7 @@ const LayerUI = ({
         files={files}
         actionManager={actionManager}
         onExportImage={onExportImage}
+        renderCustomImageExport={renderCustomImageExport}
         onCloseRequest={() => setAppState({ openDialog: null })}
         name={app.getName()}
       />

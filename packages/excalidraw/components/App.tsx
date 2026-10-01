@@ -1,3 +1,5 @@
+import { moveFlowchartFollowingNodes } from "@excalidraw/element/flowchartInsertion";
+import { BPD_DEFAULT_SHAPE_BACKGROUNDS } from "@excalidraw/element/flowchartDefaults";
 import clsx from "clsx";
 import throttle from "lodash.throttle";
 import React, { useContext } from "react";
@@ -164,7 +166,6 @@ import {
   isFlowchartNodeElement,
   FLOWCHART_NODE_ICON_OPTIONS,
   FLOWCHART_NODE_ICON_CUSTOM_DATA_KEY,
-  FlowchartNodeIconKey,
   getFlowchartNodeIconKey,
   isBindableElement,
   isTextElement,
@@ -272,6 +273,8 @@ import {
   getUncroppedWidthAndHeight,
   exportProcessDiagramToMarkdown,
 } from "@excalidraw/element";
+
+import type { FlowchartNodeIconKey } from "@excalidraw/element";
 
 import type { GlobalPoint, LocalPoint, Radians } from "@excalidraw/math";
 
@@ -553,14 +556,6 @@ const BPD_DEFAULT_END_ARROWHEAD = "triangle" as const;
 const ARROW_GRID_SIZE = 20 as NullableGridSize;
 const NODE_MOVEMENT_GRID_SIZE = 20 as NullableGridSize;
 const NODE_RESIZE_GRID_SIZE = 20 as NullableGridSize;
-
-const BPD_DEFAULT_SHAPE_BACKGROUNDS = {
-  rectangle: COLOR_PALETTE.blue[DEFAULT_ELEMENT_BACKGROUND_COLOR_INDEX],
-  diamond: COLOR_PALETTE.yellow[DEFAULT_ELEMENT_BACKGROUND_COLOR_INDEX],
-  parallelogram: COLOR_PALETTE.green[DEFAULT_ELEMENT_BACKGROUND_COLOR_INDEX],
-  ellipse: COLOR_PALETTE.red[DEFAULT_ELEMENT_BACKGROUND_COLOR_INDEX],
-  capsule: COLOR_PALETTE.red[DEFAULT_ELEMENT_BACKGROUND_COLOR_INDEX],
-} as const;
 
 const getBpdDefaultShapeBackgroundColor = (
   elementType: ExcalidrawGenericElement["type"] | "embeddable",
@@ -2146,6 +2141,9 @@ class App extends React.Component<AppProps, AppState> {
                           renderTopLeftUI={renderTopLeftUI}
                           renderTopRightUI={renderTopRightUI}
                           renderCustomStats={renderCustomStats}
+                          renderCustomImageExport={
+                            this.props.renderCustomImageExport
+                          }
                           UIOptions={this.props.UIOptions}
                           onExportImage={this.onExportImage}
                           renderWelcomeScreen={
@@ -3216,139 +3214,16 @@ class App extends React.Component<AppProps, AppState> {
     direction: "up" | "right" | "down" | "left",
     sourceCenter: { x: number; y: number },
     targetCenter: { x: number; y: number },
-  ) => {
-    const elements = this.scene.getNonDeletedElements();
-    const elementsMap = this.scene.getNonDeletedElementsMap();
-    const queue = [startNode];
-    const visited = new Set<string>([startNode.id]);
-    const nodesToMove: NonDeleted<ExcalidrawFlowchartNodeElement>[] = [];
-
-    while (queue.length > 0) {
-      const currentNode = queue.shift();
-      if (!currentNode) {
-        continue;
-      }
-
-      nodesToMove.push(currentNode);
-
-      for (const element of elements) {
-        if (!isArrowElement(element)) {
-          continue;
-        }
-
-        if (!element.startBinding) {
-          continue;
-        }
-
-        const nextNode =
-          element.endBinding && elementsMap.get(element.endBinding.elementId);
-        if (!nextNode) {
-          continue;
-        }
-
-        if (
-          isFlowchartNodeElement(nextNode) &&
-          currentNode.id === element.startBinding.elementId &&
-          this.shouldMoveFlowchartFollowingNode(
-            nextNode,
-            direction,
-            sourceCenter,
-            targetCenter,
-          ) &&
-          !visited.has(nextNode.id)
-        ) {
-          visited.add(nextNode.id);
-          queue.push(nextNode);
-        }
-      }
-    }
-
-    const movedNodeIds = new Set(nodesToMove.map((node) => node.id));
-
-    elements.forEach((element) => {
-      if (
-        !isElbowArrow(element) ||
-        !element.startBinding ||
-        !element.endBinding ||
-        !movedNodeIds.has(element.startBinding.elementId) ||
-        !movedNodeIds.has(element.endBinding.elementId)
-      ) {
-        return;
-      }
-
-      this.scene.mutateElement(element, {
-        x: element.x + shift.x,
-        y: element.y + shift.y,
-      });
-
-      const boundTextElement = getBoundTextElement(element, elementsMap);
-      if (boundTextElement) {
-        this.scene.mutateElement(boundTextElement, {
-          x: boundTextElement.x + shift.x,
-          y: boundTextElement.y + shift.y,
-        });
-      }
-    });
-
-    nodesToMove.forEach((node) => {
-      this.scene.mutateElement(node, {
-        x: node.x + shift.x,
-        y: node.y + shift.y,
-      });
-
-      const boundTextElement = getBoundTextElement(node, elementsMap);
-      if (boundTextElement) {
-        this.scene.mutateElement(boundTextElement, {
-          x: boundTextElement.x + shift.x,
-          y: boundTextElement.y + shift.y,
-        });
-      }
-
-      updateBoundElements(node, this.scene);
-    });
-
-    const updatedElementsMap = this.scene.getNonDeletedElementsMap();
-    elements.forEach((element) => {
-      if (!isArrowElement(element) || !isElbowArrow(element)) {
-        return;
-      }
-
-      const updatedPoints = updateElbowArrowPoints(
-        element,
-        updatedElementsMap,
-        { points: element.points },
-      );
-      this.scene.mutateElement(element, updatedPoints);
-    });
-  };
-
-  private shouldMoveFlowchartFollowingNode = (
-    node: NonDeleted<ExcalidrawFlowchartNodeElement>,
-    direction: "up" | "right" | "down" | "left",
-    sourceCenter: { x: number; y: number },
-    targetCenter: { x: number; y: number },
-  ): boolean => {
-    const nodeCenter = getContainerCenter(
-      node,
+  ) =>
+    moveFlowchartFollowingNodes(
+      this.scene,
       this.state,
-      this.scene.getNonDeletedElementsMap(),
+      startNode,
+      shift,
+      direction,
+      sourceCenter,
+      targetCenter,
     );
-
-    if (!nodeCenter) {
-      return false;
-    }
-
-    switch (direction) {
-      case "left":
-        return nodeCenter.x <= Math.min(sourceCenter.x, targetCenter.x);
-      case "right":
-        return nodeCenter.x >= Math.max(sourceCenter.x, targetCenter.x);
-      case "up":
-        return nodeCenter.y <= Math.min(sourceCenter.y, targetCenter.y);
-      case "down":
-        return nodeCenter.y >= Math.max(sourceCenter.y, targetCenter.y);
-    }
-  };
 
   private getFlowchartAddNextDirectionForNodes = (
     sourceNode: NonDeleted<ExcalidrawFlowchartNodeElement>,

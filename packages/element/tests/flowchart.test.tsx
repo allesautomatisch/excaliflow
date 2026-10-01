@@ -1,25 +1,57 @@
-import { KEYS, reseed } from "@excalidraw/common";
+import { KEYS, reseed, resolvablePromise } from "@excalidraw/common";
 
 import { Excalidraw } from "@excalidraw/excalidraw";
+import { isTextElement } from "@excalidraw/element/typeChecks";
 
 import { API } from "@excalidraw/excalidraw/tests/helpers/api";
 import { UI, Keyboard, Pointer } from "@excalidraw/excalidraw/tests/helpers/ui";
 import {
-  render,
+  renderApp as render,
   unmountComponent,
+  waitFor,
 } from "@excalidraw/excalidraw/tests/test-utils";
+
+import { getTextEditor } from "@excalidraw/excalidraw/tests/queries/dom";
+
+import type { ExcalidrawImperativeAPI } from "@excalidraw/excalidraw/types";
 
 unmountComponent();
 
 const { h } = window;
 const mouse = new Pointer("mouse");
 
+// Excaliflow now starts bound-text editing when keyboard-created nodes commit.
+// Finish the empty edit so this suite can keep testing creation/navigation.
+const diagramElements = () =>
+  h.elements.filter((el) => !el.isDeleted && el.type !== "text");
+const commitFlow = async () => {
+  Keyboard.keyUp(KEYS.CTRL_OR_CMD);
+  if (h.state.editingTextElement && isTextElement(h.state.editingTextElement)) {
+    const containerId = h.state.editingTextElement.containerId;
+    Keyboard.exitTextEditor(await getTextEditor());
+    await waitFor(() => expect(h.state.editingTextElement).toBe(null));
+    const created = diagramElements().find((el) => el.id === containerId);
+    if (created) {
+      API.setSelectedElements([created]);
+    }
+  }
+};
+
 beforeEach(async () => {
   localStorage.clear();
   reseed(7);
   mouse.reset();
 
-  await render(<Excalidraw handleKeyboardGlobally={true} />);
+  unmountComponent();
+  const ready = resolvablePromise<ExcalidrawImperativeAPI>();
+  await render(
+    <Excalidraw
+      handleKeyboardGlobally={true}
+      excalidrawAPI={(api) => ready.resolve(api)}
+    />,
+  );
+  const api = await ready;
+  await waitFor(() => expect(api.getAppState().isLoading).toBe(false));
   h.state.width = 1000;
   h.state.height = 1000;
 
@@ -35,8 +67,8 @@ describe("flow chart creation", () => {
     API.clearSelection();
     const rectangle = API.createElement({
       type: "rectangle",
-      width: 200,
-      height: 100,
+      width: 120,
+      height: 120,
     });
 
     API.setElements([rectangle]);
@@ -44,20 +76,24 @@ describe("flow chart creation", () => {
   });
 
   // multiple at once
-  it("create multiple successor nodes at once", () => {
+  it("create multiple successor nodes at once", async () => {
     Keyboard.withModifierKeys({ ctrl: true }, () => {
       Keyboard.keyPress(KEYS.ARROW_RIGHT);
       Keyboard.keyPress(KEYS.ARROW_RIGHT);
     });
 
-    Keyboard.keyUp(KEYS.CTRL_OR_CMD);
+    await commitFlow();
 
-    expect(h.elements.length).toBe(5);
-    expect(h.elements.filter((el) => el.type === "rectangle").length).toBe(3);
-    expect(h.elements.filter((el) => el.type === "arrow").length).toBe(2);
+    expect(diagramElements().length).toBe(5);
+    expect(
+      diagramElements().filter((el) => el.type === "rectangle").length,
+    ).toBe(3);
+    expect(diagramElements().filter((el) => el.type === "arrow").length).toBe(
+      2,
+    );
   });
 
-  it("when directions are changed, only the last same directions will apply", () => {
+  it("when directions are changed, only the last same directions will apply", async () => {
     Keyboard.withModifierKeys({ ctrl: true }, () => {
       Keyboard.keyPress(KEYS.ARROW_RIGHT);
       Keyboard.keyPress(KEYS.ARROW_RIGHT);
@@ -70,14 +106,18 @@ describe("flow chart creation", () => {
       Keyboard.keyPress(KEYS.ARROW_UP);
     });
 
-    Keyboard.keyUp(KEYS.CTRL_OR_CMD);
+    await commitFlow();
 
-    expect(h.elements.length).toBe(7);
-    expect(h.elements.filter((el) => el.type === "rectangle").length).toBe(4);
-    expect(h.elements.filter((el) => el.type === "arrow").length).toBe(3);
+    expect(diagramElements().length).toBe(7);
+    expect(
+      diagramElements().filter((el) => el.type === "rectangle").length,
+    ).toBe(4);
+    expect(diagramElements().filter((el) => el.type === "arrow").length).toBe(
+      3,
+    );
   });
 
-  it("when escaped, no nodes will be created", () => {
+  it("when escaped, no nodes will be created", async () => {
     Keyboard.withModifierKeys({ ctrl: true }, () => {
       Keyboard.keyPress(KEYS.ARROW_RIGHT);
       Keyboard.keyPress(KEYS.ARROW_LEFT);
@@ -86,24 +126,28 @@ describe("flow chart creation", () => {
     });
 
     Keyboard.keyPress(KEYS.ESCAPE);
-    Keyboard.keyUp(KEYS.CTRL_OR_CMD);
+    await commitFlow();
 
-    expect(h.elements.length).toBe(1);
+    expect(diagramElements().length).toBe(1);
   });
 
-  it("create nodes one at a time", () => {
-    const initialNode = h.elements[0];
+  it("create nodes one at a time", async () => {
+    const initialNode = diagramElements()[0];
 
     Keyboard.withModifierKeys({ ctrl: true }, () => {
       Keyboard.keyPress(KEYS.ARROW_RIGHT);
     });
-    Keyboard.keyUp(KEYS.CTRL_OR_CMD);
+    await commitFlow();
 
-    expect(h.elements.length).toBe(3);
-    expect(h.elements.filter((el) => el.type === "rectangle").length).toBe(2);
-    expect(h.elements.filter((el) => el.type === "arrow").length).toBe(1);
+    expect(diagramElements().length).toBe(3);
+    expect(
+      diagramElements().filter((el) => el.type === "rectangle").length,
+    ).toBe(2);
+    expect(diagramElements().filter((el) => el.type === "arrow").length).toBe(
+      1,
+    );
 
-    const firstChildNode = h.elements.filter(
+    const firstChildNode = diagramElements().filter(
       (el) => el.type === "rectangle" && el.id !== initialNode.id,
     )[0];
     expect(firstChildNode).not.toBe(null);
@@ -114,13 +158,17 @@ describe("flow chart creation", () => {
     Keyboard.withModifierKeys({ ctrl: true }, () => {
       Keyboard.keyPress(KEYS.ARROW_RIGHT);
     });
-    Keyboard.keyUp(KEYS.CTRL_OR_CMD);
+    await commitFlow();
 
-    expect(h.elements.length).toBe(5);
-    expect(h.elements.filter((el) => el.type === "rectangle").length).toBe(3);
-    expect(h.elements.filter((el) => el.type === "arrow").length).toBe(2);
+    expect(diagramElements().length).toBe(5);
+    expect(
+      diagramElements().filter((el) => el.type === "rectangle").length,
+    ).toBe(3);
+    expect(diagramElements().filter((el) => el.type === "arrow").length).toBe(
+      2,
+    );
 
-    const secondChildNode = h.elements.filter(
+    const secondChildNode = diagramElements().filter(
       (el) =>
         el.type === "rectangle" &&
         el.id !== initialNode.id &&
@@ -134,13 +182,17 @@ describe("flow chart creation", () => {
     Keyboard.withModifierKeys({ ctrl: true }, () => {
       Keyboard.keyPress(KEYS.ARROW_RIGHT);
     });
-    Keyboard.keyUp(KEYS.CTRL_OR_CMD);
+    await commitFlow();
 
-    expect(h.elements.length).toBe(7);
-    expect(h.elements.filter((el) => el.type === "rectangle").length).toBe(4);
-    expect(h.elements.filter((el) => el.type === "arrow").length).toBe(3);
+    expect(diagramElements().length).toBe(7);
+    expect(
+      diagramElements().filter((el) => el.type === "rectangle").length,
+    ).toBe(4);
+    expect(diagramElements().filter((el) => el.type === "arrow").length).toBe(
+      3,
+    );
 
-    const thirdChildNode = h.elements.filter(
+    const thirdChildNode = diagramElements().filter(
       (el) =>
         el.type === "rectangle" &&
         el.id !== initialNode.id &&
@@ -157,7 +209,7 @@ describe("flow chart creation", () => {
 });
 
 describe("flow chart navigation", () => {
-  it("single node at each level", () => {
+  it("single node at each level", async () => {
     /**
      * ▨ -> ▨ -> ▨ -> ▨ -> ▨
      */
@@ -175,25 +227,29 @@ describe("flow chart navigation", () => {
     Keyboard.withModifierKeys({ ctrl: true }, () => {
       Keyboard.keyPress(KEYS.ARROW_RIGHT);
     });
-    Keyboard.keyUp(KEYS.CTRL_OR_CMD);
+    await commitFlow();
 
     Keyboard.withModifierKeys({ ctrl: true }, () => {
       Keyboard.keyPress(KEYS.ARROW_RIGHT);
     });
-    Keyboard.keyUp(KEYS.CTRL_OR_CMD);
+    await commitFlow();
 
     Keyboard.withModifierKeys({ ctrl: true }, () => {
       Keyboard.keyPress(KEYS.ARROW_RIGHT);
     });
-    Keyboard.keyUp(KEYS.CTRL_OR_CMD);
+    await commitFlow();
 
     Keyboard.withModifierKeys({ ctrl: true }, () => {
       Keyboard.keyPress(KEYS.ARROW_RIGHT);
     });
-    Keyboard.keyUp(KEYS.CTRL_OR_CMD);
+    await commitFlow();
 
-    expect(h.elements.filter((el) => el.type === "rectangle").length).toBe(5);
-    expect(h.elements.filter((el) => el.type === "arrow").length).toBe(4);
+    expect(
+      diagramElements().filter((el) => el.type === "rectangle").length,
+    ).toBe(5);
+    expect(diagramElements().filter((el) => el.type === "arrow").length).toBe(
+      4,
+    );
 
     // all the way to the left, gets us to the first node
     Keyboard.withModifierKeys({ alt: true }, () => {
@@ -206,7 +262,7 @@ describe("flow chart navigation", () => {
     expect(h.state.selectedElementIds[rectangle.id]).toBe(true);
 
     // all the way to the right, gets us to the last node
-    const rightMostNode = h.elements[h.elements.length - 2];
+    const rightMostNode = diagramElements()[diagramElements().length - 2];
     expect(rightMostNode);
     expect(rightMostNode.type).toBe("rectangle");
     Keyboard.withModifierKeys({ alt: true }, () => {
@@ -219,7 +275,7 @@ describe("flow chart navigation", () => {
     expect(h.state.selectedElementIds[rightMostNode.id]).toBe(true);
   });
 
-  it("multiple nodes at each level", () => {
+  it("multiple nodes at each level", async () => {
     /**
      * from the perspective of the first node, there're four layers, and
      * there are four nodes at the second layer
@@ -243,43 +299,43 @@ describe("flow chart navigation", () => {
     Keyboard.withModifierKeys({ ctrl: true }, () => {
       Keyboard.keyPress(KEYS.ARROW_RIGHT);
     });
-    Keyboard.keyUp(KEYS.CTRL_OR_CMD);
+    await commitFlow();
 
     Keyboard.withModifierKeys({ ctrl: true }, () => {
       Keyboard.keyPress(KEYS.ARROW_RIGHT);
     });
-    Keyboard.keyUp(KEYS.CTRL_OR_CMD);
+    await commitFlow();
 
     Keyboard.withModifierKeys({ ctrl: true }, () => {
       Keyboard.keyPress(KEYS.ARROW_RIGHT);
     });
-    Keyboard.keyUp(KEYS.CTRL_OR_CMD);
+    await commitFlow();
 
     Keyboard.withModifierKeys({ ctrl: true }, () => {
       Keyboard.keyPress(KEYS.ARROW_RIGHT);
     });
-    Keyboard.keyUp(KEYS.CTRL_OR_CMD);
+    await commitFlow();
 
-    const secondNode = h.elements[1];
-    const rightMostNode = h.elements[h.elements.length - 2];
+    const secondNode = diagramElements()[1];
+    const rightMostNode = diagramElements()[diagramElements().length - 2];
 
     API.setSelectedElements([rectangle]);
     Keyboard.withModifierKeys({ ctrl: true }, () => {
       Keyboard.keyPress(KEYS.ARROW_RIGHT);
     });
-    Keyboard.keyUp(KEYS.CTRL_OR_CMD);
+    await commitFlow();
 
     API.setSelectedElements([rectangle]);
     Keyboard.withModifierKeys({ ctrl: true }, () => {
       Keyboard.keyPress(KEYS.ARROW_RIGHT);
     });
-    Keyboard.keyUp(KEYS.CTRL_OR_CMD);
+    await commitFlow();
 
     API.setSelectedElements([rectangle]);
     Keyboard.withModifierKeys({ ctrl: true }, () => {
       Keyboard.keyPress(KEYS.ARROW_RIGHT);
     });
-    Keyboard.keyUp(KEYS.CTRL_OR_CMD);
+    await commitFlow();
 
     API.setSelectedElements([rectangle]);
 
@@ -314,7 +370,7 @@ describe("flow chart navigation", () => {
     expect(h.state.selectedElementIds[rectangle.id]).toBe(true);
   });
 
-  it("take the most obvious link when possible", () => {
+  it("take the most obvious link when possible", async () => {
     /**
      * ▨ → ▨   ▨ → ▨
      *     ↓   ↑
@@ -334,30 +390,30 @@ describe("flow chart navigation", () => {
     Keyboard.withModifierKeys({ ctrl: true }, () => {
       Keyboard.keyPress(KEYS.ARROW_RIGHT);
     });
-    Keyboard.keyUp(KEYS.CTRL_OR_CMD);
+    await commitFlow();
 
     Keyboard.withModifierKeys({ ctrl: true }, () => {
       Keyboard.keyPress(KEYS.ARROW_DOWN);
     });
-    Keyboard.keyUp(KEYS.CTRL_OR_CMD);
+    await commitFlow();
 
     Keyboard.withModifierKeys({ ctrl: true }, () => {
       Keyboard.keyPress(KEYS.ARROW_RIGHT);
     });
-    Keyboard.keyUp(KEYS.CTRL_OR_CMD);
+    await commitFlow();
 
     Keyboard.withModifierKeys({ ctrl: true }, () => {
       Keyboard.keyPress(KEYS.ARROW_UP);
     });
-    Keyboard.keyUp(KEYS.CTRL_OR_CMD);
+    await commitFlow();
 
     Keyboard.withModifierKeys({ ctrl: true }, () => {
       Keyboard.keyPress(KEYS.ARROW_RIGHT);
     });
-    Keyboard.keyUp(KEYS.CTRL_OR_CMD);
+    await commitFlow();
 
     // last node should be the one that's selected
-    const rightMostNode = h.elements[h.elements.length - 2];
+    const rightMostNode = diagramElements()[diagramElements().length - 2];
     expect(rightMostNode.type).toBe("rectangle");
     expect(h.state.selectedElementIds[rightMostNode.id]).toBe(true);
 
@@ -373,7 +429,8 @@ describe("flow chart navigation", () => {
     expect(h.state.selectedElementIds[rectangle.id]).toBe(true);
 
     // going any direction takes us to the predecessor as well
-    const predecessorToRightMostNode = h.elements[h.elements.length - 4];
+    const predecessorToRightMostNode =
+      diagramElements()[diagramElements().length - 4];
     expect(predecessorToRightMostNode.type).toBe("rectangle");
 
     API.setSelectedElements([rightMostNode]);

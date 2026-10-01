@@ -824,12 +824,12 @@ const sanitizePoints = (points: readonly LocalPoint[]): LocalPoint[] => {
  * - switching between linear elements
  *   e.g. elbow arrow -> line
  */
-const convertElementType = <
+export const convertElementType = <
   TElement extends Exclude<ExcalidrawElement, ExcalidrawSelectionElement>,
 >(
   element: TElement,
   targetType: ConvertibleTypes,
-  app: AppClassProperties,
+  app: Pick<AppClassProperties, "scene" | "state">,
 ): ExcalidrawElement => {
   if (!isValidConversion(element.type, targetType)) {
     if (!isProdEnv()) {

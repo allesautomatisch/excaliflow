@@ -1,0 +1,78 @@
+{
+  "focusedTests": {
+    "logPath": "/private/tmp/excaliflow-experiments-v5-tests.log",
+    "lastLines": [
+      " ✓ packages/element/tests/flowchart.test.tsx (7 tests) 6210ms",
+      "   ✓ flow chart creation > create multiple successor nodes at once 996ms",
+      "   ✓ flow chart creation > when directions are changed, only the last same directions will apply 556ms",
+      "   ✓ flow chart creation > when escaped, no nodes will be created 327ms",
+      "   ✓ flow chart creation > create nodes one at a time 743ms",
+      "   ✓ flow chart navigation > single node at each level 887ms",
+      "   ✓ flow chart navigation > multiple nodes at each level 1405ms",
+      "   ✓ flow chart navigation > take the most obvious link when possible 1294ms",
+      "",
+      " Test Files  3 passed (3)",
+      "      Tests  48 passed (48)",
+      "   Start at  12:07:55",
+      "   Duration  17.57s (transform 6.03s, setup 1.49s, collect 18.29s, tests 10.91s, environment 2.75s, prepare 480ms)",
+      "",
+      "Done in 19.08s."
+    ]
+  },
+  "finalCatalog": {
+    "logPath": "/private/tmp/excaliflow-experiments-v6-catalog.log",
+    "lastLines": [
+      "yarn run v1.22.22",
+      "$ vitest --run excalidraw-app/webmcp/catalog.test.ts",
+      "",
+      " RUN  v3.0.6 /Users/oliver/Herd/excaliflow",
+      "",
+      " ✓ excalidraw-app/webmcp/catalog.test.ts (5 tests) 19ms",
+      "",
+      " Test Files  1 passed (1)",
+      "      Tests  5 passed (5)",
+      "   Start at  12:13:36",
+      "   Duration  1.67s (transform 243ms, setup 320ms, collect 77ms, tests 19ms, environment 593ms, prepare 115ms)",
+      "",
+      "Done in 3.39s."
+    ]
+  },
+  "typecheck": {
+    "logPath": "/private/tmp/excaliflow-experiments-v6-types.log",
+    "lastLines": [
+      "yarn run v1.22.22",
+      "$ /Users/oliver/Herd/excaliflow/node_modules/.bin/tsc --noEmit",
+      "Done in 21.18s."
+    ]
+  },
+  "lintV5": {
+    "logPath": "/private/tmp/excaliflow-experiments-v5-lint.log",
+    "lastLines": []
+  },
+  "lintV6": {
+    "logPath": "/private/tmp/excaliflow-experiments-v6-lint.log",
+    "lastLines": []
+  },
+  "build": {
+    "logPath": "/private/tmp/excaliflow-experiments-v6-build.log",
+    "lastLines": [
+      " WARN  Browserslist: browsers data (caniuse-lite) is 8 months old. Please run:",
+      "  npx update-browserslist-db@latest",
+      "  Why you should do it regularly: https://github.com/browserslist/update-db#readme",
+      "",
+      "ℹ",
+      "PWA v0.21.1",
+      "mode      generateSW",
+      "precache  65 entries (5203.74 KiB)",
+      "files generated",
+      "  build/sw.js.map",
+      "  build/sw.js",
+      "  build/workbox-4e4501d4.js.map",
+      "  build/workbox-4e4501d4.js",
+      "✓ built in 39.14s",
+      "Done in 55.85s."
+    ]
+  },
+  "browser": "Fresh native in-app results 03/04/05/06; source frozen per run.",
+  "health": "HTTP/1.1 200 OK at 2026-10-01 10:23:09 UTC; port3001 listener PID14784."
+}

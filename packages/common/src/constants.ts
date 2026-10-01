@@ -260,6 +260,7 @@ export const STRING_MIME_TYPES = {
 
 export const MIME_TYPES = {
   ...STRING_MIME_TYPES,
+  md: "text/markdown",
   // image-encoded excalidraw data
   "excalidraw.svg": "image/svg+xml",
   "excalidraw.png": "image/png",

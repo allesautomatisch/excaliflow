@@ -63,6 +63,72 @@ Source of truth: `PLAN.md`. Always update `PLAN.md` first, then reflect changes 
 - [x] Auto-create and keep one headline text label per swimlane lane in sync with resize/line-count changes
 - [x] Add focused swimlane element tests and keep TypeScript clean
 
+## Milestone 6 (WebMCP access to existing flowchart features)
+
+- [x] Register `flow_get_context` and `flow_apply_operations` with strict discovery/validation schemas
+- [x] Reuse existing node placement, conversion, binding/text/container helpers and insertion graph shifting
+- [x] Apply atomic operation batches with one undo step and temporary references
+- [x] Guard drawing switches, stale revisions, repeated request IDs, locked elements, active edits and cancellation
+- [x] Clean up native and legacy registrations on unmount/remount; retain normal editor without WebMCP
+- [x] Verify actual native discovery/execution in the requested Codex Browser, including insertion, Undo/Redo, rollback, retries and manual/drawing conflicts
+- [x] Complete focused regression tests, package/app typechecks, affected-file lint and local build/load checks
+- [x] Document tool contracts, concrete native example batches, prerequisites and manual checks
+
+## Milestone 7 (Compact WebMCP catalog)
+
+- [x] Derive discovery, strict validation and optional help/examples from shared operation contracts
+- [x] Add read-only `flow_help` without adding new diagram editing capabilities
+- [x] Advertise common create/connect example and return actual committed element confirmations
+- [x] Add catalog size budgets and fresh-session/strict-validation regression tests
+- [x] Verify fresh native Browser session, optional insertion help, build/typecheck/lint and local load
+- [x] Update reference and record measured catalog size and acceptance evidence
+
+## Milestone 8 (WebMCP Flow conventions)
+
+- [x] Put shared Flow rules in discovery descriptions, structured context and optional help
+- [x] Replace public raw geometry/text operations with semantic steps and explicit loops
+- [x] Compose existing placement, binding, conversion and insertion functions
+- [x] Enforce concise labels, standard grid geometry, chronological placement and atomic rollback
+- [x] Add meaningful regression coverage for branches, loops, insertion, Undo/Redo and invalid batches
+- [x] Complete native Browser, typecheck, lint, build and local-load acceptance
+- [x] Update reference with contract v3, agent guidance and validation limits
+
+## Milestone 9 (Loop return conventions)
+
+- [x] Teach bottom exit/entry, lower returning nodes and node-clearance rules through WebMCP
+- [x] Wrap existing node movement, bottom bindings and fixed elbow segment editing
+- [x] Add semantic repair of existing loop edges while preserving IDs and labels
+- [x] Test detours, source lowering, idempotence, Undo/Redo and atomic overlap rejection
+- [x] Complete typecheck/lint/build/load checks
+- [x] Verify bottom ports, node clearance, IDs, idempotence and Undo/Redo in native Browser
+- [x] Repair both webinar loopbacks and update the reference
+- [x] Export the actual drawing with final nested-loop ordering; verify no node or loop crossings
+- [ ] Re-open the final exported drawing in Browser after its connection recovers
+
+## Milestone 10 (Fresh Codex session experiments)
+
+- [x] Define a fixed human-level prompt, isolated new projectless threads and comparable evaluation criteria
+- [x] Run baseline experiments with evidenced empty starts and save screenshots/results
+- [x] Adapt built-in WebMCP guidance based on observed results
+- [x] Run new independent comparison threads and preserve their screenshots/results
+- [x] Complete source checks and chronological report with limitations
+
+## Milestone 11 (WebMCP export)
+
+- [x] Register compact `export_as` with all four formats and save/clipboard/server destinations
+- [x] Reuse existing exporters and expose image dialog options without mutating editor preferences
+- [x] Guard snapshots, session/revision, invalid input, cancellation and active file handles
+- [x] Test real format outputs, image flags and registration plus native Browser export
+- [x] Complete typecheck/lint/build/load checks and update reference
+
+- [x] Add server batch uploads with shared UUID and public exports route in Laravel
+- [x] Add manual image-dialog server export and format selection
+- [x] Add an icon-only copy button beside each published export link
+- [x] Document production Flow host routing and upload/storage configuration
+
+- [x] Wire `/api/v2/exports` and `/exports/` in repository Docker and Vercel hosting configurations
+- [ ] Deploy frontend/backend and apply export proxy configuration on the live Flow host
+
 ## Ops
 
 - [x] Add a feature flag (`VITE_APP_ENABLE_LOCAL_STORAGE`) to allow enabling/disabling scene localStorage persistence, and default persistence off.

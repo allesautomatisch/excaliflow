@@ -1,0 +1,74 @@
+{
+  "fourFormats": {
+    "ok": true,
+    "contractVersion": "7",
+    "drawingSession": "FPmmTs39qYcUd9HfPNhzC:pts0UggPSarcz6Dj1RXyg:0",
+    "revision": 2,
+    "destination": "server",
+    "uuid": "1f8288e6-07d3-48b1-abdb-af3643c9bb63",
+    "exports": [
+      {
+        "format": "png",
+        "fileName": "2026-10-01-my-company-flow-1f8288e6-07d3-48b1-abdb-af3643c9bb63.png",
+        "url": "http://localhost:3001/exports/2026-10-01-my-company-flow-1f8288e6-07d3-48b1-abdb-af3643c9bb63.png",
+        "sizeBytes": 38009
+      },
+      {
+        "format": "svg",
+        "fileName": "2026-10-01-my-company-flow-1f8288e6-07d3-48b1-abdb-af3643c9bb63.svg",
+        "url": "http://localhost:3001/exports/2026-10-01-my-company-flow-1f8288e6-07d3-48b1-abdb-af3643c9bb63.svg",
+        "sizeBytes": 13893
+      },
+      {
+        "format": "excalidraw",
+        "fileName": "2026-10-01-my-company-flow-1f8288e6-07d3-48b1-abdb-af3643c9bb63.excalidraw",
+        "url": "http://localhost:3001/exports/2026-10-01-my-company-flow-1f8288e6-07d3-48b1-abdb-af3643c9bb63.excalidraw",
+        "sizeBytes": 8446
+      },
+      {
+        "format": "md",
+        "fileName": "2026-10-01-my-company-flow-1f8288e6-07d3-48b1-abdb-af3643c9bb63.md",
+        "url": "http://localhost:3001/exports/2026-10-01-my-company-flow-1f8288e6-07d3-48b1-abdb-af3643c9bb63.md",
+        "sizeBytes": 94
+      }
+    ],
+    "elementCount": 8,
+    "imageOptions": {
+      "background": false,
+      "darkMode": true,
+      "embedScene": true,
+      "scale": 2,
+      "selectedOnly": false
+    }
+  },
+  "pngAndMarkdown": {
+    "ok": true,
+    "contractVersion": "7",
+    "drawingSession": "h0Msinqe0vGmuQwgo2BFA:3gbVrZB5RImUPO1pq0EAD:0",
+    "revision": 2,
+    "destination": "server",
+    "uuid": "3564b787-2406-41b5-bff2-94ee5538e695",
+    "exports": [
+      {
+        "format": "png",
+        "fileName": "2026-10-01-my-company-flow-3564b787-2406-41b5-bff2-94ee5538e695.png",
+        "url": "http://localhost:3001/exports/2026-10-01-my-company-flow-3564b787-2406-41b5-bff2-94ee5538e695.png",
+        "sizeBytes": 62645
+      },
+      {
+        "format": "md",
+        "fileName": "2026-10-01-my-company-flow-3564b787-2406-41b5-bff2-94ee5538e695.md",
+        "url": "http://localhost:3001/exports/2026-10-01-my-company-flow-3564b787-2406-41b5-bff2-94ee5538e695.md",
+        "sizeBytes": 94
+      }
+    ],
+    "elementCount": 8,
+    "imageOptions": {
+      "background": false,
+      "darkMode": false,
+      "embedScene": true,
+      "scale": 3,
+      "selectedOnly": false
+    }
+  }
+}

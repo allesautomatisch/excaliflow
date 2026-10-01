@@ -100,6 +100,61 @@
    - Auto-create one text label per swimlane lane and keep those labels centered when the swimlane is resized or its lane count changes.
    - Test checkpoint: TypeScript clean, swimlane helper test passes, app loads locally, and the tool appears in the extra tools menu.
 
+6. **WebMCP Access to Existing Flowchart Features**
+
+   - Expose two tools on the active app document: `flow_get_context` and `flow_apply_operations`.
+   - Reuse the existing node placement, shape conversion, binding/text/frame helpers and arrow insertion graph-shifting function. UI and WebMCP share those helpers; do not add app capabilities solely for WebMCP without discussing them with the user.
+   - Support atomic batches of existing node/connector actions, including one-operation batches and insertion into a specifically identified arrow. Each successful batch uses one existing undo step.
+   - Validate strict schemas, drawing sessions, optional revisions, bounded retry IDs, locked elements/containers, editor activity and cancellation before committing a cloned scene.
+   - Register through native `document.modelContext` with abort cleanup; retain a feature-detected legacy `navigator.modelContext` adapter with explicit unregister cleanup. Browsers without either API keep the normal editor.
+   - Test checkpoint: native tools discovered and executed in the Codex in-app Browser on localhost; verify insertion shifts downstream nodes, bindings, Undo/Redo, retries, manual-edit conflicts, invalid-batch rollback and drawing switches. Run focused tests, package/app typechecks, lint and app build. Tool contracts and reproducible examples live in `excalidraw-app/webmcp/README.md`.
+   - Verified 2026-10-01: 40 focused tests, app/element/core typechecks, app build, HTTP 200/listener and native Browser execution passed. Affected-file lint has 0 errors and one pre-existing unused `editorInterface` warning. Backend persistence and collaboration were not exercised against production data.
+
+7. **Compact WebMCP Catalog for Future Sessions**
+
+   - Derive compact shared discovery, strict execution schemas, summaries and on-demand `flow_help` details/examples from one operation contract.
+   - Keep common creation/connection usable directly from discovery with context plus one atomic batch; return committed element labels/bindings/positions and contract version.
+   - Protect initial compact/formatted catalog size with regression budgets; verify the actual Codex Browser description and a fresh native session without help calls.
+   - Preserve existing app capabilities and insertion helpers; update the WebMCP reference and run focused tests, typecheck, lint, build and browser/load checks.
+   - Verified 2026-10-01: 39 focused tests, app typecheck, WebMCP-file lint (0 errors/warnings), app build and HTTP 200/listener passed. Actual native Browser description shrank from 20177 to 12435 bytes (38.4%); fresh drawing creation/connection required only context plus one batch and no help. Optional insertion help, strict invalid-field rollback and existing graph-shift execution passed. The original drawing was backed up/restored with graph IDs and node positions preserved.
+
+8. **Enforce Flow Conventions at the WebMCP Boundary**
+
+   - Teach every new browser agent via registered descriptions/schemas, `flow_get_context.flowRules`, compact examples and optional operation-level `flow_help`; repository instructions are not required for app agents.
+   - Replace raw public editing operations with semantic append/branch/insert/rename/loop operations (contract version 3). Compose the existing editor functions; keep raw engine operations private.
+   - Require one-word object/action labels (max 32 combined characters), terminal defaults, 120x120 nodes on the 120px grid, and 240px chronological steps to the right. Branches start below and continue right; loops explicitly return to earlier reachable steps.
+   - Validate the cloned result before one atomic commit, including occupied cells and off-grid anchors. Keep existing manual editing and insertion graph-shifting behavior.
+   - Verify focused regressions, native Browser discovery/execution, typecheck, lint, build and local loading; document grammatical validation and existing routing limits.
+   - Verified 2026-10-01: 42 focused tests, app typecheck, WebMCP lint (0 errors/warnings), app build and HTTP 200/listener passed. Fresh native Browser contract 3 creation, insertion/shift, branch/loop, optional help and invalid-input rollback passed. Browser description 8747 bytes (about 30% below contract 2). Original drawing restored after reload; all 39 graph elements match IDs, labels, geometry and bindings.
+
+9. **Loop Return Conventions and Node Clearance**
+
+   - Expose existing bottom endpoint bindings and fixed elbow segment editing through semantic loop wrappers; avoid introducing a new editor/router mode.
+   - Lower returning leaf nodes to a free grid row when possible; retain nodes with forward continuation and container membership.
+   - Choose bounded lower return corridors and side detours using existing elbow geometry. Reject new/changed connectors crossing node interiors atomically; unrelated nodes remain in place.
+   - Add `route_loop(edgeId)` to repair existing returns without changing connector IDs or labels. Deliver rules through discovery, context and help (contract 4).
+   - Verify bottom directions, blocked target columns, idempotent repairs, insertion/Undo/Redo and rollback; repair the two webinar loops and verify the real drawing in Browser.
+   - Verified 2026-10-01: 46 focused tests, app typecheck, WebMCP lint, build and HTTP 200/listener passed. Native Browser repaired both returns with bottom ports, separate return lanes and no node crossings; only the two returning nodes moved, IDs/labels remained unchanged. Undo restored the original graph; existing editor Redo normalized binding gaps, then the wrapper restored its endpoint spacing.
+   - Route shorter loops first to allow enclosing returns beneath them. The final actual drawing was separately processed through `applyFlowOperations` and exported to `webinar-loops.excalidraw`; an additional verification confirmed no node or mutual loop crossings. Final live re-import remains pending: the dev server exhausted its heap and the Browser connection stopped responding. Server restarted and passed HTTP health checks; drawing backup and final export retained.
+
+10. **Fresh Codex Session Experiments**
+
+- Run sequential new projectless Codex threads with the same human-level URL/task prompt, verified empty drawings and no inherited conversation or repository context.
+- Preserve tool/rule versions, thread evidence, graph outcomes and rendered screenshots before observer intervention; separate infrastructure failures from Flow-rule quality.
+- Evaluate the baseline, adapt only built-in WebMCP guidance/wrappers based on observed failures and repeat in new threads under the same conditions.
+- Produce a chronological report with each test, result and a one-sentence good/bad assessment. Protocol/evidence: `experiments/fresh-sessions-2026-10-01/`.
+- Completed 2026-10-01: six fresh projectless chats with evidenced empty starts and preserved screenshots; pilot 02 excluded from controlled comparison because it used standalone Playwright and read app sources. Exact @Browser prompt held constant in 03–06, contracts 4/5/6 frozen per run.
+- Contract 6 includes the user clarification: sharing the lowest occupied row is sufficient; only higher leaf sources lower. Precise edge-label errors, separate arrow/node span limits, compact authoring/branch guidance and optional free-bottom-port guidance added around existing editor functions.
+- 48 focused tests passed; final help-only edit passed all five catalog-budget tests. App typecheck, WebMCP lint, build and HTTP health passed. Runs 05/06 finish with leaf sources on the existing lowest row; 06 still required two failed layout attempts and existing insertion/graph shift. No runtime-speed or guaranteed global-layout claim. Chronological report: `experiments/fresh-sessions-2026-10-01/report.md`.
+
+11. **WebMCP Export Existing Formats**
+
+- Add `export_as` for PNG, SVG, Excalidraw and the existing process Markdown exporter, with local save, clipboard or public server destinations.
+- Reuse existing renderers, serialization, file saving and clipboard helpers. Expose image background, dark mode, embedded scene, 1/2/3x scale and existing selection-only export.
+- In the manual server export results, offer a small copy icon beside each format link to copy its individual URL.
+- Snapshot the current drawing with session/revision checks; exports must not mutate the drawing or its export preferences, or silently overwrite its active file handle.
+- Verify format/destination coverage, image options, referenced assets, validation/cancellation and real native Browser export; update the compact catalog reference and run source/build/load checks.
+
 ## Clarifying Questions
 
 1. For the default “standard size” on click, is `160x100` acceptable, or do you prefer another size?
@@ -141,8 +196,32 @@
 - Flow backend project persistence is implemented across the Laravel API and Excaliflow UI: project list dropdowns, nullable project filtering, current-project preselection, and project-name display in the top-left file info.
 - Flow backend image persistence is implemented end to end: referenced image files are encrypted client-side, uploaded after the drawing record is saved, and decrypted/restored on every backend drawing load path.
 
+- WebMCP exposes existing editing capabilities only in the currently open drawing. Export uses the existing render/serialization paths with local file, clipboard and public server destinations; backend drawing discovery, collaboration management and new app features remain outside the tool surface.
+- Public WebMCP contract v4 accepts semantic steps without arbitrary geometry or directions and enforces bottom loop ports, clear return lanes and lower returning leaf nodes when possible. Forward insertion reuses the existing downstream graph shift; manual editor placement remains available. Existing node and unrelated connector IDs are preserved; the specifically replaced connector gets replacement IDs returned by the batch. Noun/verb meaning is taught through descriptions/examples; validation guarantees two short tokens, not grammatical classification.
+
 ## Extra Low-Risk QoL Ideas
 
 - Optional: BPD quick-style preset button (reapplies thick stroke + elbow arrows + architect roughness).
 - Optional: BPD shape quick-swap in properties panel (rect ⇄ capsule ⇄ parallelogram).
 - Optional: Default grid on for BPD mode (helps alignment without changing snapping logic).
+
+
+## Public export extension (milestone 11)
+
+- `export_as` supports local save, clipboard and `server`; server batches accept `formats` and share one generated UUID/date/name stem.
+- Laravel `POST /api/v2/exports` stores validated PNG/SVG/Excalidraw/Markdown batches; public `GET /exports/{fileName}` retrieves the same bytes. Filesystem storage is persistent and configurable; no schema migration.
+- The image dialog exposes server publication, multiple format selection, editable export name and public links with copy support. Existing image renderers/metadata and Markdown/JSON serializers are reused.
+- Development proxies, Docker Nginx template and Vercel rewrites are wired. Production requires the backend/frontend release; other hosting setups need the Flow host routes documented in `server-api-docs.md`; no production deployment was performed.
+
+
+### Export acceptance, 01.10.2026
+
+- 57 focused WebMCP/export/catalog tests, 12 Laravel export tests (49 assertions), and the Playwright login plus export-route smoke passed. Root/app TypeScript checks, affected WebMCP/export lint (zero errors/warnings), build and HTTP 200/listener passed. The existing app-wide unused `editorInterface` lint warning remains outside this change.
+- Native @Browser: a four-format publication, PNG+Markdown pair and manual four-format image-dialog export each returned a shared UUID with readable date/name filenames. Public SVG rendered through the Flow-origin development proxy. Real PNG artifact is 1240x280 at 2x, with a transparent corner and a decoded embedded eight-element scene. Tool overrides left the dialog preferences unchanged.
+- Evidence is in `experiments/exports-2026-10-01/`; final screenshot shows editable name, image options, four formats, public links and copy-links action.
+- Follow-up: each published format link now has an accessible icon-only copy button using the existing clipboard helper. TypeScript, focused lint and app health passed; all four icons were confirmed in native Browser (`server-export-copy-icons.png`). A PNG icon click still yielded no clipboard readback in that browser, so native clipboard completion remains unconfirmed.
+- Native system Clipboard calls and copy-links readback did not complete in the Codex browser. Their real serializer/PNG metadata/SVG output transport paths are covered by focused tests; no successful native clipboard round-trip is claimed. Local-save transport uses existing fileSave and is covered with mocked IO, not a confirmed native file-dialog round-trip.
+- The additionally attempted legacy core export suite failed 7/8 tests (drop DOM setup and older font/scene snapshots); these tests call unchanged lower-level scene exporters rather than the new export transport. It was not declared green and its fixtures were not rewritten.
+- Production release and host routing remain pending; the documented URLs are not claimed live on flow.allesautomatisch.com.
+
+- Repository hosting is wired for Docker and Vercel; the rendered Nginx proxy template passed `nginx -t` locally. Docker image runtime/production deployment was not exercised.

@@ -43,7 +43,7 @@ type TestRenderFn = (
   >,
 ) => Promise<RenderResult<typeof customQueries>>;
 
-const renderApp: TestRenderFn = async (ui, options) => {
+export const renderApp: TestRenderFn = async (ui, options) => {
   // when tests reuse Pointer instances let's reset the last
   // pointer poisitions so there's no leak between tests
   Pointer.resetAll();

@@ -66,5 +66,15 @@
     }
   ],
   "outputDirectory": "excalidraw-app/build",
-  "installCommand": "yarn install"
+  "installCommand": "yarn install",
+  "rewrites": [
+    {
+      "source": "/api/v2/exports",
+      "destination": "https://allesautomatisch.com/api/v2/exports"
+    },
+    {
+      "source": "/exports/:fileName",
+      "destination": "https://allesautomatisch.com/exports/:fileName"
+    }
+  ]
 }

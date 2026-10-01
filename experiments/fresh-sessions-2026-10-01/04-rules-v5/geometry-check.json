@@ -1,0 +1,74 @@
+{
+  "source": "Actual saved drawing; pilot02 was pasted into another browser before export, so its coordinates are translated.",
+  "nodeCount": 15,
+  "edgeCount": 16,
+  "fixedSizeAndGrid": true,
+  "labels": [
+    "Start",
+    "YouTube-Video veröffentlichen",
+    "Landingpage verlinken",
+    "Webinar-Anmeldung erfassen",
+    "Webinar durchführen",
+    "Beratungseinladung versenden",
+    "Terminbuchung prüfen",
+    "Termin bestätigen",
+    "Beratung durchführen",
+    "Ende",
+    "Aufzeichnung senden",
+    "E-Mail-Serie senden",
+    "Erkenntnisse sammeln",
+    "Videothemen ableiten",
+    "YouTube-Videos erstellen"
+  ],
+  "nodeArrowInteriorOverlaps": [],
+  "loops": [
+    {
+      "source": "E-Mail-Serie senden",
+      "target": "Beratungseinladung versenden",
+      "sourceY": 240,
+      "bottomBindings": true,
+      "points": [
+        [
+          1740,
+          366
+        ],
+        [
+          1740,
+          480
+        ],
+        [
+          1260,
+          480
+        ],
+        [
+          1260,
+          126
+        ]
+      ]
+    },
+    {
+      "source": "YouTube-Videos erstellen",
+      "target": "YouTube-Video veröffentlichen",
+      "sourceY": 240,
+      "bottomBindings": true,
+      "points": [
+        [
+          2460,
+          366
+        ],
+        [
+          2460,
+          600
+        ],
+        [
+          300,
+          600
+        ],
+        [
+          300,
+          126
+        ]
+      ]
+    }
+  ]
+}

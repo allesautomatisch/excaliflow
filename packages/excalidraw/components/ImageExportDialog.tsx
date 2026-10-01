@@ -38,7 +38,12 @@ import "./ImageExportDialog.scss";
 
 import type { ActionManager } from "../actions/manager";
 
-import type { AppClassProperties, BinaryFiles, UIAppState } from "../types";
+import type {
+  AppClassProperties,
+  BinaryFiles,
+  UIAppState,
+  ExcalidrawProps,
+} from "../types";
 
 export const ErrorCanvasPreview = () => {
   return (
@@ -58,6 +63,7 @@ type ImageExportModalProps = {
   files: BinaryFiles;
   actionManager: ActionManager;
   onExportImage: AppClassProperties["onExportImage"];
+  renderCustomImageExport?: ExcalidrawProps["renderCustomImageExport"];
   name: string;
 };
 
@@ -67,6 +73,7 @@ const ImageExportModal = ({
   files,
   actionManager,
   onExportImage,
+  renderCustomImageExport,
   name,
 }: ImageExportModalProps) => {
   const hasSelection = isSomeElementSelected(
@@ -176,9 +183,10 @@ const ImageExportModal = ({
           {renderError && <ErrorCanvasPreview />}
         </div>
         <div className="ImageExportModal__preview__filename">
-          {!nativeFileSystemSupported && (
+          {(!nativeFileSystemSupported || renderCustomImageExport) && (
             <input
               type="text"
+              aria-label="Export name"
               className="TextInput"
               value={projectName}
               style={{ width: "30ch" }}
@@ -326,6 +334,19 @@ const ImageExportModal = ({
             </FilledButton>
           )}
         </div>
+        {renderCustomImageExport?.(
+          elementsSnapshot,
+          {
+            ...appStateSnapshot,
+            name: projectName,
+            exportBackground: exportWithBackground,
+            exportWithDarkMode: exportDarkMode,
+            exportEmbedScene: embedScene,
+            exportScale,
+          },
+          files,
+          exportSelectionOnly,
+        )}
       </div>
     </div>
   );
@@ -370,6 +391,7 @@ export const ImageExportDialog = ({
   files,
   actionManager,
   onExportImage,
+  renderCustomImageExport,
   onCloseRequest,
   name,
 }: {
@@ -378,6 +400,7 @@ export const ImageExportDialog = ({
   files: BinaryFiles;
   actionManager: ActionManager;
   onExportImage: AppClassProperties["onExportImage"];
+  renderCustomImageExport?: ExcalidrawProps["renderCustomImageExport"];
   onCloseRequest: () => void;
   name: string;
 }) => {
@@ -398,6 +421,7 @@ export const ImageExportDialog = ({
         files={files}
         actionManager={actionManager}
         onExportImage={onExportImage}
+        renderCustomImageExport={renderCustomImageExport}
         name={name}
       />
     </Dialog>

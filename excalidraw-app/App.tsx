@@ -38,6 +38,7 @@ import {
   isRunningInIframe,
   isDevEnv,
   setFeatureFlag,
+  randomId,
 } from "@excalidraw/common";
 import polyfill from "@excalidraw/excalidraw/polyfill";
 import { useCallback, useEffect, useRef, useState } from "react";
@@ -93,6 +94,11 @@ import type {
 import type { ResolutionType } from "@excalidraw/common/utility-types";
 import type { ResolvablePromise } from "@excalidraw/common/utils";
 import type { ImportedDataState } from "@excalidraw/excalidraw/data/types";
+
+import { ServerExport } from "./components/ServerExport";
+
+import { registerFlowTools } from "./webmcp/register";
+import { createFlowController } from "./webmcp/controller";
 
 import CustomStats from "./CustomStats";
 import {
@@ -591,6 +597,20 @@ const ExcalidrawWrapper = () => {
   const [excalidrawAPI, excalidrawRefCallback] =
     useCallbackRefState<ExcalidrawImperativeAPI>();
 
+  const webmcpDrawingRef = useRef({
+    session: randomId(),
+    backendId: null as string | null,
+    loading: true,
+  });
+  useEffect(() => {
+    if (!excalidrawAPI) {
+      return;
+    }
+    return registerFlowTools(
+      createFlowController(excalidrawAPI, () => webmcpDrawingRef.current),
+    );
+  }, [excalidrawAPI]);
+
   const isDrawingPersistedRef = useRef<boolean>(
     Boolean(getPathnameDrawingSlug()),
   );
@@ -803,7 +823,18 @@ const ExcalidrawWrapper = () => {
       }
     };
 
+    const initialWebmcpDrawing = webmcpDrawingRef.current;
     initializeScene({ collabAPI, excalidrawAPI }).then(async (data) => {
+      if (webmcpDrawingRef.current !== initialWebmcpDrawing) {
+        return;
+      }
+      webmcpDrawingRef.current = {
+        session: randomId(),
+        backendId: data.isExternalScene
+          ? data.id ?? null
+          : data.backendDrawing?.id ?? null,
+        loading: false,
+      };
       if (data.backendDrawing) {
         setCurrentProjectFromDrawing(data.backendDrawing);
       } else if (data.isExternalScene) {
@@ -827,9 +858,25 @@ const ExcalidrawWrapper = () => {
         ) {
           collabAPI.stopCollaboration(false);
         }
+        webmcpDrawingRef.current = {
+          session: randomId(),
+          backendId: null,
+          loading: true,
+        };
         excalidrawAPI.updateScene({ appState: { isLoading: true } });
 
+        const loadingWebmcpDrawing = webmcpDrawingRef.current;
         initializeScene({ collabAPI, excalidrawAPI }).then((data) => {
+          if (webmcpDrawingRef.current !== loadingWebmcpDrawing) {
+            return;
+          }
+          webmcpDrawingRef.current = {
+            session: randomId(),
+            backendId: data.isExternalScene
+              ? data.id ?? null
+              : data.backendDrawing?.id ?? null,
+            loading: false,
+          };
           if (data.backendDrawing) {
             setCurrentProjectFromDrawing(data.backendDrawing);
           } else if (data.isExternalScene) {
@@ -873,6 +920,11 @@ const ExcalidrawWrapper = () => {
         }
         // don't sync if local state is newer or identical to browser state
         if (isBrowserStorageStateNewer(STORAGE_KEYS.VERSION_DATA_STATE)) {
+          webmcpDrawingRef.current = {
+            session: randomId(),
+            backendId: null,
+            loading: false,
+          };
           const localDataState = importFromLocalStorage();
           const username = importUsernameFromLocalStorage();
           setLangCode(getPreferredLanguage());
@@ -1150,6 +1202,13 @@ const ExcalidrawWrapper = () => {
       }
 
       if (id) {
+        // Saving establishes the backend association even after a native file
+        // import, which otherwise deliberately hides the previous backend ID.
+        webmcpDrawingRef.current = {
+          ...webmcpDrawingRef.current,
+          session: randomId(),
+          backendId: id,
+        };
         setDrawingAsSaved(exportedElements);
         isDrawingPersistedRef.current = true;
         setCurrentBackendProjectId(projectIdOverride ?? null);
@@ -1217,6 +1276,11 @@ const ExcalidrawWrapper = () => {
   }, []);
 
   const onNewDrawing = useCallback(() => {
+    webmcpDrawingRef.current = {
+      session: randomId(),
+      backendId: null,
+      loading: false,
+    };
     isDrawingPersistedRef.current = false;
     clearCurrentBackendProject();
     setBackendDrawingName(null);
@@ -1235,9 +1299,18 @@ const ExcalidrawWrapper = () => {
         return;
       }
 
+      webmcpDrawingRef.current = {
+        session: randomId(),
+        backendId: null,
+        loading: true,
+      };
+      const loadingWebmcpDrawing = webmcpDrawingRef.current;
       try {
         const { elements, appState: importedAppState } =
           await importFromBackend(drawing.id, encryptionKey);
+        if (webmcpDrawingRef.current !== loadingWebmcpDrawing) {
+          return;
+        }
         const restoredElements = restoreElements(elements, null, {
           repairBindings: true,
           deleteInvisibleElements: true,
@@ -1260,6 +1333,8 @@ const ExcalidrawWrapper = () => {
         setCurrentProjectFromDrawing(drawing);
         setDrawingAsSaved(restoredElements);
 
+        loadingWebmcpDrawing.backendId = drawing.id;
+        loadingWebmcpDrawing.loading = false;
         excalidrawAPI.updateScene({
           elements: restoredElements,
           appState: {
@@ -1277,6 +1352,10 @@ const ExcalidrawWrapper = () => {
           elements: restoredElements,
         });
 
+        if (webmcpDrawingRef.current !== loadingWebmcpDrawing) {
+          return;
+        }
+
         if (focusTarget) {
           requestAnimationFrame(() => {
             excalidrawAPI.scrollToContent(focusTarget, {
@@ -1285,7 +1364,11 @@ const ExcalidrawWrapper = () => {
           });
         }
       } catch (error: any) {
-        setErrorMessage(error.message || t("alerts.importBackendFailed"));
+        if (webmcpDrawingRef.current === loadingWebmcpDrawing) {
+          setErrorMessage(error.message || t("alerts.importBackendFailed"));
+        }
+      } finally {
+        loadingWebmcpDrawing.loading = false;
       }
     },
     [
@@ -1390,6 +1473,18 @@ const ExcalidrawWrapper = () => {
         isCollaborating={isCollaborating}
         onPointerUpdate={collabAPI?.onPointerUpdate}
         validateEmbeddable={true}
+        renderCustomImageExport={(elements, state, files, selectedOnly) =>
+          excalidrawAPI && (
+            <ServerExport
+              selectedOnly={selectedOnly}
+              snapshot={{
+                elements,
+                files,
+                state: { ...excalidrawAPI.getAppState(), ...state },
+              }}
+            />
+          )
+        }
         UIOptions={{
           canvasActions: {
             toggleTheme: true,

@@ -15,6 +15,8 @@ RUN npm_config_target_arch=${TARGETARCH} yarn build:app:docker
 
 FROM --platform=${TARGETPLATFORM} nginx:1.27-alpine
 
+ENV FLOW_EXPORT_BACKEND=https://allesautomatisch.com
+COPY excalidraw-app/hosting/default.conf.template /etc/nginx/templates/default.conf.template
 COPY --from=build /opt/node_app/excalidraw-app/build /usr/share/nginx/html
 
 HEALTHCHECK CMD wget -q -O /dev/null http://localhost || exit 1

@@ -618,6 +618,12 @@ export interface ExcalidrawProps {
   theme?: Theme;
   // @TODO come with better API before v0.18.0
   name?: string;
+  renderCustomImageExport?: (
+    elements: readonly NonDeletedExcalidrawElement[],
+    appState: UIAppState,
+    files: BinaryFiles,
+    selectedOnly: boolean,
+  ) => React.ReactNode;
   renderCustomStats?: (
     elements: readonly NonDeletedExcalidrawElement[],
     appState: UIAppState,

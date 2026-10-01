@@ -1,4 +1,9 @@
-import { getGridPoint, KEYS, invariant, toBrandedType } from "@excalidraw/common";
+import {
+  getGridPoint,
+  KEYS,
+  invariant,
+  toBrandedType,
+} from "@excalidraw/common";
 
 import { type GlobalPoint, pointFrom, type LocalPoint } from "@excalidraw/math";
 
@@ -205,8 +210,7 @@ const getOffsets = (
       )
     ) {
       return {
-        x:
-          (horizontalOffset + element.width) * (direction === "left" ? -1 : 1),
+        x: (horizontalOffset + element.width) * (direction === "left" ? -1 : 1),
         y: centeredY,
       };
     }
@@ -269,9 +273,8 @@ const getSnappedNodePosition = (
   return { x: snappedX, y: snappedY };
 };
 
-const addNewNode = (
+export const getNextFlowchartNodePosition = (
   element: ExcalidrawFlowchartNodeElement,
-  appState: AppState,
   direction: LinkDirection,
   scene: Scene,
   spacingMultiplier: number,
@@ -298,6 +301,29 @@ const addNewNode = (
     element.x + offsets.x,
     element.y + offsets.y,
     snapToGridSize,
+  );
+
+  return snappedNodePosition;
+};
+
+const addNewNode = (
+  element: ExcalidrawFlowchartNodeElement,
+  appState: AppState,
+  direction: LinkDirection,
+  scene: Scene,
+  spacingMultiplier: number,
+  snapToGridSize: NullableGridSize = null,
+  nodeDimensions?: FlowchartNodeDimensions,
+) => {
+  const nextNodeWidth = nodeDimensions?.width ?? element.width;
+  const nextNodeHeight = nodeDimensions?.height ?? element.height;
+  const snappedNodePosition = getNextFlowchartNodePosition(
+    element,
+    direction,
+    scene,
+    spacingMultiplier,
+    snapToGridSize,
+    nodeDimensions,
   );
 
   const nextNode = newElement({
@@ -367,8 +393,7 @@ export const addNewNodes = (
     let nextY: number;
     if (direction === "left" || direction === "right") {
       const totalHeight =
-        verticalOffset * (numberOfNodes - 1) +
-        numberOfNodes * nextNodeHeight;
+        verticalOffset * (numberOfNodes - 1) + numberOfNodes * nextNodeHeight;
 
       const startY = startNode.y + startNode.height / 2 - totalHeight / 2;
 
@@ -381,8 +406,7 @@ export const addNewNodes = (
       nextY = startY + offsetY;
     } else {
       const totalWidth =
-        horizontalOffset * (numberOfNodes - 1) +
-        numberOfNodes * nextNodeWidth;
+        horizontalOffset * (numberOfNodes - 1) + numberOfNodes * nextNodeWidth;
       const startX = startNode.x + startNode.width / 2 - totalWidth / 2;
       let offsetY = verticalOffset + startNode.height;
 
@@ -437,7 +461,7 @@ export const addNewNodes = (
   return newNodes;
 };
 
-const createBindingArrow = (
+export const createBindingArrow = (
   startBindingElement: ExcalidrawFlowchartNodeElement,
   endBindingElement: ExcalidrawFlowchartNodeElement,
   direction: LinkDirection,

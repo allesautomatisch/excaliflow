@@ -126,7 +126,7 @@ export const exportCanvas = async (
         viewBackgroundColor,
         exportPadding,
         exportScale: appState.exportScale,
-        exportEmbedScene: appState.exportEmbedScene && type === "svg",
+        exportEmbedScene: appState.exportEmbedScene,
       },
       files,
       { exportingFrame },
@@ -160,27 +160,13 @@ export const exportCanvas = async (
     }
   }
 
-  const tempCanvas = exportToCanvas(elements, appState, files, {
+  const blob = exportImageBlob("png", elements, appState, files, {
     exportBackground,
     viewBackgroundColor,
     exportPadding,
     exportingFrame,
   });
-
   if (type === "png") {
-    let blob = canvasToBlob(tempCanvas);
-
-    if (appState.exportEmbedScene) {
-      blob = blob.then((blob) =>
-        import("./image").then(({ encodePngMetadata }) =>
-          encodePngMetadata({
-            blob,
-            metadata: serializeAsJSON(elements, appState, files, "local"),
-          }),
-        ),
-      );
-    }
-
     return fileSave(blob, {
       description: "Export to PNG",
       name,
@@ -190,7 +176,6 @@ export const exportCanvas = async (
     });
   } else if (type === "clipboard") {
     try {
-      const blob = canvasToBlob(tempCanvas);
       await copyBlobToClipboardAsPng(blob);
     } catch (error: any) {
       console.warn(error);
@@ -213,4 +198,65 @@ export const exportCanvas = async (
     // shouldn't happen
     throw new Error("Unsupported export type");
   }
+};
+
+/** Render with the same options and scene metadata used by manual image export. */
+export const exportImageBlob = async (
+  format: "png" | "svg",
+  elements: ExportedElements,
+  appState: AppState,
+  files: BinaryFiles,
+  options: {
+    exportBackground: boolean;
+    viewBackgroundColor: string;
+    exportPadding?: number;
+    exportingFrame?: ExcalidrawFrameLikeElement | null;
+  },
+): Promise<Blob> => {
+  if (!elements.length) {
+    throw new Error(t("alerts.cannotExportEmptyCanvas"));
+  }
+  const {
+    exportBackground,
+    viewBackgroundColor,
+    exportPadding = DEFAULT_EXPORT_PADDING,
+    exportingFrame = null,
+  } = options;
+  if (format === "svg") {
+    const svg = await exportToSvg(
+      elements,
+      {
+        exportBackground,
+        viewBackgroundColor,
+        exportPadding,
+        exportWithDarkMode: appState.exportWithDarkMode,
+        exportEmbedScene: appState.exportEmbedScene,
+        exportScale: appState.exportScale,
+      },
+      files,
+      { exportingFrame },
+    );
+    return new Blob([SVG_DOCUMENT_PREAMBLE + svg.outerHTML], {
+      type: MIME_TYPES.svg,
+    });
+  }
+  const tempCanvas = exportToCanvas(elements, appState, files, {
+    exportBackground,
+    viewBackgroundColor,
+    exportPadding,
+    exportingFrame,
+  });
+
+  let blob = canvasToBlob(tempCanvas);
+  if (appState.exportEmbedScene) {
+    blob = blob.then((blob) =>
+      import("./image").then(({ encodePngMetadata }) =>
+        encodePngMetadata({
+          blob,
+          metadata: serializeAsJSON(elements, appState, files, "local"),
+        }),
+      ),
+    );
+  }
+  return blob;
 };
