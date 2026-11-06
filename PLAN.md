@@ -15,7 +15,7 @@
 - Add-next-step handle/button on selected shape: creates new shape + connecting elbow arrow.
 - Add-next-step `+` button repositions to the nearest side of the selected node based on pointer position, and creates the next node in that chosen direction (up/right/down/left).
 - Add-next-step `+` button and keyboard `Cmd/Ctrl + Arrow` flow creation always create the Step shape (blue rectangle with black outline).
-- In BPD mode, `Enter` finishes editing node text and keeps the node selected so `Cmd/Ctrl + Arrow` can create the next node. `Ctrl + Enter` (also `Cmd + Enter` on macOS) inserts a line break.
+- In BPD mode, `Enter` finishes editing node text and keeps the node selected even if the label is empty, so `Cmd/Ctrl + Arrow` can create the next node. `Ctrl + Enter` (also `Cmd + Enter` on macOS) inserts a line break.
 - Distance between nodes created via `+` should be `1.5x` the previous spacing.
 - Add a second contextual flowchart button (next to `+`) to quickly change the selected node shape via popup + shortcuts.
 - Keyboard `D/G/R/O/C` shortcut behavior: if one flowchart node is selected, convert it to diamond/parallelogram/rectangle/ellipse/capsule; otherwise select the corresponding drawing tool.

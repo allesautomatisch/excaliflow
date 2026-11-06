@@ -116,7 +116,10 @@ export const textWysiwyg = ({
    *       is derived from `originalText`
    */
   onChange?: (nextOriginalText: string) => void;
-  onSubmit: (data: { viaKeyboard: boolean; nextOriginalText: string }) => void;
+  onSubmit: (data: {
+    submitKey: typeof KEYS.ENTER | typeof KEYS.ESCAPE | null;
+    nextOriginalText: string;
+  }) => void;
   onFlowchartArrowKeyDown?: (event: KeyboardEvent) => void;
   getViewportCoords: (x: number, y: number) => [number, number];
   element: ExcalidrawTextElement;
@@ -467,7 +470,7 @@ export const textWysiwyg = ({
       app.actionManager.executeAction(actionIncreaseFontSize);
     } else if (event.key === KEYS.ESCAPE) {
       event.preventDefault();
-      submittedViaKeyboard = true;
+      submitKey = KEYS.ESCAPE;
       handleSubmit();
     } else if (actionSaveToActiveFile.keyTest(event)) {
       event.preventDefault();
@@ -501,7 +504,7 @@ export const textWysiwyg = ({
           : event[KEYS.CTRL_OR_CMD]
       ) {
         event.preventDefault();
-        submittedViaKeyboard = true;
+        submitKey = KEYS.ENTER;
         handleSubmit();
       }
     } else if (
@@ -627,7 +630,7 @@ export const textWysiwyg = ({
 
   // using a state variable instead of passing it to the handleSubmit callback
   // so that we don't need to create separate a callback for event handlers
-  let submittedViaKeyboard = false;
+  let submitKey: typeof KEYS.ENTER | typeof KEYS.ESCAPE | null = null;
   const handleSubmit = () => {
     // prevent double submit
     if (isDestroyed) {
@@ -679,7 +682,7 @@ export const textWysiwyg = ({
     }
 
     onSubmit({
-      viaKeyboard: submittedViaKeyboard,
+      submitKey,
       nextOriginalText: editable.value,
     });
   };

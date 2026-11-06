@@ -1,4 +1,10 @@
-import { KEYS, reseed, resolvablePromise } from "@excalidraw/common";
+import {
+  getFeatureFlag,
+  KEYS,
+  reseed,
+  resolvablePromise,
+  setFeatureFlag,
+} from "@excalidraw/common";
 
 import { Excalidraw } from "@excalidraw/excalidraw";
 import { isElbowArrow, isTextElement } from "@excalidraw/element/typeChecks";
@@ -76,6 +82,33 @@ describe("flow chart creation", () => {
 
     API.setElements([rectangle]);
     API.setSelectedElements([rectangle]);
+  });
+
+  it("selects the new node when Enter finishes its empty text edit", async () => {
+    const bpdFeatures = getFeatureFlag("BPD_FEATURES");
+    setFeatureFlag("BPD_FEATURES", true);
+    try {
+      Keyboard.withModifierKeys({ ctrl: true }, () => {
+        Keyboard.keyPress(KEYS.ARROW_RIGHT);
+      });
+      Keyboard.keyUp(modifierKey);
+
+      const editor = await getTextEditor();
+      const arrow = diagramElements().find(isElbowArrow);
+      const newNodeId = arrow?.endBinding?.elementId;
+      expect(newNodeId).toBeDefined();
+      expect(editor.value).toBe("");
+
+      Keyboard.keyPress(KEYS.ENTER, editor);
+
+      expect(h.state.editingTextElement).toBeNull();
+      expect(Object.keys(h.state.selectedElementIds)).toEqual([newNodeId]);
+      expect(
+        h.elements.filter((el) => !el.isDeleted && isTextElement(el)),
+      ).toEqual([]);
+    } finally {
+      setFeatureFlag("BPD_FEATURES", bpdFeatures);
+    }
   });
 
   it.each([300, 301])(

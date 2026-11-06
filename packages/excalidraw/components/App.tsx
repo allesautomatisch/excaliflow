@@ -6581,16 +6581,21 @@ class App extends React.Component<AppProps, AppState> {
               }
             })
           : undefined,
-      onSubmit: withBatchedUpdates(({ viaKeyboard, nextOriginalText }) => {
+      onSubmit: withBatchedUpdates(({ submitKey, nextOriginalText }) => {
         const isDeleted = !nextOriginalText.trim();
         updateElement(nextOriginalText, isDeleted);
 
-        // select the created text element only if submitting via keyboard
-        // (when submitting via click it should act as signal to deselect)
-        if (!isDeleted && viaKeyboard) {
-          const elementIdToSelect = element.containerId
-            ? element.containerId
-            : element.id;
+        // Enter finishes editing a node even when there is no label to keep.
+        const emptyLabelContainer =
+          isDeleted && submitKey === KEYS.ENTER && element.containerId
+            ? this.scene.getNonDeletedElement(element.containerId)
+            : null;
+        const keepEmptyNodeSelected =
+          emptyLabelContainer &&
+          getFeatureFlag("BPD_FEATURES") &&
+          isFlowchartNodeElement(emptyLabelContainer);
+        if (submitKey && (!isDeleted || keepEmptyNodeSelected)) {
+          const elementIdToSelect = element.containerId ?? element.id;
 
           // needed to ensure state is updated before "finalize" action
           // that's invoked on keyboard-submit as well

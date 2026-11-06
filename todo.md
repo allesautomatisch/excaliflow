@@ -43,6 +43,7 @@ Source of truth: `PLAN.md`. Always update `PLAN.md` first, then reflect changes 
 - [x] Start keyboard flowchart creation directly from a node's text editor
 - [x] Fix keyboard multi-add text focus race (select new node via `flushSync` before edit)
 - [x] Finish node text editing with `Enter` and insert a line break with `Ctrl/Cmd + Enter`
+- [x] Keep the node selected when `Enter` finishes an empty node label
 - [x] Ensure keyboard flow-created nodes always use Step shape/color (not selected-node style)
 - [x] Make `D` shortcut context-aware: selected flow node -> diamond conversion, otherwise diamond tool
 - [x] Extend context-aware conversion to `G/R/O/C` for flow nodes (otherwise select corresponding tool)
