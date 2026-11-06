@@ -1,4 +1,8 @@
-import { CANVAS_SEARCH_TAB, DEFAULT_SIDEBAR } from "@excalidraw/common";
+import {
+  CANVAS_SEARCH_TAB,
+  DEFAULT_SIDEBAR,
+  getFeatureFlag,
+} from "@excalidraw/common";
 
 import {
   isFlowchartNodeElement,
@@ -138,6 +142,19 @@ const getHints = ({
   }
 
   if (appState.editingTextElement) {
+    const container = isTextElement(appState.editingTextElement)
+      ? app.scene.getContainerElement(appState.editingTextElement)
+      : null;
+    if (
+      getFeatureFlag("BPD_FEATURES") &&
+      container &&
+      isFlowchartNodeElement(container)
+    ) {
+      return t("hints.node_text_editing", {
+        finish: getTaggedShortcutKey("Enter"),
+        newLine: getTaggedShortcutKey(["CtrlOrCmd", "Enter"]),
+      });
+    }
     return t("hints.text_editing", {
       shortcut_1: getTaggedShortcutKey("Escape"),
       shortcut_2: getTaggedShortcutKey(["CtrlOrCmd", "Enter"]),

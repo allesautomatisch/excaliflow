@@ -1,11 +1,13 @@
 import { KEYS, reseed, resolvablePromise } from "@excalidraw/common";
 
 import { Excalidraw } from "@excalidraw/excalidraw";
-import { isTextElement } from "@excalidraw/element/typeChecks";
+import { isElbowArrow, isTextElement } from "@excalidraw/element/typeChecks";
 
 import { API } from "@excalidraw/excalidraw/tests/helpers/api";
 import { UI, Keyboard, Pointer } from "@excalidraw/excalidraw/tests/helpers/ui";
 import {
+  createEvent,
+  fireEvent,
   renderApp as render,
   unmountComponent,
   waitFor,
@@ -19,13 +21,14 @@ unmountComponent();
 
 const { h } = window;
 const mouse = new Pointer("mouse");
+const modifierKey = KEYS.CTRL_OR_CMD === "metaKey" ? "Meta" : "Control";
 
 // Excaliflow now starts bound-text editing when keyboard-created nodes commit.
 // Finish the empty edit so this suite can keep testing creation/navigation.
 const diagramElements = () =>
   h.elements.filter((el) => !el.isDeleted && el.type !== "text");
 const commitFlow = async () => {
-  Keyboard.keyUp(KEYS.CTRL_OR_CMD);
+  Keyboard.keyUp(modifierKey);
   if (h.state.editingTextElement && isTextElement(h.state.editingTextElement)) {
     const containerId = h.state.editingTextElement.containerId;
     Keyboard.exitTextEditor(await getTextEditor());
@@ -74,6 +77,97 @@ describe("flow chart creation", () => {
     API.setElements([rectangle]);
     API.setSelectedElements([rectangle]);
   });
+
+  it.each([300, 301])(
+    "uses the Shift release grace period when committing after %i ms",
+    (delay) => {
+      const originalNode = diagramElements()[0];
+      const creator = h.app.flowChartCreator;
+
+      Keyboard.withModifierKeys({ ctrl: true }, () => {
+        Keyboard.keyPress(KEYS.ARROW_RIGHT);
+      });
+      const forward = creator.pendingNodes?.find(isElbowArrow);
+      expect(forward?.startBinding?.elementId).toBe(originalNode.id);
+
+      Keyboard.withModifierKeys({ ctrl: true, shift: true }, () => {
+        Keyboard.keyDown("Shift");
+      });
+      const reversed = creator.pendingNodes?.find(isElbowArrow);
+      expect(reversed?.id).toBe(forward?.id);
+      expect(reversed?.startBinding).toEqual(forward?.endBinding);
+      expect(reversed?.endBinding).toEqual(forward?.startBinding);
+      expect(reversed?.endArrowhead).toBe("triangle");
+
+      const shiftUp = createEvent.keyUp(document, {
+        key: "Shift",
+        [KEYS.CTRL_OR_CMD]: true,
+      });
+      fireEvent(document, shiftUp);
+      expect(creator.pendingNodes?.find(isElbowArrow)).toEqual(forward);
+      expect(diagramElements()).toHaveLength(1);
+
+      const modifierUp = createEvent.keyUp(document, { key: modifierKey });
+      Object.defineProperty(modifierUp, "timeStamp", {
+        value: shiftUp.timeStamp + delay,
+      });
+      fireEvent(document, modifierUp);
+
+      expect(diagramElements()).toHaveLength(3);
+      const arrow = diagramElements().find(isElbowArrow);
+      expect(arrow?.startBinding).toEqual(
+        delay === 300 ? forward?.endBinding : forward?.startBinding,
+      );
+      expect(arrow?.endBinding).toEqual(
+        delay === 300 ? forward?.startBinding : forward?.endBinding,
+      );
+    },
+  );
+
+  it.each([false, true])(
+    "creates from the node text editor with Shift held = %s",
+    async (shiftKey) => {
+      const originalNode = diagramElements()[0];
+      Keyboard.keyPress(KEYS.ENTER);
+      const editor = await getTextEditor();
+      fireEvent.input(editor, { target: { value: "Review request" } });
+
+      fireEvent.keyDown(editor, { key: KEYS.ARROW_RIGHT });
+      expect(document.activeElement).toBe(editor);
+      expect(h.app.flowChartCreator.pendingNodes).toBeNull();
+
+      fireEvent.keyDown(editor, {
+        key: KEYS.ARROW_RIGHT,
+        [KEYS.CTRL_OR_CMD]: true,
+        shiftKey,
+      });
+      expect(h.state.editingTextElement).toBeNull();
+      expect(diagramElements()).toHaveLength(1);
+
+      fireEvent.keyUp(document, { key: modifierKey, shiftKey });
+      const newNode = diagramElements().find(
+        (element) =>
+          element.type === "rectangle" && element.id !== originalNode.id,
+      );
+      const arrow = diagramElements().find(isElbowArrow);
+      expect(newNode?.x).toBeGreaterThan(originalNode.x);
+      expect(arrow?.startBinding?.elementId).toBe(
+        shiftKey ? newNode?.id : originalNode.id,
+      );
+      expect(arrow?.endBinding?.elementId).toBe(
+        shiftKey ? originalNode.id : newNode?.id,
+      );
+      expect(
+        h.elements.find(
+          (el) => isTextElement(el) && el.containerId === originalNode.id,
+        ),
+      ).toMatchObject({ originalText: "Review request", isDeleted: false });
+      expect(h.state.editingTextElement).toMatchObject({
+        containerId: newNode?.id,
+      });
+      expect(await getTextEditor()).toBe(document.activeElement);
+    },
+  );
 
   // multiple at once
   it("create multiple successor nodes at once", async () => {

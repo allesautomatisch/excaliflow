@@ -637,9 +637,10 @@ const ExcalidrawWrapper = () => {
   >([]);
   const [backendProjectsErrorMessage, setBackendProjectsErrorMessage] =
     useState("");
+  // Undefined means no loaded flow. Null means a flow without a project.
   const [currentBackendProjectId, setCurrentBackendProjectId] = useState<
-    string | null
-  >(null);
+    string | null | undefined
+  >();
   const [currentBackendProjectName, setCurrentBackendProjectName] = useState<
     string | null
   >(null);
@@ -661,12 +662,11 @@ const ExcalidrawWrapper = () => {
     [backendProjects],
   );
 
-  const currentProjectName =
-    currentBackendProjectId === null
-      ? null
-      : resolveBackendProjectName(currentBackendProjectId) ??
-        currentBackendProjectName ??
-        `Projekt ${currentBackendProjectId}`;
+  const currentProjectName = currentBackendProjectId
+    ? resolveBackendProjectName(currentBackendProjectId) ??
+      currentBackendProjectName ??
+      `Projekt ${currentBackendProjectId}`
+    : null;
 
   const setCurrentProjectFromDrawing = useCallback(
     (drawing: Pick<BackendDrawingListItem, "project_id" | "project_name">) => {
@@ -681,12 +681,6 @@ const ExcalidrawWrapper = () => {
     },
     [],
   );
-
-  const clearCurrentBackendProject = useCallback(() => {
-    setCurrentBackendProjectId(null);
-    setCurrentBackendProjectName(null);
-    setBackendSaveProjectId(null);
-  }, []);
 
   useEffect(() => {
     let isCancelled = false;
@@ -835,10 +829,8 @@ const ExcalidrawWrapper = () => {
           : data.backendDrawing?.id ?? null,
         loading: false,
       };
-      if (data.backendDrawing) {
-        setCurrentProjectFromDrawing(data.backendDrawing);
-      } else if (data.isExternalScene) {
-        clearCurrentBackendProject();
+      if (data.backendDrawing || data.isExternalScene) {
+        setCurrentProjectFromDrawing(data.backendDrawing ?? {});
       }
       isDrawingPersistedRef.current =
         isDrawingPersistedRef.current ||
@@ -877,10 +869,8 @@ const ExcalidrawWrapper = () => {
               : data.backendDrawing?.id ?? null,
             loading: false,
           };
-          if (data.backendDrawing) {
-            setCurrentProjectFromDrawing(data.backendDrawing);
-          } else if (data.isExternalScene) {
-            clearCurrentBackendProject();
+          if (data.backendDrawing || data.isExternalScene) {
+            setCurrentProjectFromDrawing(data.backendDrawing ?? {});
           }
           isDrawingPersistedRef.current =
             isDrawingPersistedRef.current || data.isExternalScene;
@@ -1009,7 +999,6 @@ const ExcalidrawWrapper = () => {
   }, [
     isCollabDisabled,
     collabAPI,
-    clearCurrentBackendProject,
     excalidrawAPI,
     setCurrentProjectFromDrawing,
     setLangCode,
@@ -1116,7 +1105,7 @@ const ExcalidrawWrapper = () => {
   const savedDrawingHashRef = useRef<number | null>(null);
 
   useEffect(() => {
-    setBackendSaveProjectId(currentBackendProjectId);
+    setBackendSaveProjectId(currentBackendProjectId ?? null);
   }, [currentBackendProjectId]);
 
   const setDrawingAsSaved = useCallback(
@@ -1282,10 +1271,12 @@ const ExcalidrawWrapper = () => {
       loading: false,
     };
     isDrawingPersistedRef.current = false;
-    clearCurrentBackendProject();
+    setCurrentBackendProjectId(undefined);
+    setCurrentBackendProjectName(null);
+    setBackendSaveProjectId(null);
     setBackendDrawingName(null);
     updateBrowserRoute(null);
-  }, [clearCurrentBackendProject]);
+  }, []);
 
   const onLoadDrawing = useCallback(
     async (drawing: LoadDialogDrawing) => {

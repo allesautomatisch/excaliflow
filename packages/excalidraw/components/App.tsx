@@ -551,6 +551,9 @@ export const getBpdStandardShapeSize = (
     : BPD_STANDARD_SHAPE_SIZE;
 
 const BPD_FLOWCHART_ADD_NEXT_SPACING_MULTIPLIER = 1;
+const FLOWCHART_SHIFT_RELEASE_GRACE_MS = 300;
+const FLOWCHART_MODIFIER_KEY =
+  KEYS.CTRL_OR_CMD === "metaKey" ? "Meta" : "Control";
 const BPD_DEFAULT_NODE_FONT_FAMILY = FONT_FAMILY["Comic Shanns"];
 const BPD_DEFAULT_END_ARROWHEAD = "triangle" as const;
 const ARROW_GRID_SIZE = 20 as NullableGridSize;
@@ -767,6 +770,7 @@ class App extends React.Component<AppProps, AppState> {
   private elementsPendingErasure: ElementsPendingErasure = new Set();
 
   public flowChartCreator: FlowChartCreator = new FlowChartCreator();
+  private flowchartShiftReleasedAt: number | null = null;
   private flowChartNavigator: FlowChartNavigator = new FlowChartNavigator();
   private flowchartAddNextDirection: "up" | "right" | "down" | "left" = "right";
   private flowchartShapePickerOpen = false;
@@ -2869,6 +2873,40 @@ class App extends React.Component<AppProps, AppState> {
     });
   };
 
+  private previewFlowchartNodes = (
+    node: NonDeleted<ExcalidrawFlowchartNodeElement>,
+    event: React.KeyboardEvent | KeyboardEvent,
+  ) => {
+    this.createFlowchartPendingNodes(node, getLinkDirectionFromKey(event.key));
+    this.flowChartCreator.setArrowsReversed(event.shiftKey);
+
+    const pendingNodes = this.flowChartCreator.pendingNodes;
+    if (
+      pendingNodes?.length &&
+      !isElementCompletelyInViewport(
+        pendingNodes,
+        this.canvas.width / window.devicePixelRatio,
+        this.canvas.height / window.devicePixelRatio,
+        {
+          offsetLeft: this.state.offsetLeft,
+          offsetTop: this.state.offsetTop,
+          scrollX: this.state.scrollX,
+          scrollY: this.state.scrollY,
+          zoom: this.state.zoom,
+        },
+        this.scene.getNonDeletedElementsMap(),
+        this.getEditorUIOffsets(),
+      )
+    ) {
+      this.scrollToContent(pendingNodes, {
+        animate: true,
+        duration: 300,
+        fitToContent: true,
+        canvasOffsets: this.getEditorUIOffsets(),
+      });
+    }
+  };
+
   private getFlowchartNodesFromArrow = (
     arrow: NonDeleted<ExcalidrawArrowElement>,
   ): {
@@ -3627,6 +3665,11 @@ class App extends React.Component<AppProps, AppState> {
 
   private onBlur = withBatchedUpdates(() => {
     isHoldingSpace = false;
+    this.flowchartShiftReleasedAt = null;
+    if (this.flowChartCreator.isCreatingChart) {
+      this.flowChartCreator.clear();
+      this.triggerRender(true);
+    }
     this.setState({ isBindingEnabled: true });
   });
 
@@ -5586,53 +5629,37 @@ class App extends React.Component<AppProps, AppState> {
           this.flowChartCreator.isCreatingChart
         ) {
           this.flowChartCreator.clear();
+          this.flowchartShiftReleasedAt = null;
+          this.triggerRender(true);
+          return;
+        }
+
+        if (
+          event.key === "Shift" &&
+          event[KEYS.CTRL_OR_CMD] &&
+          this.flowChartCreator.isCreatingChart
+        ) {
+          this.flowChartCreator.setArrowsReversed(true);
           this.triggerRender(true);
           return;
         }
 
         const arrowKeyPressed = isArrowKey(event.key);
+        const flowchartNode =
+          selectedElements.length === 1 &&
+          isFlowchartNodeElement(selectedElements[0])
+            ? selectedElements[0]
+            : null;
 
-        if (event[KEYS.CTRL_OR_CMD] && arrowKeyPressed && !event.shiftKey) {
+        if (
+          event[KEYS.CTRL_OR_CMD] &&
+          arrowKeyPressed &&
+          (!event.shiftKey || flowchartNode)
+        ) {
           event.preventDefault();
 
-          const selectedElements = getSelectedElements(
-            this.scene.getNonDeletedElementsMap(),
-            this.state,
-          );
-
-          if (
-            selectedElements.length === 1 &&
-            isFlowchartNodeElement(selectedElements[0])
-          ) {
-            this.createFlowchartPendingNodes(
-              selectedElements[0],
-              getLinkDirectionFromKey(event.key),
-            );
-          }
-
-          if (
-            this.flowChartCreator.pendingNodes?.length &&
-            !isElementCompletelyInViewport(
-              this.flowChartCreator.pendingNodes,
-              this.canvas.width / window.devicePixelRatio,
-              this.canvas.height / window.devicePixelRatio,
-              {
-                offsetLeft: this.state.offsetLeft,
-                offsetTop: this.state.offsetTop,
-                scrollX: this.state.scrollX,
-                scrollY: this.state.scrollY,
-                zoom: this.state.zoom,
-              },
-              this.scene.getNonDeletedElementsMap(),
-              this.getEditorUIOffsets(),
-            )
-          ) {
-            this.scrollToContent(this.flowChartCreator.pendingNodes, {
-              animate: true,
-              duration: 300,
-              fitToContent: true,
-              canvasOffsets: this.getEditorUIOffsets(),
-            });
+          if (flowchartNode) {
+            this.previewFlowchartNodes(flowchartNode, event);
           }
 
           return;
@@ -6081,6 +6108,17 @@ class App extends React.Component<AppProps, AppState> {
   );
 
   private onKeyUp = withBatchedUpdates((event: KeyboardEvent) => {
+    if (
+      event.key === "Shift" &&
+      !event.shiftKey &&
+      event[KEYS.CTRL_OR_CMD] &&
+      this.flowChartCreator.isCreatingChart
+    ) {
+      this.flowchartShiftReleasedAt = event.timeStamp;
+      this.flowChartCreator.setArrowsReversed(false);
+      this.triggerRender(true);
+    }
+
     if (event.key === KEYS.SPACE) {
       if (
         this.state.viewModeEnabled ||
@@ -6209,8 +6247,16 @@ class App extends React.Component<AppProps, AppState> {
       }
     }
 
-    if (!event[KEYS.CTRL_OR_CMD]) {
+    if (event.key === FLOWCHART_MODIFIER_KEY && !event[KEYS.CTRL_OR_CMD]) {
+      const shiftReleasedAt = this.flowchartShiftReleasedAt;
+      this.flowchartShiftReleasedAt = null;
       if (this.flowChartCreator.isCreatingChart) {
+        this.flowChartCreator.setArrowsReversed(
+          event.shiftKey ||
+            (shiftReleasedAt !== null &&
+              event.timeStamp - shiftReleasedAt <=
+                FLOWCHART_SHIFT_RELEASE_GRACE_MS),
+        );
         if (this.flowChartCreator.pendingNodes?.length) {
           this.scene.insertElements(this.flowChartCreator.pendingNodes);
         }
@@ -6471,6 +6517,10 @@ class App extends React.Component<AppProps, AppState> {
     },
   ) {
     const elementsMap = this.scene.getElementsMapIncludingDeleted();
+    const textContainer = getContainerElement(
+      element,
+      this.scene.getNonDeletedElementsMap(),
+    );
 
     const updateElement = (nextOriginalText: string, isDeleted: boolean) => {
       this.scene.replaceAllElements([
@@ -6516,6 +6566,21 @@ class App extends React.Component<AppProps, AppState> {
           updateBoundElements(element, this.scene);
         }
       }),
+      onFlowchartArrowKeyDown:
+        textContainer && isFlowchartNodeElement(textContainer)
+          ? withBatchedUpdates((event: KeyboardEvent) => {
+              const node = this.scene.getNonDeletedElement(textContainer.id);
+              if (node && isFlowchartNodeElement(node)) {
+                this.setState((prevState) => ({
+                  selectedElementIds: makeNextSelectedElementIds(
+                    { [node.id]: true },
+                    prevState,
+                  ),
+                }));
+                this.previewFlowchartNodes(node, event);
+              }
+            })
+          : undefined,
       onSubmit: withBatchedUpdates(({ viaKeyboard, nextOriginalText }) => {
         const isDeleted = !nextOriginalText.trim();
         updateElement(nextOriginalText, isDeleted);

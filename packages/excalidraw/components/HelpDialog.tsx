@@ -1,6 +1,11 @@
 import React from "react";
 
-import { isDarwin, isFirefox, isWindows } from "@excalidraw/common";
+import {
+  getFeatureFlag,
+  isDarwin,
+  isFirefox,
+  isWindows,
+} from "@excalidraw/common";
 
 import { KEYS } from "@excalidraw/common";
 
@@ -174,6 +179,21 @@ export const HelpDialog = ({ onClose }: { onClose?: () => void }) => {
                 getShortcutKey("CtrlOrCmd+Enter"),
               ]}
             />
+            {getFeatureFlag("BPD_FEATURES") && (
+              <>
+                <Shortcut
+                  label={t("helpDialog.nodeTextNewLine")}
+                  shortcuts={[
+                    getShortcutKey("CtrlOrCmd+Enter"),
+                    getShortcutKey("Shift+Enter"),
+                  ]}
+                />
+                <Shortcut
+                  label={t("helpDialog.nodeTextFinish")}
+                  shortcuts={[getShortcutKey("Esc"), getShortcutKey("Enter")]}
+                />
+              </>
+            )}
             <Shortcut
               label={t("helpDialog.curvedArrow")}
               shortcuts={[

@@ -729,6 +729,7 @@ export class FlowChartCreator {
   isCreatingChart: boolean = false;
   private numberOfNodes: number = 0;
   private direction: LinkDirection | null = "right";
+  private arrowsReversed = false;
   pendingNodes: PendingExcalidrawElements | null = null;
 
   createNodes(
@@ -740,6 +741,7 @@ export class FlowChartCreator {
     snapToGridSize: NullableGridSize = null,
     nodeDimensions?: FlowchartNodeDimensions,
   ) {
+    this.arrowsReversed = false;
     const elementsMap = scene.getNonDeletedElementsMap();
     if (direction !== this.direction) {
       const { nextNode, bindingArrow } = addNewNode(
@@ -801,11 +803,39 @@ export class FlowChartCreator {
     }
   }
 
+  setArrowsReversed(reversed: boolean) {
+    if (!this.pendingNodes || this.arrowsReversed === reversed) {
+      return;
+    }
+
+    this.arrowsReversed = reversed;
+    this.pendingNodes = this.pendingNodes.map((element) => {
+      if (!isElbowArrow(element)) {
+        return element;
+      }
+
+      // Pending arrows have no fixed segments. Keep the route in place and
+      // use the old endpoint as the origin for the reversed local points.
+      const [endX, endY] = element.points[element.points.length - 1];
+      return {
+        ...element,
+        x: element.x + endX,
+        y: element.y + endY,
+        points: [...element.points]
+          .reverse()
+          .map(([x, y]) => pointFrom<LocalPoint>(x - endX, y - endY)),
+        startBinding: element.endBinding,
+        endBinding: element.startBinding,
+      };
+    });
+  }
+
   clear() {
     this.isCreatingChart = false;
     this.pendingNodes = null;
     this.direction = null;
     this.numberOfNodes = 0;
+    this.arrowsReversed = false;
   }
 }
 

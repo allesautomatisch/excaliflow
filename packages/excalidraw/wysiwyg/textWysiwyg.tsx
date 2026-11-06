@@ -5,11 +5,13 @@ import {
   POINTER_BUTTON,
   THEME,
   isWritableElement,
+  isArrowKey,
   getFontString,
   getFontFamilyString,
   isTestEnv,
   MIME_TYPES,
   applyDarkModeFilter,
+  getFeatureFlag,
 } from "@excalidraw/common";
 
 import {
@@ -38,6 +40,7 @@ import { wrapText } from "@excalidraw/element";
 import {
   isArrowElement,
   isBoundToContainer,
+  isFlowchartNodeElement,
   isTextElement,
 } from "@excalidraw/element";
 
@@ -97,6 +100,7 @@ export const textWysiwyg = ({
   id,
   onChange,
   onSubmit,
+  onFlowchartArrowKeyDown,
   getViewportCoords,
   element,
   canvas,
@@ -113,6 +117,7 @@ export const textWysiwyg = ({
    */
   onChange?: (nextOriginalText: string) => void;
   onSubmit: (data: { viaKeyboard: boolean; nextOriginalText: string }) => void;
+  onFlowchartArrowKeyDown?: (event: KeyboardEvent) => void;
   getViewportCoords: (x: number, y: number) => [number, number];
   element: ExcalidrawTextElement;
   canvas: HTMLCanvasElement;
@@ -433,7 +438,18 @@ export const textWysiwyg = ({
   }
 
   editable.onkeydown = (event) => {
-    if (!event.shiftKey && actionZoomIn.keyTest(event)) {
+    if (
+      onFlowchartArrowKeyDown &&
+      event[KEYS.CTRL_OR_CMD] &&
+      isArrowKey(event.key) &&
+      !event.isComposing &&
+      event.keyCode !== 229
+    ) {
+      event.preventDefault();
+      event.stopPropagation();
+      handleSubmit();
+      onFlowchartArrowKeyDown(event);
+    } else if (!event.shiftKey && actionZoomIn.keyTest(event)) {
       event.preventDefault();
       app.actionManager.executeAction(actionZoomIn);
       updateWysiwygStyle();
@@ -457,13 +473,37 @@ export const textWysiwyg = ({
       event.preventDefault();
       handleSubmit();
       app.actionManager.executeAction(actionSaveToActiveFile);
-    } else if (event.key === KEYS.ENTER && event[KEYS.CTRL_OR_CMD]) {
-      event.preventDefault();
+    } else if (event.key === KEYS.ENTER) {
       if (event.isComposing || event.keyCode === 229) {
         return;
       }
-      submittedViaKeyboard = true;
-      handleSubmit();
+
+      const container = app.scene.getContainerElement(element);
+      const isNodeText =
+        getFeatureFlag("BPD_FEATURES") &&
+        container &&
+        isFlowchartNodeElement(container);
+      if (isNodeText && (event.ctrlKey || event[KEYS.CTRL_OR_CMD])) {
+        event.preventDefault();
+        // Use a native edit when available to preserve the textarea's undo history.
+        if (!document.execCommand?.("insertText", false, "\n")) {
+          editable.setRangeText(
+            "\n",
+            editable.selectionStart,
+            editable.selectionEnd,
+            "end",
+          );
+          editable.dispatchEvent(new Event("input"));
+        }
+      } else if (
+        isNodeText
+          ? !event.shiftKey && !event.altKey && !event.metaKey
+          : event[KEYS.CTRL_OR_CMD]
+      ) {
+        event.preventDefault();
+        submittedViaKeyboard = true;
+        handleSubmit();
+      }
     } else if (
       event.key === KEYS.TAB ||
       (event[KEYS.CTRL_OR_CMD] &&

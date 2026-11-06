@@ -673,6 +673,7 @@ export interface ExcalidrawProps {
     projectId?: string | null,
   ) => Promise<LoadDialogDrawing[]>;
   getLoadDialogProjects?: () => Promise<LoadDialogProject[]>;
+  /** Pass null for an unassigned drawing or omit to use the default project. */
   defaultLoadDialogProjectId?: string | null;
 }
 

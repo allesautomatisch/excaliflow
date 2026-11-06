@@ -12,6 +12,8 @@ import {
   THEME,
   VERTICAL_ALIGN,
   applyDarkModeFilter,
+  getFeatureFlag,
+  setFeatureFlag,
 } from "@excalidraw/common";
 
 import type {
@@ -26,7 +28,7 @@ import { getTextEditor, updateTextEditor } from "../tests/queries/dom";
 import {
   GlobalTestState,
   act,
-  render,
+  renderApp as render,
   screen,
   unmountComponent,
 } from "../tests/test-utils";
@@ -48,6 +50,43 @@ describe("textWysiwyg", () => {
     beforeEach(async () => {
       await render(<Excalidraw handleKeyboardGlobally={true} />);
       API.setElements([]);
+    });
+
+    it("inserts a line break with Ctrl+Enter and finishes node editing with Enter", async () => {
+      const bpdFeatures = getFeatureFlag("BPD_FEATURES");
+      setFeatureFlag("BPD_FEATURES", true);
+      try {
+        const node = API.createElement({
+          type: "rectangle",
+          width: 120,
+          height: 120,
+        });
+        API.setElements([node]);
+        API.setSelectedElements([node]);
+        Keyboard.keyPress(KEYS.ENTER);
+
+        const editor = await getTextEditor();
+        updateTextEditor(editor, "Step replace label");
+        editor.setSelectionRange(4, 13);
+        fireEvent.keyDown(editor, { key: KEYS.ENTER, ctrlKey: true });
+
+        expect(editor.value).toBe("Step\nlabel");
+        expect(editor.selectionStart).toBe(5);
+        expect(h.state.editingTextElement).not.toBe(null);
+
+        fireEvent.keyDown(editor, { key: KEYS.ENTER, isComposing: true });
+        expect(h.state.editingTextElement).not.toBe(null);
+
+        Keyboard.keyPress(KEYS.ENTER, editor);
+
+        expect(h.state.editingTextElement).toBe(null);
+        expect(h.state.selectedElementIds[node.id]).toBe(true);
+        expect(h.elements).toContainEqual(
+          expect.objectContaining({ originalText: "Step\nlabel" }),
+        );
+      } finally {
+        setFeatureFlag("BPD_FEATURES", bpdFeatures);
+      }
     });
 
     it("should prefer editing selected text element (non-bindable container present)", async () => {

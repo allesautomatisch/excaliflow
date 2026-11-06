@@ -39,7 +39,10 @@ Source of truth: `PLAN.md`. Always update `PLAN.md` first, then reflect changes 
 - [x] Align `Cmd/Ctrl + Arrow` preview placement constants with `+` node creation
 - [x] Align `Cmd/Ctrl + Arrow` preview arrowheads with `+` node creation defaults
 - [x] Auto-start typing in first node after committing `Cmd/Ctrl + Arrow` flowchart creation
+- [x] Reverse keyboard flowchart arrows live with Shift and allow a 300 ms Shift release grace period at commit
+- [x] Start keyboard flowchart creation directly from a node's text editor
 - [x] Fix keyboard multi-add text focus race (select new node via `flushSync` before edit)
+- [x] Finish node text editing with `Enter` and insert a line break with `Ctrl/Cmd + Enter`
 - [x] Ensure keyboard flow-created nodes always use Step shape/color (not selected-node style)
 - [x] Make `D` shortcut context-aware: selected flow node -> diamond conversion, otherwise diamond tool
 - [x] Extend context-aware conversion to `G/R/O/C` for flow nodes (otherwise select corresponding tool)
@@ -136,6 +139,7 @@ Source of truth: `PLAN.md`. Always update `PLAN.md` first, then reflect changes 
 - [ ] Keep Vite + Basic-auth proxy running; auto-restart if killed
 - [x] Keep TypeScript checker at 0 errors
 - [x] Add project-aware Flow backend save/load support with nullable project filtering
+- [x] Default the load dialog to the `Alles Automatisch` project when no flow is open
 - [x] Persist encrypted clipboard/imported images with Flow backend drawings and restore them on load
 
 ## QoL

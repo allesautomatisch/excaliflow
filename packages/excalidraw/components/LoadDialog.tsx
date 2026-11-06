@@ -11,6 +11,7 @@ import "./LoadDialog.scss";
 
 const ALL_PROJECTS_VALUE = "__all__";
 const NO_PROJECT_VALUE = "__none__";
+const DEFAULT_PROJECT_NAME = "Alles Automatisch";
 
 type LoadDialogProps = {
   onCloseRequest: () => void;
@@ -37,11 +38,9 @@ export const LoadDialog = ({
   defaultProjectId,
   onLoadDrawing,
 }: LoadDialogProps) => {
-  const [projects, setProjects] = useState<LoadDialogProject[]>([]);
+  const [projects, setProjects] = useState<LoadDialogProject[]>();
   const [projectErrorMessage, setProjectErrorMessage] = useState("");
-  const [selectedProjectFilter, setSelectedProjectFilter] = useState(
-    defaultProjectId ? String(defaultProjectId) : NO_PROJECT_VALUE,
-  );
+  const [projectFilterOverride, setProjectFilterOverride] = useState<string>();
   const [drawings, setDrawings] = useState<LoadDialogDrawing[]>([]);
   const [selectedDrawingId, setSelectedDrawingId] = useState<string | null>(
     null,
@@ -53,6 +52,17 @@ export const LoadDialog = ({
   const selectedDrawing = drawings.find(
     (drawing) => drawing.id === selectedDrawingId,
   );
+  const isWaitingForDefaultProject =
+    projectFilterOverride === undefined &&
+    defaultProjectId === undefined &&
+    !!getLoadDialogProjects &&
+    !projects;
+  const selectedProjectFilter =
+    projectFilterOverride ??
+    (defaultProjectId === undefined
+      ? projects?.find((project) => project.name === DEFAULT_PROJECT_NAME)?.id
+      : defaultProjectId) ??
+    NO_PROJECT_VALUE;
   const selectedProjectId =
     selectedProjectFilter === ALL_PROJECTS_VALUE
       ? undefined
@@ -69,7 +79,7 @@ export const LoadDialog = ({
 
     return (
       drawing.project_name?.trim() ||
-      projects.find((project) => project.id === projectId)?.name ||
+      projects?.find((project) => project.id === projectId)?.name ||
       "Unbekanntes Projekt"
     );
   };
@@ -108,7 +118,7 @@ export const LoadDialog = ({
   }, [getLoadDialogProjects]);
 
   useEffect(() => {
-    if (!getLoadDialogDrawings) {
+    if (!getLoadDialogDrawings || isWaitingForDefaultProject) {
       return;
     }
 
@@ -142,7 +152,7 @@ export const LoadDialog = ({
     return () => {
       isCancelled = true;
     };
-  }, [getLoadDialogDrawings, selectedProjectId]);
+  }, [getLoadDialogDrawings, isWaitingForDefaultProject, selectedProjectId]);
 
   return (
     <Dialog onCloseRequest={onCloseRequest} title={false}>
@@ -157,21 +167,25 @@ export const LoadDialog = ({
             <label htmlFor="load-dialog-project">Projekt</label>
             <select
               id="load-dialog-project"
-              value={selectedProjectFilter}
-              onChange={(event) => setSelectedProjectFilter(event.target.value)}
+              value={isWaitingForDefaultProject ? "" : selectedProjectFilter}
+              disabled={isWaitingForDefaultProject}
+              onChange={(event) => setProjectFilterOverride(event.target.value)}
             >
+              {isWaitingForDefaultProject && (
+                <option value="">Lade Projekte…</option>
+              )}
               <option value={ALL_PROJECTS_VALUE}>Alle</option>
               <option value={NO_PROJECT_VALUE}>Kein Projekt</option>
               {selectedProjectFilter !== ALL_PROJECTS_VALUE &&
                 selectedProjectFilter !== NO_PROJECT_VALUE &&
-                !projects.some(
+                !projects?.some(
                   (project) => project.id === selectedProjectFilter,
                 ) && (
                   <option value={selectedProjectFilter}>
                     Unbekanntes Projekt
                   </option>
                 )}
-              {projects.map((project) => (
+              {projects?.map((project) => (
                 <option key={project.id} value={project.id}>
                   {project.name}
                 </option>

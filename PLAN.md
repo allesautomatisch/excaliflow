@@ -15,6 +15,7 @@
 - Add-next-step handle/button on selected shape: creates new shape + connecting elbow arrow.
 - Add-next-step `+` button repositions to the nearest side of the selected node based on pointer position, and creates the next node in that chosen direction (up/right/down/left).
 - Add-next-step `+` button and keyboard `Cmd/Ctrl + Arrow` flow creation always create the Step shape (blue rectangle with black outline).
+- In BPD mode, `Enter` finishes editing node text and keeps the node selected so `Cmd/Ctrl + Arrow` can create the next node. `Ctrl + Enter` (also `Cmd + Enter` on macOS) inserts a line break.
 - Distance between nodes created via `+` should be `1.5x` the previous spacing.
 - Add a second contextual flowchart button (next to `+`) to quickly change the selected node shape via popup + shortcuts.
 - Keyboard `D/G/R/O/C` shortcut behavior: if one flowchart node is selected, convert it to diamond/parallelogram/rectangle/ellipse/capsule; otherwise select the corresponding drawing tool.
@@ -29,7 +30,8 @@
 - The backend exposes project IDs/names through `/api/v2/projects`.
 - Drawing list responses include `project_id` and `project_name`.
 - Loading supports three filters: all drawings, no project only, or one selected project.
-- Saving and loading preselect the current drawing's project when the drawing has one; otherwise loading defaults to `Kein Projekt`.
+- Saving and loading preselect the current drawing's project, including `Kein Projekt` for an unassigned drawing.
+- With no flow open, the load dialog preselects `Alles Automatisch` and lists its flows. If the project is unavailable, it falls back to `Kein Projekt`.
 - The top-left file info displays the current project name or `Kein Projekt`.
 
 ## UX Details & Proposals
@@ -185,6 +187,8 @@
 - In BPD mode, nodes created via `+` or `Cmd/Ctrl + Arrow` are always forced to default size (`120x120`), independent of the selected/source node size.
 - In BPD mode, creating a node via `+` auto-opens bound text editing on the new node so typing can start immediately.
 - In BPD mode, keyboard `Cmd/Ctrl + Arrow` flowchart preview creation reuses the same spacing/grid and Step-style shape/color constants as the `+` button creation path.
+- While holding `Cmd/Ctrl`, Shift reverses the preview arrows toward the existing node, and releasing Shift restores their forward direction. Releasing `Cmd/Ctrl` commits the preview with reversed arrows if Shift is held or was released at most 300 ms earlier.
+- The shortcut also works while editing a flowchart node's text. The current text is saved when the preview starts, and text editing opens on the first new node after commit.
 - In BPD mode, committing keyboard `Cmd/Ctrl + Arrow` flowchart creation auto-starts text editing in the first created node, matching `+` behavior.
 - Keyboard flowchart creation uses `flushSync` selection to the first created node before `startTextEditing`, preventing stale selection from reopening old node text.
 - Keyboard `D/G/R/O/C` shortcuts are context-aware for flowchart nodes: selected node converts to matching shape; no node selected keeps normal tool selection behavior.
