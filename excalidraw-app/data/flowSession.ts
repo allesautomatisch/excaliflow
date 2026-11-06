@@ -3,8 +3,16 @@ const returnLocationKey = "excaliflow-login-return";
 export async function checkFlowSession(): Promise<boolean> {
   const response = await fetch("/api/flow-auth/session", { cache: "no-store" });
   if (response.status === 401) {
+    const start = await fetch("/api/flow-auth/start", {
+      cache: "no-store",
+      headers: { Accept: "application/json" },
+    });
+    if (!start.ok) {
+      throw new Error("Flow login could not be started");
+    }
+    const { location } = await start.json();
     sessionStorage.setItem(returnLocationKey, window.location.href);
-    window.location.replace("/api/flow-auth/start");
+    window.location.replace(location);
     return false;
   }
 

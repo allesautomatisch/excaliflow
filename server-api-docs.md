@@ -162,7 +162,7 @@ If you do not persist `encryption_key` server-side, key retention is still local
 
 ### Flow login and hosting
 
-The browser checks `GET /api/flow-auth/session` before mounting the editor. On `401` it starts the handoff through `/api/flow-auth/start`. Laravel uses its existing login on the main domain, checks the account's admin permission, and returns a one-minute code to the fixed Flow callback. Only the browser with the matching verifier cookie can redeem the code, once. The separate Flow cookie is HTTPS-only, HttpOnly and scoped to the Flow host. It expires after two hours. Signing out in the editor revokes the Flow session, and the existing main-domain login can sign the user in again.
+The browser checks `GET /api/flow-auth/session` before mounting the editor. On `401` it requests the login URL from `/api/flow-auth/start` and navigates to the main domain. Laravel uses its existing login on the main domain, checks the account's admin permission, and returns a one-minute code to the fixed Flow callback. Only the browser with the matching verifier cookie can redeem the code, once. The separate Flow cookie is HTTPS-only, HttpOnly and scoped to the Flow host. It expires after two hours. Signing out in the editor revokes the Flow session, and the existing main-domain login can sign the user in again.
 
 `APP_URL` is the Laravel login origin, and `FLOW_ORIGIN` is the exact Flow origin with no trailing slash. Production defaults to `https://flow.allesautomatisch.com`; local development defaults to `http://localhost:3001`. `FLOW_CACHE_STORE` defaults to the Laravel database cache and must support atomic locks and be shared across the Laravel instances serving the two hosts. Existing database cache tables are sufficient. In local development, if Node does not trust Herd's certificate, set `NODE_EXTRA_CA_CERTS` to the Herd CA PEM before starting Vite.
 
@@ -173,6 +173,7 @@ location ~ ^/api/(v2|flow-auth)(/|$) {
     client_max_body_size 48m;
     proxy_pass https://allesautomatisch.com;
     proxy_intercept_errors off;
+    proxy_redirect off;
     proxy_set_header Host allesautomatisch.com;
     proxy_ssl_server_name on;
     proxy_ssl_name allesautomatisch.com;

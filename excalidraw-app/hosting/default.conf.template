@@ -8,6 +8,7 @@ server {
         client_max_body_size 48m;
         proxy_pass ${FLOW_EXPORT_BACKEND};
         proxy_intercept_errors off;
+        proxy_redirect off;
         proxy_set_header Host $proxy_host;
         proxy_ssl_server_name on;
         proxy_ssl_verify_depth 3;
