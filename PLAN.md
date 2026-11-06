@@ -237,3 +237,10 @@
 - Fixed two live-only integration findings: the PWA navigation fallback intercepted public file links, and Spatie's global `.md` suffix rewrite prevented retrieving actual Markdown exports. The service worker now excludes `/exports/` and `/api/`; a wrapper retains the existing page rewrite everywhere except export files. Installing current locked dependencies reproduced the Markdown issue in the existing tests before the fix.
 - 64 focused frontend tests, 13 backend export tests (55 assertions), current TypeScript/build/lint checks and the local authenticated Playwright export-route smoke (2 tests) passed. One existing unused-variable lint warning remains. Public PNG/SVG/Excalidraw/Markdown URLs each returned HTTP 200 with the correct type and byte count; SVG rendered in native Browser after its service worker update. Native WebMCP and manual four-format publication both succeeded with shared UUIDs; all four individual copy icons are present.
 - Evidence: `experiments/exports-2026-10-01/production-export-result.json`, `production-url-checks.json`, `production-export-dialog.png`, `production-svg-preview.png`. Clipboard readback in the Codex browser remains unconfirmed. The local backend's `.env` broadcast driver was changed from unavailable `reverb` to `log` after dependency synchronization; the private previous environment is backed up in `/private/tmp/excaliflow-release-backup/` and no environment file was committed.
+
+
+## Private editor access
+
+- Use the existing Laravel login on \`allesautomatisch.com\` to authorize the editor. A short-lived, single-use handoff creates a host-only Flow session for authorized admin accounts.
+- Require this session for drawings, projects, files and export creation. Public export downloads are the external sharing path. Saved drawing links open after login.
+- Proxy Flow auth and API routes through the Flow origin. Verify browser login and deep links, anonymous API denial, drawing storage, and anonymous export downloads before the coordinated production rollout.

@@ -20,12 +20,16 @@ export default defineConfig(({ mode }) => {
       // don't auto-open a browser in headless/server environments
       open: false,
       proxy: {
-        "/api/v2/exports": {
-          target: new URL(envVars.VITE_APP_BACKEND_V2_GET_URL).origin,
+        "/api/v2": {
+          target: envVars.VITE_APP_FLOW_BACKEND_ORIGIN,
+          changeOrigin: true,
+        },
+        "/api/flow-auth/": {
+          target: envVars.VITE_APP_FLOW_BACKEND_ORIGIN,
           changeOrigin: true,
         },
         "/exports/": {
-          target: new URL(envVars.VITE_APP_BACKEND_V2_GET_URL).origin,
+          target: envVars.VITE_APP_FLOW_BACKEND_ORIGIN,
           changeOrigin: true,
         },
       },
@@ -159,7 +163,11 @@ export default defineConfig(({ mode }) => {
 
         workbox: {
           // Public files and API responses must reach the server, not the SPA.
-          navigateFallbackDenylist: [/^\/exports\//, /^\/api\//],
+          navigateFallbackDenylist: [
+            /^\/exports\//,
+            /^\/api\//,
+            /^\/flow-auth\//,
+          ],
           // don't precache fonts, locales and separate chunks
           globIgnores: [
             "fonts.css",

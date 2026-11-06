@@ -4,9 +4,10 @@ server {
     root /usr/share/nginx/html;
     index index.html;
 
-    location = /api/v2/exports {
+    location ~ ^/api/(v2|flow-auth)(/|$) {
         client_max_body_size 48m;
         proxy_pass ${FLOW_EXPORT_BACKEND};
+        proxy_intercept_errors off;
         proxy_set_header Host $proxy_host;
         proxy_ssl_server_name on;
         proxy_ssl_verify_depth 3;
@@ -16,6 +17,7 @@ server {
 
     location ^~ /exports/ {
         proxy_pass ${FLOW_EXPORT_BACKEND};
+        proxy_intercept_errors off;
         proxy_set_header Host $proxy_host;
         proxy_ssl_server_name on;
         proxy_ssl_verify_depth 3;

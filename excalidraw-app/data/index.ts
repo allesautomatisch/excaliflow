@@ -67,8 +67,8 @@ export const getSyncableElements = (
     isSyncableElement(element),
   ) as SyncableExcalidrawElement[];
 
-const BACKEND_V2_GET = import.meta.env.VITE_APP_BACKEND_V2_GET_URL;
-const BACKEND_V2_POST = import.meta.env.VITE_APP_BACKEND_V2_POST_URL;
+const BACKEND_V2_GET = "/api/v2/";
+const BACKEND_V2_POST = "/api/v2/post";
 const BACKEND_V2_ENCRYPTION_KEY =
   import.meta.env.VITE_APP_BACKEND_V2_ENCRYPTION_KEY?.trim() || "";
 

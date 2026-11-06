@@ -143,8 +143,7 @@ GET /api/v2?owner_id=123&per_page=25&q=sketch&cursor=2
 
 In `excaliflow` the backend save/load endpoints are consumed with:
 
-- `VITE_APP_BACKEND_V2_POST_URL`
-- `VITE_APP_BACKEND_V2_GET_URL`
+- Set `VITE_APP_FLOW_BACKEND_ORIGIN` to the Laravel origin for the Vite development proxy. The browser uses relative API URLs under its own origin.
 
 `GET` endpoint uses `id` and keeps the encryption key in the frontend URL hash (`#json=<id>,<key>`).
 
@@ -157,27 +156,23 @@ If you do not persist `encryption_key` server-side, key retention is still local
 
 ## 7) Security and production hardening
 
-- Current API has no auth in this implementation.
-- For multi-user systems, use `owner_id` checks against auth context and add middleware.
-- If exposing `encryption_key`, gate it:
-  - only include via `include_encryption_key=true` for trusted clients
-- Configure rate limiting and CSRF/CORS policy according to your deployment topology.
-- Keep payload size and row retention policies reviewed, especially for large drawings.
+- The editor and the drawing, project, file and export-write routes require the Excaliflow session and an admin account. The public exports path is described below.
+- The private API sends no-store responses and accepts writes only from the configured Flow origin. Keep the Flow routes same-origin in the browser.
+- An authenticated editor may open an existing drawing link. External readers can use an explicitly published export.
 
-## Public exports (PNG, SVG, Excalidraw, Markdown)
+### Flow login and hosting
 
-`POST /api/v2/exports` accepts multipart `name` (max 128 characters) and one to four `files[png]`, `files[svg]`, `files[excalidraw]`, `files[md]` uploads. It returns HTTP 201 with `{ uuid, exports: [{ format, fileName, url, sizeBytes }] }`. All files in one request share the server-generated `YYYY-MM-DD-name-slug-UUID` stem. `url` is `/exports/<fileName>`, relative to the Flow origin. A new request generates a new UUID; existing publications remain unchanged. No database migration is required.
+The browser checks `GET /api/flow-auth/session` before mounting the editor. On `401` it starts the handoff through `/api/flow-auth/start`. Laravel uses its existing login on the main domain, checks the account's admin permission, and returns a one-minute code to the fixed Flow callback. Only the browser with the matching verifier cookie can redeem the code, once. The separate Flow cookie is HTTPS-only, HttpOnly and scoped to the Flow host. It expires after two hours. Signing out in the editor revokes the Flow session, and the existing main-domain login can sign the user in again.
 
-`GET /exports/{fileName}` is public and serves the stored bytes with the correct MIME type. The controller restricts filenames and formats, validates file content, bounds payloads, removes partially stored batches on storage failure, and returns CSP/nosniff headers for inline SVG rendering. The default disk is Laravel's local disk, under `exports`; this is public through the controller, not through the encrypted drawing-file API. Files have no automatic expiry.
+`APP_URL` is the Laravel login origin, and `FLOW_ORIGIN` is the exact Flow origin with no trailing slash. Production defaults to `https://flow.allesautomatisch.com`; local development defaults to `http://localhost:3001`. `FLOW_CACHE_STORE` defaults to the Laravel database cache and must support atomic locks and be shared across the Laravel instances serving the two hosts. Existing database cache tables are sufficient. In local development, if Node does not trust Herd's certificate, set `NODE_EXTRA_CA_CERTS` to the Herd CA PEM before starting Vite.
 
-Configuration in the Laravel backend: `DRAWINGS_EXPORTS_DISK` (default `local`), `DRAWINGS_EXPORTS_PATH` (default `exports`), `DRAWINGS_EXPORTS_MAX_PAYLOAD_BYTES` (default 20 MiB/file), `DRAWINGS_EXPORTS_MAX_BATCH_BYTES` (default 40 MiB/request). PHP `upload_max_filesize` and `post_max_size` and the hosting proxy's request limit must permit the intended sizes; use at least 20M/file and 48M/request for the defaults. Preserve the configured storage disk across releases.
-
-Excaliflow sends uploads to its own origin and converts the relative response URLs to that origin. Vite proxies the upload and retrieval paths to the existing configured development backend. The repository Docker image includes `excalidraw-app/hosting/default.conf.template`, defaulting `FLOW_EXPORT_BACKEND` to `https://allesautomatisch.com` (an HTTPS origin without a trailing slash, with upstream certificate verification); Vercel rewrites cover the same routes. A production host using another serving setup must proxy both paths to the Laravel host before its SPA/static-file fallback. Example inside that host's Nginx server block (adapt upstream to the actual deployment):
+Before deploying either application, add the following block to the Flow site's Forge Nginx server config, in addition to its existing public `/exports/` location. It can replace the previous exact `/api/v2/exports` proxy block.
 
 ```nginx
-location = /api/v2/exports {
+location ~ ^/api/(v2|flow-auth)(/|$) {
     client_max_body_size 48m;
     proxy_pass https://allesautomatisch.com;
+    proxy_intercept_errors off;
     proxy_set_header Host allesautomatisch.com;
     proxy_ssl_server_name on;
     proxy_ssl_name allesautomatisch.com;
@@ -185,6 +180,21 @@ location = /api/v2/exports {
     proxy_ssl_verify_depth 3;
     proxy_ssl_trusted_certificate /etc/ssl/certs/ca-certificates.crt;
 }
+```
+
+Validate the Nginx configuration before reloading. Then deploy Laravel and Excaliflow together. In a fresh browser session verify that Flow goes to the main-domain login and returns to the original Flow URL. Verify the private API returns `401` anonymously on both hosts and a published SVG opens in a private window. The editor build and Laravel API must stay in sync.
+
+## Public exports (PNG, SVG, Excalidraw, Markdown)
+
+`POST /api/v2/exports` requires a Flow session and accepts multipart `name` (max 128 characters) and one to four `files[png]`, `files[svg]`, `files[excalidraw]`, `files[md]` uploads. It returns HTTP 201 with `{ uuid, exports: [{ format, fileName, url, sizeBytes }] }`. All files in one request share the server-generated `YYYY-MM-DD-name-slug-UUID` stem. `url` is `/exports/<fileName>`, relative to the Flow origin. A new request generates a new UUID; existing publications remain unchanged. No database migration is required.
+
+`GET /exports/{fileName}` is public and serves the stored bytes with the correct MIME type. The controller restricts filenames and formats, validates file content, bounds payloads, removes partially stored batches on storage failure, and returns CSP/nosniff headers for inline SVG rendering. The default disk is Laravel's local disk, under `exports`; this is public through the controller, not through the encrypted drawing-file API. Files have no automatic expiry.
+
+Configuration in the Laravel backend: `DRAWINGS_EXPORTS_DISK` (default `local`), `DRAWINGS_EXPORTS_PATH` (default `exports`), `DRAWINGS_EXPORTS_MAX_PAYLOAD_BYTES` (default 20 MiB/file), `DRAWINGS_EXPORTS_MAX_BATCH_BYTES` (default 40 MiB/request). PHP `upload_max_filesize` and `post_max_size` and the hosting proxy's request limit must permit the intended sizes; use at least 20M/file and 48M/request for the defaults. Preserve the configured storage disk across releases.
+
+Excaliflow sends uploads to its own origin and converts the relative response URLs to that origin. In addition to the private API proxy above, keep the public retrieval route below before the SPA fallback. Vite, the Docker Nginx template and Vercel already route both.
+
+```nginx
 location ^~ /exports/ {
     proxy_pass https://allesautomatisch.com;
     proxy_set_header Host allesautomatisch.com;
@@ -196,4 +206,4 @@ location ^~ /exports/ {
 }
 ```
 
-Deploy the Laravel controller/routes/config and Excaliflow build together, then apply the Flow host routing. This was completed on 2026-10-01 on the existing Forge sites. All four formats were published and retrieved at `https://flow.allesautomatisch.com/exports/YYYY-MM-DD-name-UUID.ext`. The PWA navigation fallback excludes `/exports/` and `/api/`, and the Laravel Markdown URL middleware preserves actual export filenames while retaining page `.md` variants.
+The public export deployment was completed on 2026-10-01. All four formats were published and retrieved at `https://flow.allesautomatisch.com/exports/YYYY-MM-DD-name-UUID.ext`. The PWA navigation fallback excludes `/exports/` and `/api/`, and the Laravel Markdown URL middleware preserves actual export filenames while retaining page `.md` variants.

@@ -4,6 +4,7 @@ import React from "react";
 import type { Theme } from "@excalidraw/element/types";
 
 import { LanguageList } from "../app-language/LanguageList";
+import { endFlowSession } from "../data/flowSession";
 
 export const AppMainMenu: React.FC<{
   onCollabDialogOpen: () => any;
@@ -40,6 +41,18 @@ export const AppMainMenu: React.FC<{
         <LanguageList style={{ width: "100%" }} />
       </MainMenu.ItemCustom>
       <MainMenu.DefaultItems.ChangeCanvasBackground />
+      <MainMenu.Separator />
+      <MainMenu.Item
+        onSelect={() => {
+          if (window.confirm("Möchtest du dich von Excaliflow abmelden?")) {
+            endFlowSession().catch(() => {
+              window.alert("Die Flow-Abmeldung ist fehlgeschlagen.");
+            });
+          }
+        }}
+      >
+        Abmelden
+      </MainMenu.Item>
     </MainMenu>
   );
 });

@@ -153,3 +153,11 @@ Source of truth: `PLAN.md`. Always update `PLAN.md` first, then reflect changes 
 - [x] Include target node text on Decision branch targets
 - [x] Simplify Markdown export to unordered list without node ids or arrow target ids
 - [x] Use `zurück zu` for Decision branches targeting already exported nodes
+
+
+## Private editor access
+
+- [x] Connect the main Laravel login to a separate Flow session.
+- [x] Gate the editor and private API while keeping published export URLs readable.
+- [x] Verify the cross-host login in the local browser and check the API and export boundaries.
+- [ ] Install the Forge proxy routes, deploy both applications and verify live access.

@@ -69,8 +69,12 @@
   "installCommand": "yarn install",
   "rewrites": [
     {
-      "source": "/api/v2/exports",
-      "destination": "https://allesautomatisch.com/api/v2/exports"
+      "source": "/api/v2/:path*",
+      "destination": "https://allesautomatisch.com/api/v2/:path*"
+    },
+    {
+      "source": "/api/flow-auth/:path*",
+      "destination": "https://allesautomatisch.com/api/flow-auth/:path*"
     },
     {
       "source": "/exports/:fileName",
