@@ -208,3 +208,33 @@ location ^~ /exports/ {
 ```
 
 The public export deployment was completed on 2026-10-01. All four formats were published and retrieved at `https://flow.allesautomatisch.com/exports/YYYY-MM-DD-name-UUID.ext`. The PWA navigation fallback excludes `/exports/` and `/api/`, and the Laravel Markdown URL middleware preserves actual export filenames while retaining page `.md` variants.
+
+## Stable PNG and SVG flow URLs
+
+`/<drawing-slug>.png` and `/<drawing-slug>.svg` are public, lazy-rendered images of the last backend drawing. Requests proxy to `GET /api/v2/flow-images/{slug}.{format}`. A cache miss uses the same browser exporter as the image dialog, including attached images and saved background, dark mode, embedded-scene and scale preferences. It exports the whole drawing. Existing drawings without saved preferences use exporter defaults until their next backend save. The server cache defaults to Laravel's private local disk at `storage/app/private/drawings/image-cache/<drawing-id>.png` and `.svg`.
+
+Only the Save to Flow backend button requests `DELETE /api/v2/drawings/{drawing}/image-cache` after all uploads succeed. JSON `revision` is the SHA-256 of the encrypted payload; a superseded save returns 409. This deletes both images under the renderer's lock. Local saves, manual server exports, share-link creation and unsaved edits do not invalidate them. Image responses use `Cache-Control: no-store`, so a browser or CDN cannot retain an older image after invalidation. Existing dated `/exports/` links keep their immutable behavior.
+
+### Forge host addition
+
+Add these locations to the **Flow frontend** server block alongside the existing API and `/exports/` proxies (replace the upstream with your existing Laravel upstream). Insert this before any general static-image regex location. Static files such as `favicon.svg` retain precedence:
+
+```nginx
+location ~ ^/[a-z0-9]+(-[a-z0-9]+)*\.(png|svg)$ {
+    try_files $uri @flow_image;
+}
+
+location @flow_image {
+    rewrite ^/(.*)$ /api/v2/flow-images/$1 break;
+    proxy_pass https://allesautomatisch.com;
+    proxy_intercept_errors off;
+    proxy_set_header Host $proxy_host;
+    proxy_ssl_server_name on;
+    proxy_ssl_verify_depth 3;
+    proxy_ssl_verify on;
+    proxy_ssl_trusted_certificate /etc/ssl/certs/ca-certificates.crt;
+    proxy_read_timeout 110s;
+}
+```
+
+Vite, Docker Nginx and Vercel routing are included in this repository. The PWA navigation fallback excludes root image URLs and the standalone renderer page. Deploy the matching frontend and Laravel change together. The backend needs production Node dependencies (`npm ci --omit=dev`) and Chromium installed for the PHP/deploy user (`npx playwright install chromium`; Linux system libraries via `npx playwright install-deps chromium`). Set `DRAWINGS_IMAGE_NODE_BINARY` if PHP needs an absolute Node path, and ensure the browser can reach `FLOW_ORIGIN/flow-render.html` and its assets. Full backend deployment notes are in `automatisch/resources/docs/flow-images.md`.

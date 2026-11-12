@@ -1183,6 +1183,7 @@ const ExcalidrawWrapper = () => {
           drawingName,
           projectId: projectIdOverride,
           persistEncryptionKey: true,
+          invalidateImageCache: true,
         },
       );
 

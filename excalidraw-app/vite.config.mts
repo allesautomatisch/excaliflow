@@ -1,4 +1,5 @@
 import path from "path";
+import fs from "fs";
 
 import { defineConfig, loadEnv } from "vite";
 import react from "@vitejs/plugin-react";
@@ -20,6 +21,19 @@ export default defineConfig(({ mode }) => {
       // don't auto-open a browser in headless/server environments
       open: false,
       proxy: {
+        "^/[a-z0-9]+(?:-[a-z0-9]+)*\\.(png|svg)$": {
+          target: envVars.VITE_APP_FLOW_BACKEND_ORIGIN,
+          changeOrigin: true,
+          rewrite: (url) => `/api/v2/flow-images${url}`,
+          bypass: (request) => {
+            const pathname = (request.url || "").split("?")[0];
+            if (
+              fs.existsSync(path.resolve(__dirname, `../public${pathname}`))
+            ) {
+              return request.url;
+            }
+          },
+        },
         "/api/v2": {
           target: envVars.VITE_APP_FLOW_BACKEND_ORIGIN,
           changeOrigin: true,
@@ -96,6 +110,10 @@ export default defineConfig(({ mode }) => {
     build: {
       outDir: "build",
       rollupOptions: {
+        input: {
+          app: path.resolve(__dirname, "index.html"),
+          renderer: path.resolve(__dirname, "flow-render.html"),
+        },
         output: {
           assetFileNames(chunkInfo) {
             if (chunkInfo?.name?.endsWith(".woff2")) {
@@ -167,6 +185,8 @@ export default defineConfig(({ mode }) => {
             /^\/exports\//,
             /^\/api\//,
             /^\/flow-auth\//,
+            /^\/[a-z0-9]+(?:-[a-z0-9]+)*\.(png|svg)$/,
+            /^\/flow-render\.html$/,
           ],
           // don't precache fonts, locales and separate chunks
           globIgnores: [

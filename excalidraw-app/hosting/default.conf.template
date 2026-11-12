@@ -29,4 +29,20 @@ server {
     location / {
         try_files $uri $uri/ /index.html;
     }
+
+    location ~ ^/[a-z0-9]+(-[a-z0-9]+)*\.(png|svg)$ {
+        try_files $uri @flow_image;
+    }
+
+    location @flow_image {
+        rewrite ^/(.*)$ /api/v2/flow-images/$1 break;
+        proxy_pass ${FLOW_EXPORT_BACKEND};
+        proxy_intercept_errors off;
+        proxy_set_header Host $proxy_host;
+        proxy_ssl_server_name on;
+        proxy_ssl_verify_depth 3;
+        proxy_ssl_verify on;
+        proxy_ssl_trusted_certificate /etc/ssl/certs/ca-certificates.crt;
+        proxy_read_timeout 110s;
+    }
 }

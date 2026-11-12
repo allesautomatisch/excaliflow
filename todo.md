@@ -161,3 +161,11 @@ Source of truth: `PLAN.md`. Always update `PLAN.md` first, then reflect changes 
 - [x] Gate the editor and private API while keeping published export URLs readable.
 - [x] Verify the cross-host login in the local browser and check the API and export boundaries.
 - [ ] Install the Forge proxy routes, deploy both applications and verify live access.
+
+## Stable flow image URLs
+
+- [x] Add lazy PNG/SVG rendering and known private cache paths.
+- [x] Invalidate both formats only after Save to Flow backend and attached-image uploads succeed.
+- [x] Preserve export preferences and reuse existing rendering, fonts and encrypted assets.
+- [x] Add extension routing, PWA exclusions, cache lifecycle tests and local route verification.
+- [ ] Activate Forge extension routing and install matching Chromium on the production backend; verify the production URLs.

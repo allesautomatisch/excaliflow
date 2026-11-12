@@ -244,3 +244,11 @@
 - Use the existing Laravel login on \`allesautomatisch.com\` to authorize the editor. A short-lived, single-use handoff creates a host-only Flow session for authorized admin accounts.
 - Require this session for drawings, projects, files and export creation. Public export downloads are the external sharing path. Saved drawing links open after login.
 - Proxy Flow auth and API routes through the Flow origin. Verify browser login and deep links, anonymous API denial, drawing storage, and anonymous export downloads before the coordinated production rollout.
+
+## Stable flow image URLs
+
+- Serve public `/<slug>.png` and `/<slug>.svg` through Laravel, rendering only on a private disk-cache miss with the existing browser image exporter and encrypted drawing/assets.
+- Save image export preferences with the backend scene; export the entire saved flow. Older scenes use exporter defaults until saved again.
+- Invalidate both cached formats exclusively after the Save to Flow backend action finishes all uploads, with a payload revision check and the same lock used for rendering.
+- Wire Vite/Docker/Vercel extension routing and PWA exclusions; preserve real static files. Forge needs the documented host locations and the backend needs matching Playwright Chromium installation.
+- Local acceptance: 19 focused frontend regressions, 39 backend tests (198 assertions), real PNG/SVG routes and actual save-modal completion smoke, affected-file lint and production build. Built renderer separately verified with embedded fonts. Full TypeScript passed before concurrent Markdown-test edits; final scoped checking excludes that unrelated test. Production activation remains dependent on host/browser setup.

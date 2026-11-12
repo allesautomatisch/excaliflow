@@ -1,12 +1,5 @@
-import {
-  compressData,
-  decompressData,
-} from "@excalidraw/excalidraw/data/encode";
-import {
-  decryptData,
-  generateEncryptionKey,
-  IV_LENGTH_BYTES,
-} from "@excalidraw/excalidraw/data/encryption";
+import { compressData } from "@excalidraw/excalidraw/data/encode";
+import { generateEncryptionKey } from "@excalidraw/excalidraw/data/encryption";
 import { serializeAsJSON } from "@excalidraw/excalidraw/data/json";
 import {
   isInitializedImageElement,
@@ -42,6 +35,7 @@ import {
   saveFilesToBackend,
 } from "./backendFiles";
 import { encodeFilesForUpload } from "./FileManager";
+import { decodeBackendDrawing } from "./backendScene";
 
 import type { WS_SUBTYPES } from "../app_constants";
 
@@ -202,42 +196,6 @@ export const getCollaborationLink = (data: {
   return `${window.location.origin}${window.location.pathname}#room=${data.roomId},${data.roomKey}`;
 };
 
-/**
- * Decodes shareLink data using the legacy buffer format.
- * @deprecated
- */
-const legacy_decodeFromBackend = async ({
-  buffer,
-  decryptionKey,
-}: {
-  buffer: ArrayBuffer;
-  decryptionKey: string;
-}) => {
-  let decrypted: ArrayBuffer;
-
-  try {
-    // Buffer should contain both the IV (fixed length) and encrypted data
-    const iv = buffer.slice(0, IV_LENGTH_BYTES);
-    const encrypted = buffer.slice(IV_LENGTH_BYTES, buffer.byteLength);
-    decrypted = await decryptData(new Uint8Array(iv), encrypted, decryptionKey);
-  } catch (error: any) {
-    // Fixed IV (old format, backward compatibility)
-    const fixedIv = new Uint8Array(IV_LENGTH_BYTES);
-    decrypted = await decryptData(fixedIv, buffer, decryptionKey);
-  }
-
-  // We need to convert the decrypted array buffer to a string
-  const string = new window.TextDecoder("utf-8").decode(
-    new Uint8Array(decrypted),
-  );
-  const data: ImportedDataState = JSON.parse(string);
-
-  return {
-    elements: data.elements || null,
-    appState: data.appState || null,
-  };
-};
-
 export const importFromBackend = async (
   id: string,
   decryptionKey: string,
@@ -251,28 +209,7 @@ export const importFromBackend = async (
     }
     const buffer = await response.arrayBuffer();
 
-    try {
-      const { data: decodedBuffer } = await decompressData(
-        new Uint8Array(buffer),
-        {
-          decryptionKey,
-        },
-      );
-      const data: ImportedDataState = JSON.parse(
-        new TextDecoder().decode(decodedBuffer),
-      );
-
-      return {
-        elements: data.elements || null,
-        appState: data.appState || null,
-      };
-    } catch (error: any) {
-      console.warn(
-        "error when decoding shareLink data using the new format:",
-        error,
-      );
-      return legacy_decodeFromBackend({ buffer, decryptionKey });
-    }
+    return await decodeBackendDrawing(buffer, decryptionKey);
   } catch (error: any) {
     window.alert(t("alerts.importBackendFailed"));
     console.error(error);
@@ -621,14 +558,26 @@ export const saveToBackend = async (
     drawingName?: string | null;
     projectId?: string | null;
     persistEncryptionKey?: boolean;
+    invalidateImageCache?: boolean;
   },
 ): Promise<SaveToBackendResult> => {
   const encryptionKey = await resolveBackendEncryptionKey();
 
+  const scene = JSON.parse(
+    serializeAsJSON(elements, appState, files, "database"),
+  );
+  // These preferences normally live only in the browser. Named backend saves
+  // also retain them so lazy server exports match the image dialog.
+  if (opts?.persistEncryptionKey) {
+    Object.assign(scene.appState, {
+      exportBackground: appState.exportBackground,
+      exportWithDarkMode: appState.exportWithDarkMode,
+      exportEmbedScene: appState.exportEmbedScene,
+      exportScale: appState.exportScale,
+    });
+  }
   const payload = await compressData(
-    new TextEncoder().encode(
-      serializeAsJSON(elements, appState, files, "database"),
-    ),
+    new TextEncoder().encode(JSON.stringify(scene)),
     { encryptionKey },
   );
 
@@ -662,6 +611,29 @@ export const saveToBackend = async (
           drawingId: id,
           files: filesToUpload,
         });
+      }
+
+      if (opts?.invalidateImageCache) {
+        // Complete only the Save to Flow backend action, after every image has
+        // uploaded. Other saves and manual server exports never evict images.
+        const endpoint = getBackendV2Url();
+        endpoint.pathname = `${endpoint.pathname.replace(
+          /\/+$/,
+          "",
+        )}/drawings/${encodeURIComponent(id)}/image-cache`;
+        const revision = bytesToHexString(
+          new Uint8Array(await crypto.subtle.digest("SHA-256", payload)),
+        );
+        const response = await fetch(endpoint, {
+          method: "DELETE",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ revision }),
+        });
+        if (!response.ok) {
+          throw new Error(
+            `Flow image cache update failed (HTTP ${response.status})`,
+          );
+        }
       }
 
       return { id, encryptionKey, errorMessage: null };
