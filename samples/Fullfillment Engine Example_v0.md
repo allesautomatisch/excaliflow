@@ -1,0 +1,40 @@
+# Prozess: Fullfillment Engine Example
+
+- Start (Closed Sale)
+- Send Client Agreement
+- Signed?
+  - No: weiter mit "Follow Up / Resell if needed"
+  - Yes: weiter mit "Create Client Dashboard & OS Canvas"
+- Create Client Dashboard & OS Canvas
+- Follow Up / Resell if needed
+- Create Account & Add GSA License in Portal
+- Send Welcome Email
+- Schedule Kickstart Call
+- Deliver Kickstart & Triage Session
+- All 1-on-1 Calls Scheduled?
+  - No: weiter mit "Follow Up with Client until ALL are scheduled"
+  - Yes: weiter mit "Deliver 1-on-1 Implementation Session"
+- Deliver 1-on-1 Implementation Session
+- Follow Up with Client until ALL are scheduled
+- OS Tool Complete?
+  - No: weiter mit "Create Catchup Plan with Client"
+  - Yes: weiter mit "OS Canvas Complete?"
+- OS Canvas Complete?
+  - No: zurück zu "Deliver 1-on-1 Implementation Session"
+  - Yes: weiter mit "Ask for a testimonial"
+- Create Catchup Plan with Client
+- Ask for a testimonial
+- Implement Catchup Plan
+- Deliver HWGT Session
+- Present Offer for Ongoing Support
+  - No: weiter mit "Off-board Client"
+  - Yes: weiter mit "Ascend to FB or S&E?"
+- Ascend to FB or S&E?
+  - No: weiter mit "Off-board Client"
+  - Yes FB: weiter mit "Hand off to Founders-Board Team"
+  - Yes S&E: weiter mit "Start S&E Coaching"
+- Off-board Client
+- Hand off to Founders-Board Team
+- Start S&E Coaching
+- Referal Request
+- End

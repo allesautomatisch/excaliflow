@@ -136,6 +136,8 @@ Source of truth: `PLAN.md`. Always update `PLAN.md` first, then reflect changes 
 
 ## Ops
 
+- [x] Make the Vite lint checker use repository ignore rules so changing build output cannot crash the local server.
+
 - [x] Add a feature flag (`VITE_APP_ENABLE_LOCAL_STORAGE`) to allow enabling/disabling scene localStorage persistence, and default persistence off.
 - [ ] Keep Vite + Basic-auth proxy running; auto-restart if killed
 - [x] Keep TypeScript checker at 0 errors
@@ -153,14 +155,25 @@ Source of truth: `PLAN.md`. Always update `PLAN.md` first, then reflect changes 
 - [x] Include target node text on Decision branch targets
 - [x] Simplify Markdown export to unordered list without node ids or arrow target ids
 - [x] Use `zurück zu` for Decision branches targeting already exported nodes
+- [x] Export both engine diagrams in `samples/` as PNG references for Markdown export improvements
+- [x] Save the existing Markdown export output for both engine diagrams beside their source files in `samples/`
+- [x] Nest Markdown branch routes, preserve return/shared-destination connections, and regenerate both sample exports
+- [x] Disambiguate Markdown destinations, mark unlabeled exits neutrally, and separate independent entries/shared flows
+- [x] Recover original `_v0` sample exports and preserve previous exports while generating `_v2`
+- [x] Remove the “Gemeinsamer Ablauf: ” heading prefix and generate versioned `_v3` Markdown samples
+- [x] Remove the introductory Markdown reference explanation without regenerating sample exports
+- [x] Inline shared linear runs of at most three steps at each reference while preserving decision boundaries, labels and loops
+- [x] Generate both `_v4.md` sample exports with the current algorithm
 
 
 ## Private editor access
 
 - [x] Connect the main Laravel login to a separate Flow session.
 - [x] Gate the editor and private API while keeping published export URLs readable.
+- [x] Bypass Flow authentication in Laravel's local environment for quick editor/API testing, with an opt-out and production guard.
 - [x] Verify the cross-host login in the local browser and check the API and export boundaries.
-- [ ] Install the Forge proxy routes, deploy both applications and verify live access.
+- [x] Install the Forge proxy routes, deploy both applications and verify the anonymous redirect, API denial and public SVG access on production.
+- [ ] Confirm the handoff on production with the owner’s account.
 
 ## Stable flow image URLs
 

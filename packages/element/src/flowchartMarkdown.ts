@@ -51,7 +51,6 @@ type OrderedProcessNodes = {
 
 const DEFAULT_PROCESS_NAME = "Unbenannt";
 const DEFAULT_EDGE_LABEL = "weiter";
-const DEFAULT_LAST_DECISION_EDGE_LABEL = "sonst";
 
 const normalizeInlineText = (text: string) => text.replace(/\s+/g, " ").trim();
 
@@ -312,20 +311,178 @@ const getSortedOutgoingEdges = (
   });
 };
 
-const getEdgeLabel = (
-  edge: ProcessEdge,
-  edgeIndex: number,
-  lastUnlabeledDecisionEdgeIndex: number,
+// A shared destination can be reached from independent routes. A loop returning
+// to a node that every path to its source already passed is not a new entry.
+const getRouteLayout = (nodes: ProcessNode[], edges: ProcessEdge[]) => {
+  const entryIds = new Set<string>();
+  const sharedIds = new Set<string>();
+  const multipleEntryIds = new Set<string>();
+  const outgoing = getOutgoingEdges(edges);
+  const incoming = new Map<string, Set<string>>();
+  for (const edge of edges) {
+    const sources = incoming.get(edge.to) ?? new Set<string>();
+    sources.add(edge.from);
+    incoming.set(edge.to, sources);
+  }
+  for (const component of getConnectedNodeComponents(nodes, edges)) {
+    const roots = getComponentStartNodes(component, edges);
+    const reached = new Set<string>();
+    const visit = (id: string) => {
+      const pending = [id];
+      while (pending.length) {
+        const current = pending.pop()!;
+        if (reached.has(current)) {
+          continue;
+        }
+        reached.add(current);
+        pending.push(...(outgoing.get(current) ?? []).map((edge) => edge.to));
+      }
+    };
+    for (const root of roots) {
+      visit(root.element.id);
+    }
+    // Cyclic components can have no zero-incoming node, or several source cycles.
+    for (const node of component) {
+      if (!reached.has(node.element.id)) {
+        roots.push(node);
+        visit(node.element.id);
+      }
+    }
+    const rootIds = new Set(roots.map((node) => node.element.id));
+    for (const id of rootIds) {
+      entryIds.add(id);
+      if (roots.length > 1) {
+        multipleEntryIds.add(id);
+      }
+    }
+    const ids = component.map((node) => node.element.id);
+    const dominators = new Map(
+      ids.map((id) => [id, new Set(rootIds.has(id) ? [id] : ids)]),
+    );
+    let changed = true;
+    while (changed) {
+      changed = false;
+      for (const id of ids) {
+        if (rootIds.has(id)) {
+          continue;
+        }
+        const sources = [...(incoming.get(id) ?? [])];
+        const next = new Set([
+          id,
+          ...ids.filter((candidate) =>
+            sources.every((source) => dominators.get(source)!.has(candidate)),
+          ),
+        ]);
+        const previous = dominators.get(id)!;
+        if (
+          next.size !== previous.size ||
+          [...next].some((value) => !previous.has(value))
+        ) {
+          dominators.set(id, next);
+          changed = true;
+        }
+      }
+    }
+    for (const id of ids) {
+      const independentSources = [...(incoming.get(id) ?? [])].filter(
+        (source) => !dominators.get(source)!.has(id),
+      );
+      if (!rootIds.has(id) && independentSources.length > 1) {
+        sharedIds.add(id);
+      }
+    }
+  }
+  return { entryIds, sharedIds, multipleEntryIds, incoming };
+};
+
+// Inline only a complete short linear run. Decisions, forks and longer runs
+// remain named destinations; cyclic runs must never be expanded repeatedly.
+const getShortSharedRoutes = (
+  sharedIds: Set<string>,
+  nodes: Map<string, ProcessNode>,
+  outgoing: Map<string, ProcessEdge[]>,
 ) => {
-  if (edge.label) {
-    return edge.label;
+  const routes = new Map<
+    string,
+    { nodes: ProcessNode[]; exit: ProcessEdge | null }
+  >();
+  for (const id of sharedIds) {
+    const route: ProcessNode[] = [];
+    const seen = new Set<string>();
+    let current = nodes.get(id)!;
+    let exit: ProcessEdge | null = null;
+    while (true) {
+      if (seen.has(current.element.id)) {
+        break;
+      }
+      const edges = outgoing.get(current.element.id) ?? [];
+      if (current.element.type === "diamond" || edges.length > 1) {
+        if (route.length) {
+          routes.set(id, { nodes: route, exit });
+        }
+        break;
+      }
+      if (route.length === 3) {
+        break;
+      }
+      seen.add(current.element.id);
+      route.push(current);
+      exit = edges[0] ?? null;
+      if (!exit) {
+        routes.set(id, { nodes: route, exit: null });
+        break;
+      }
+      current = nodes.get(exit.to)!;
+    }
   }
+  return routes;
+};
 
-  if (edgeIndex === lastUnlabeledDecisionEdgeIndex) {
-    return DEFAULT_LAST_DECISION_EDGE_LABEL;
+const getDisplayNames = (
+  nodes: ProcessNode[],
+  incoming: Map<string, Set<string>>,
+) => {
+  const sorted = [...nodes].sort(compareNodesByPosition);
+  const byId = new Map(nodes.map((node) => [node.element.id, node]));
+  const groups = new Map<string, ProcessNode[]>();
+  for (const node of sorted) {
+    const key = node.text.toLowerCase();
+    groups.set(key, [...(groups.get(key) ?? []), node]);
   }
-
-  return DEFAULT_EDGE_LABEL;
+  const describe = (node: ProcessNode, depth = 0): string => {
+    const group = groups.get(node.text.toLowerCase())!;
+    if (group.length === 1) {
+      return node.text;
+    }
+    const sources = [...(incoming.get(node.element.id) ?? [])]
+      .map((id) => byId.get(id)!)
+      .sort(compareNodesByPosition);
+    if (depth >= 2 || !sources.length) {
+      return `${node.text} (${group.indexOf(node) + 1})`;
+    }
+    const context = [
+      ...new Set(sources.map((source) => describe(source, depth + 1))),
+    ];
+    return `${node.text} (nach ${context.join(" / ")})`;
+  };
+  // Reserve literal names too, so generated qualifiers cannot collide with one.
+  const reserved = new Set(nodes.map((node) => node.text.toLowerCase()));
+  const used = new Set<string>();
+  return new Map(
+    sorted.map((node) => {
+      const base = describe(node);
+      let name = base;
+      let suffix = 1;
+      while (
+        used.has(name.toLowerCase()) ||
+        (name !== node.text && reserved.has(name.toLowerCase()))
+      ) {
+        name = `${base} (${suffix++})`;
+      }
+      used.add(name.toLowerCase());
+      return [node.element.id, name];
+    }),
+  );
 };
 
 const getFrameSection = (frame: ExcalidrawFrameElement): ProcessSection => ({
@@ -476,11 +633,6 @@ const emitTextBlock = (lines: string[], textBlock: ProcessTextBlock) => {
   lines.push(...textBlock.text.split("\n"));
 };
 
-const getBranchDirectionText = (
-  edge: ProcessEdge,
-  emittedNodeIds: Set<string>,
-) => (emittedNodeIds.has(edge.to) ? "zurück zu" : "weiter mit");
-
 export const exportProcessDiagramToMarkdown = ({
   elements,
   processName,
@@ -533,6 +685,23 @@ export const exportProcessDiagramToMarkdown = ({
     orderedNodes.map((node) => [node.element.id, node]),
   );
   const outgoingEdges = getOutgoingEdges(edges);
+  const { entryIds, sharedIds, multipleEntryIds, incoming } = getRouteLayout(
+    nodes,
+    edges,
+  );
+  const shortRoutes = getShortSharedRoutes(
+    sharedIds,
+    nodeByElementId,
+    outgoingEdges,
+  );
+  // A short run may end at a decision which previously lived inside that run.
+  // Give that continuation its own definition before emitting any references.
+  for (const route of shortRoutes.values()) {
+    if (route.exit) {
+      sharedIds.add(route.exit.to);
+    }
+  }
+  const displayNames = getDisplayNames(nodes, incoming);
   const swimlaneLabelTitles = getSwimlaneLabelTitles(nonDeletedElements);
   const freeTextBlocks = getFreeTextBlocks(nonDeletedElements);
   const emittedSectionIds = new Set<string>();
@@ -546,64 +715,149 @@ export const exportProcessDiagramToMarkdown = ({
     "",
   ];
 
-  for (const node of orderedNodes) {
+  const emitNode = (node: ProcessNode, depth: number) => {
+    const indent = "  ".repeat(depth);
     const section = getNodeSection(node, elementsMap, swimlaneLabelTitles);
-    const shouldEmitSection = section && !emittedSectionIds.has(section.id);
+    if (section && !emittedSectionIds.has(section.id)) {
+      if (depth === 0) {
+        ensureBlankLine(lines);
+        lines.push(`# ${section.title}`);
+      } else {
+        lines.push(`${indent}- **${section.title}**`);
+      }
+      emittedSectionIds.add(section.id);
+    }
+    lines.push(`${indent}- ${displayNames.get(node.element.id)}`);
+    emittedNodeIds.add(node.element.id);
+  };
 
-    if (flowStartNodeIds.has(node.element.id)) {
+  // Expand one route at a time. References end routes that join an already
+  // emitted node; only nodes on the active route are described as a return.
+  type Task =
+    | { type: "node"; node: ProcessNode; depth: number }
+    | { type: "leave"; nodeId: string }
+    | { type: "edge"; edge: ProcessEdge; depth: number; label: string | null };
+  const activeNodeIds = new Set<string>();
+
+  // Finish all entry routes before defining shared continuations at top level.
+  const order = new Map(
+    orderedNodes.map((node, index) => [node.element.id, index]),
+  );
+  const components = getConnectedNodeComponents(nodes, edges)
+    .map((component) =>
+      component.sort(
+        (a, b) => order.get(a.element.id)! - order.get(b.element.id)!,
+      ),
+    )
+    .sort((a, b) => order.get(a[0].element.id)! - order.get(b[0].element.id)!);
+  const roots = components.flatMap((component) => [
+    ...component.filter((node) => entryIds.has(node.element.id)),
+    ...component.filter((node) => sharedIds.has(node.element.id)),
+    ...component,
+  ]);
+  for (const root of roots) {
+    if (emittedNodeIds.has(root.element.id)) {
+      continue;
+    }
+
+    if (flowStartNodeIds.has(root.element.id)) {
       while (
         nextTextBlockIndex < freeTextBlocks.length &&
         compareElementsByPosition(
           freeTextBlocks[nextTextBlockIndex].element,
-          node.element,
+          root.element,
         ) <= 0
       ) {
-        emitTextBlock(lines, freeTextBlocks[nextTextBlockIndex]);
-        nextTextBlockIndex++;
+        emitTextBlock(lines, freeTextBlocks[nextTextBlockIndex++]);
       }
     }
-
-    if (flowStartNodeIds.has(node.element.id) || shouldEmitSection) {
-      ensureBlankLine(lines);
+    ensureBlankLine(lines);
+    if (sharedIds.has(root.element.id)) {
+      lines.push(`## ${displayNames.get(root.element.id)}`, "");
+    } else if (multipleEntryIds.has(root.element.id)) {
+      lines.push(`## Einstieg: ${displayNames.get(root.element.id)}`, "");
     }
+    const tasks: Task[] = [{ type: "node", node: root, depth: 0 }];
 
-    if (section && shouldEmitSection) {
-      lines.push(`# ${section.title}`);
-      emittedSectionIds.add(section.id);
-    }
-
-    const outgoing = getSortedOutgoingEdges(
-      outgoingEdges.get(node.element.id) ?? [],
-      nodeByElementId,
-    );
-
-    lines.push(`- ${node.text}`);
-    emittedNodeIds.add(node.element.id);
-
-    if (outgoing.length > 1) {
-      let lastUnlabeledDecisionEdgeIndex = -1;
-
-      if (node.element.type === "diamond") {
-        for (let edgeIndex = outgoing.length - 1; edgeIndex >= 0; edgeIndex--) {
-          if (!outgoing[edgeIndex].label) {
-            lastUnlabeledDecisionEdgeIndex = edgeIndex;
-            break;
+    while (tasks.length) {
+      const task = tasks.pop()!;
+      if (task.type === "leave") {
+        activeNodeIds.delete(task.nodeId);
+        continue;
+      }
+      const indent = "  ".repeat(task.depth);
+      if (task.type === "edge") {
+        const target = nodeByElementId.get(task.edge.to)!;
+        const shortRoute = shortRoutes.get(task.edge.to);
+        if (shortRoute && !activeNodeIds.has(task.edge.to)) {
+          let depth = task.depth;
+          if (task.label) {
+            lines.push(`${indent}- ${task.label}:`);
+            depth++;
           }
+          for (const [index, node] of shortRoute.nodes.entries()) {
+            emitNode(node, depth);
+            const edge = (outgoingEdges.get(node.element.id) ?? [])[0];
+            if (edge?.label && index < shortRoute.nodes.length - 1) {
+              lines.push(`${"  ".repeat(depth + 1)}- ${edge.label}:`);
+              depth += 2;
+            }
+          }
+          if (shortRoute.exit) {
+            const edge = shortRoute.exit;
+            const direction = activeNodeIds.has(edge.to)
+              ? "zurück zu"
+              : "weiter mit";
+            lines.push(
+              `${"  ".repeat(depth + (edge.label ? 1 : 0))}- ${
+                edge.label ? `${edge.label}: ` : ""
+              }${direction} "${displayNames.get(edge.to)}"`,
+            );
+          }
+          continue;
         }
+        if (emittedNodeIds.has(task.edge.to) || sharedIds.has(task.edge.to)) {
+          const direction = activeNodeIds.has(task.edge.to)
+            ? "zurück zu"
+            : "weiter mit";
+          lines.push(
+            `${indent}- ${
+              task.label ? `${task.label}: ` : ""
+            }${direction} "${displayNames.get(target.element.id)}"`,
+          );
+        } else {
+          if (task.label) {
+            lines.push(`${indent}- ${task.label}:`);
+          }
+          tasks.push({
+            type: "node",
+            node: target,
+            depth: task.depth + (task.label ? 1 : 0),
+          });
+        }
+        continue;
       }
 
-      for (const [edgeIndex, edge] of outgoing.entries()) {
-        const targetNode = nodeByElementId.get(edge.to);
+      const { node, depth } = task;
+      emitNode(node, depth);
+      activeNodeIds.add(node.element.id);
+      tasks.push({ type: "leave", nodeId: node.element.id });
 
-        lines.push(
-          `  - ${getEdgeLabel(
-            edge,
-            edgeIndex,
-            lastUnlabeledDecisionEdgeIndex,
-          )}: ${getBranchDirectionText(edge, emittedNodeIds)} "${
-            targetNode?.text ?? ""
-          }"`,
-        );
+      const outgoing = getSortedOutgoingEdges(
+        outgoingEdges.get(node.element.id) ?? [],
+        nodeByElementId,
+      );
+      for (let i = outgoing.length - 1; i >= 0; i--) {
+        const edge = outgoing[i];
+        tasks.push({
+          type: "edge",
+          edge,
+          depth: depth + (outgoing.length > 1 || edge.label ? 1 : 0),
+          label:
+            outgoing.length > 1
+              ? edge.label ?? "Verbindung ohne Beschriftung"
+              : edge.label,
+        });
       }
     }
   }

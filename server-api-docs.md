@@ -166,6 +166,8 @@ The browser checks `GET /api/flow-auth/session` before mounting the editor. On `
 
 `APP_URL` is the Laravel login origin, and `FLOW_ORIGIN` is the exact Flow origin with no trailing slash. Production defaults to `https://flow.allesautomatisch.com`; local development defaults to `http://localhost:3001`. `FLOW_CACHE_STORE` defaults to the Laravel database cache and must support atomic locks and be shared across the Laravel instances serving the two hosts. Existing database cache tables are sufficient. In local development, if Node does not trust Herd's certificate, set `NODE_EXTRA_CA_CERTS` to the Herd CA PEM before starting Vite.
 
+With Laravel's `APP_ENV=local`, Flow authentication is bypassed by default for the editor and its APIs. Responses remain private/no-store, and writes still require the configured `FLOW_ORIGIN`. The session response includes `X-Flow-Auth: disabled`, which hides the editor's logout action. Set `FLOW_LOCAL_AUTH_BYPASS=false` in Laravel's local `.env` to test the full login flow again. This bypass is never honored in production, staging, or testing, even if the flag is enabled. Vite must proxy to the local Laravel backend (`https://automatisch.test`), with the Herd CA trusted by Node.
+
 Before deploying either application, add the following block to the Flow site's Forge Nginx server config, in addition to its existing public `/exports/` location. It can replace the previous exact `/api/v2/exports` proxy block.
 
 ```nginx

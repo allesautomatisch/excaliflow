@@ -1,4 +1,5 @@
 const returnLocationKey = "excaliflow-login-return";
+export let isFlowSessionRequired = true;
 
 export async function checkFlowSession(): Promise<boolean> {
   const response = await fetch("/api/flow-auth/session", { cache: "no-store" });
@@ -19,6 +20,8 @@ export async function checkFlowSession(): Promise<boolean> {
   if (response.status !== 204) {
     throw new Error("Flow session check failed");
   }
+
+  isFlowSessionRequired = response.headers.get("X-Flow-Auth") !== "disabled";
 
   const previous = sessionStorage.getItem(returnLocationKey);
   sessionStorage.removeItem(returnLocationKey);

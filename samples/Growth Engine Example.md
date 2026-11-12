@@ -1,0 +1,66 @@
+# Prozess: Growth Engine Example
+
+- Hand-Raiser E-Mail Campaign
+- Conversion / Sell-by-chat
+- Qualified?
+  - No:
+    - Level 7 Masterclass
+    - Bought L7MC?
+      - No:
+        - L7MC Follow up sequence
+          - After 10 days:
+            - Email List
+            - Lead Magnet or Webinar Landing Page
+            - zurück zu "Qualified?"
+          - weiter: zurück zu "Bought L7MC?"
+      - Yes:
+        - Scalable Intensive Bundle
+        - Scalable Growth Accellerator
+        - Start L7 Fullfillment Engine
+  - Yes:
+    - Book a meeting
+    - Booked?
+      - No:
+        - Follow Up Campaign
+        - Qualified?
+          - No:
+            - DQ/Closed /Lost
+            - weiter mit "Email List"
+          - Yes:
+            - Book with AE
+            - Meeting Show-up Series
+            - Attended?
+              - No:
+                - Setter Follow Up
+                - zurück zu "Attended?"
+              - Yes:
+                - Deliver Growth Session
+                - Offer Presented?
+                  - No:
+                    - Follow-Up (BAMFAM)
+                      - After 21 Days: weiter mit "DQ/Closed /Lost"
+                      - weiter: zurück zu "Deliver Growth Session"
+                  - sonst:
+                    - Closed?
+                      - No: weiter mit "Follow-Up (BAMFAM)"
+                      - weiter:
+                        - Start OSA Fulfillment Engine
+                      - sonst:
+                        - Start FB Fullfillment Engine
+      - Yes:
+        - Lead Status?
+          - A Lead: weiter mit "Book with AE"
+          - B Lead:
+            - Book with MDR
+            - Meeting Show-up series
+            - Attended?
+              - No: weiter mit "Setter Follow Up"
+              - Yes:
+                - Deliver Triage Session
+                - Qualified?
+                  - No: weiter mit "DQ/Closed /Lost"
+                  - sonst: weiter mit "Book with AE"
+
+- Start
+- FB / IG Ads
+- weiter mit "Lead Magnet or Webinar Landing Page"

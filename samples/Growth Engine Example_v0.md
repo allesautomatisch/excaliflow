@@ -1,0 +1,61 @@
+# Prozess: Growth Engine Example
+
+- Hand-Raiser E-Mail Campaign
+- Conversion / Sell-by-chat
+- Qualified?
+  - No: weiter mit "Level 7 Masterclass"
+  - Yes: weiter mit "Book a meeting"
+- Book a meeting
+- Level 7 Masterclass
+- Booked?
+  - No: weiter mit "Follow Up Campaign"
+  - Yes: weiter mit "Lead Status?"
+- Bought L7MC?
+  - No: weiter mit "L7MC Follow up sequence"
+  - Yes: weiter mit "Scalable Intensive Bundle"
+- Follow Up Campaign
+- Lead Status?
+  - A Lead: weiter mit "Book with AE"
+  - B Lead: weiter mit "Book with MDR"
+- Scalable Intensive Bundle
+- L7MC Follow up sequence
+  - After 10 days: weiter mit "Email List"
+  - weiter: zurück zu "Bought L7MC?"
+- Qualified?
+  - No: weiter mit "DQ/Closed /Lost"
+  - Yes: weiter mit "Book with AE"
+- Book with AE
+- Book with MDR
+- Scalable Growth Accellerator
+- Email List
+- DQ/Closed /Lost
+- Meeting Show-up Series
+- Meeting Show-up series
+- Start L7 Fullfillment Engine
+- Lead Magnet or Webinar Landing Page
+- Attended?
+  - No: weiter mit "Setter Follow Up"
+  - Yes: weiter mit "Deliver Growth Session"
+- Attended?
+  - No: weiter mit "Setter Follow Up"
+  - Yes: weiter mit "Deliver Triage Session"
+- Deliver Growth Session
+- Setter Follow Up
+- Deliver Triage Session
+- Offer Presented?
+  - No: weiter mit "Follow-Up (BAMFAM)"
+  - sonst: weiter mit "Closed?"
+- Qualified?
+  - No: zurück zu "DQ/Closed /Lost"
+  - sonst: zurück zu "Book with AE"
+- Closed?
+  - No: weiter mit "Follow-Up (BAMFAM)"
+  - weiter: weiter mit "Start OSA Fulfillment Engine"
+  - sonst: weiter mit "Start FB Fullfillment Engine"
+- Follow-Up (BAMFAM)
+  - After 21 Days: zurück zu "DQ/Closed /Lost"
+  - weiter: zurück zu "Deliver Growth Session"
+- Start OSA Fulfillment Engine
+- Start FB Fullfillment Engine
+- Start
+- FB / IG Ads
