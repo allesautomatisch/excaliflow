@@ -181,4 +181,4 @@ Source of truth: `PLAN.md`. Always update `PLAN.md` first, then reflect changes 
 - [x] Invalidate both formats only after Save to Flow backend and attached-image uploads succeed.
 - [x] Preserve export preferences and reuse existing rendering, fonts and encrypted assets.
 - [x] Add extension routing, PWA exclusions, cache lifecycle tests and local route verification.
-- [ ] Activate Forge extension routing and install matching Chromium on the production backend; verify the production URLs.
+- [x] Activate Forge extension routing and install matching Chromium on the production backend; verify the production URLs without authentication and confirm cache reuse.

@@ -258,4 +258,11 @@
 - Save image export preferences with the backend scene; export the entire saved flow. Older scenes use exporter defaults until saved again.
 - Invalidate both cached formats exclusively after the Save to Flow backend action finishes all uploads, with a payload revision check and the same lock used for rendering.
 - Wire Vite/Docker/Vercel extension routing and PWA exclusions; preserve real static files. Forge needs the documented host locations and the backend needs matching Playwright Chromium installation.
-- Local acceptance: 19 focused frontend regressions, 39 backend tests (198 assertions), real PNG/SVG routes and actual save-modal completion smoke, affected-file lint and production build. Built renderer separately verified with embedded fonts. Full TypeScript passed before concurrent Markdown-test edits; final scoped checking excludes that unrelated test. Production activation remains dependent on host/browser setup.
+- Local acceptance: 19 focused frontend regressions, 39 backend tests (198 assertions), real PNG/SVG routes and actual save-modal completion smoke, affected-file lint and production build. Built renderer separately verified with embedded fonts. Full TypeScript passed before concurrent Markdown-test edits; final scoped checking excludes that unrelated test. Production activation completed in Forge on 2026-11-12; see production acceptance below.
+
+### Production image acceptance, 2026-11-12
+
+- Installed public extension locations in the Flow host Nginx configuration, stripping cookies before proxying image requests. Preserved the existing API, exports, TLS and editor configuration.
+- Fixed renderer startup by installing Chromium build 1208 for the deployed Playwright 1.58.2; retained the existing build 1254. Forge now installs matching Chromium after npm ci and before activating future backend releases, with browser garbage collection disabled.
+- Verified both fullfillment-engine-example URLs in normal Chrome through `$browse`: HTTP 200, PNG/SVG MIME types, successful image decoding at 2020x1100, and a visually inspected PNG. Cookie-free requests with redirects disabled succeed; the private projects API still returns 401 without cookies.
+- Repeated requests returned identical bytes and left the server cache sizes and modification times unchanged. PNG: 186984 bytes; SVG: 83312 bytes. No production drawing was edited or resaved; save-triggered invalidation remains covered by the local save-modal and regression tests.

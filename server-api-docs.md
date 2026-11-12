@@ -235,8 +235,11 @@ location @flow_image {
     proxy_ssl_verify_depth 3;
     proxy_ssl_verify on;
     proxy_ssl_trusted_certificate /etc/ssl/certs/ca-certificates.crt;
+    proxy_set_header Cookie "";
     proxy_read_timeout 110s;
 }
 ```
 
 Vite, Docker Nginx and Vercel routing are included in this repository. The PWA navigation fallback excludes root image URLs and the standalone renderer page. Deploy the matching frontend and Laravel change together. The backend needs production Node dependencies (`npm ci --omit=dev`) and Chromium installed for the PHP/deploy user (`npx playwright install chromium`; Linux system libraries via `npx playwright install-deps chromium`). Set `DRAWINGS_IMAGE_NODE_BINARY` if PHP needs an absolute Node path, and ensure the browser can reach `FLOW_ORIGIN/flow-render.html` and its assets. Full backend deployment notes are in `automatisch/resources/docs/flow-images.md`.
+
+Production activation completed in Forge on 2026-11-12. Both example image URLs return HTTP 200 without cookies and decode at 2020x1100; repeated requests preserve the cached bytes and file modification times. The private projects API still returns 401 without authentication. The backend Forge deployment script now runs `PLAYWRIGHT_SKIP_BROWSER_GC=1 npx playwright install chromium` after `npm ci` and before the build/release activation, keeping the browser matched to the installed Playwright version while preserving other installed browsers.
