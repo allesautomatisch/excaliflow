@@ -1,15 +1,16 @@
 import { useEffect, useState } from "react";
 import clsx from "clsx";
 
-import { Dialog } from "./Dialog";
-import { ToolButton } from "./ToolButton";
 import { t } from "../i18n";
 
-import type { LoadDialogDrawing, LoadDialogProject } from "../types";
+import { Dialog } from "./Dialog";
+import { LoadDialogProjectPicker } from "./LoadDialogProjectPicker";
+import { ToolButton } from "./ToolButton";
 
 import "./LoadDialog.scss";
 
-const ALL_PROJECTS_VALUE = "__all__";
+import type { LoadDialogDrawing, LoadDialogProject } from "../types";
+
 const NO_PROJECT_VALUE = "__none__";
 const DEFAULT_PROJECT_NAME = "Alles Automatisch";
 
@@ -39,6 +40,9 @@ export const LoadDialog = ({
   onLoadDrawing,
 }: LoadDialogProps) => {
   const [projects, setProjects] = useState<LoadDialogProject[]>();
+  const [portalContainer, setPortalContainer] = useState<HTMLElement | null>(
+    null,
+  );
   const [projectErrorMessage, setProjectErrorMessage] = useState("");
   const [projectFilterOverride, setProjectFilterOverride] = useState<string>();
   const [drawings, setDrawings] = useState<LoadDialogDrawing[]>([]);
@@ -64,11 +68,7 @@ export const LoadDialog = ({
       : defaultProjectId) ??
     NO_PROJECT_VALUE;
   const selectedProjectId =
-    selectedProjectFilter === ALL_PROJECTS_VALUE
-      ? undefined
-      : selectedProjectFilter === NO_PROJECT_VALUE
-      ? null
-      : selectedProjectFilter;
+    selectedProjectFilter === NO_PROJECT_VALUE ? null : selectedProjectFilter;
 
   const getDrawingProjectName = (drawing: LoadDialogDrawing) => {
     if (drawing.project_id === null || drawing.project_id === undefined) {
@@ -155,8 +155,12 @@ export const LoadDialog = ({
   }, [getLoadDialogDrawings, isWaitingForDefaultProject, selectedProjectId]);
 
   return (
-    <Dialog onCloseRequest={onCloseRequest} title={false}>
-      <section className="LoadDialog">
+    <Dialog
+      className="LoadDialog__dialog"
+      onCloseRequest={onCloseRequest}
+      title={false}
+    >
+      <section className="LoadDialog" ref={setPortalContainer}>
         <header className="LoadDialog__header">
           <h2>{t("loadDialog.title")}</h2>
         </header>
@@ -165,32 +169,15 @@ export const LoadDialog = ({
 
           <div className="LoadDialog__field">
             <label htmlFor="load-dialog-project">Projekt</label>
-            <select
-              id="load-dialog-project"
-              value={isWaitingForDefaultProject ? "" : selectedProjectFilter}
+            <LoadDialogProjectPicker
+              projects={projects ?? []}
+              value={selectedProjectId}
               disabled={isWaitingForDefaultProject}
-              onChange={(event) => setProjectFilterOverride(event.target.value)}
-            >
-              {isWaitingForDefaultProject && (
-                <option value="">Lade Projekte…</option>
-              )}
-              <option value={ALL_PROJECTS_VALUE}>Alle</option>
-              <option value={NO_PROJECT_VALUE}>Kein Projekt</option>
-              {selectedProjectFilter !== ALL_PROJECTS_VALUE &&
-                selectedProjectFilter !== NO_PROJECT_VALUE &&
-                !projects?.some(
-                  (project) => project.id === selectedProjectFilter,
-                ) && (
-                  <option value={selectedProjectFilter}>
-                    Unbekanntes Projekt
-                  </option>
-                )}
-              {projects?.map((project) => (
-                <option key={project.id} value={project.id}>
-                  {project.name}
-                </option>
-              ))}
-            </select>
+              portalContainer={portalContainer}
+              onChange={(value) =>
+                setProjectFilterOverride(value ?? NO_PROJECT_VALUE)
+              }
+            />
             {projectErrorMessage && (
               <p className="LoadDialog__fieldError">{projectErrorMessage}</p>
             )}

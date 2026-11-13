@@ -143,6 +143,7 @@ Source of truth: `PLAN.md`. Always update `PLAN.md` first, then reflect changes 
 - [x] Keep TypeScript checker at 0 errors
 - [x] Add project-aware Flow backend save/load support with nullable project filtering
 - [x] Default the load dialog to the `Alles Automatisch` project when no flow is open
+- [x] Group the load dialog project menu with ordered root projects and a hover/click/keyboard-accessible `Kunden` submenu
 - [x] Persist encrypted clipboard/imported images with Flow backend drawings and restore them on load
 
 ## QoL

@@ -29,9 +29,10 @@
 - Backend file storage defaults to Laravel's private local disk and can be moved to another configured filesystem (such as S3) through environment configuration without changing Excaliflow.
 - The backend exposes project IDs/names through `/api/v2/projects`.
 - Drawing list responses include `project_id` and `project_name`.
-- Loading supports three filters: all drawings, no project only, or one selected project.
+- The backend drawing list supports all drawings, no project only, or one selected project; the load dialog offers no project or a specific project through its categorized menu.
 - Saving and loading preselect the current drawing's project, including `Kein Projekt` for an unassigned drawing.
 - With no flow open, the load dialog preselects `Alles Automatisch` and lists its flows. If the project is unavailable, it falls back to `Kein Projekt`.
+- The load dialog project menu lists `Kein Projekt`, `Alles Automatisch`, `Beispiele`, and `Strategie` in that order (named projects when available). All other projects appear in a `Kunden` submenu, opening to the right on hover with click/touch and keyboard access; on phones it opens below.
 - The top-left file info displays the current project name or `Kein Projekt`.
 
 ## UX Details & Proposals
